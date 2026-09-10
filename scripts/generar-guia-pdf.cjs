@@ -131,7 +131,7 @@ function EX(t){ G.push(['ex', t]); }
 
 /* ---- 1 ---- */
 H1('1. Qué es PacaPOS');
-P('PacaPOS es el sistema de punto de venta de tu tienda de ropa. Registra ventas al contado y al fiado, lives de TikTok, inventario de pacas, gastos del negocio y la cobranza de tus clientes. Todo en córdobas (C$), desde computadora o celular, y se instala en el teléfono como una app más.');
+P('PacaPOS es el sistema de punto de venta de tu tienda de ropa. Registra ventas al contado y al fiado, lives de TikTok, inventario de productos, gastos del negocio y la cobranza de tus clientes. Todo en córdobas (C$), desde computadora o celular, y se instala en el teléfono como una app más.');
 TIP('Regla de oro: anota cada venta, abono y gasto EN EL MOMENTO en que ocurre. La app hace todas las cuentas por ti, pero solo con lo que le dices.');
 
 /* ---- 2 ---- */
@@ -165,7 +165,7 @@ TIP('Entrega las contraseñas por mensaje privado, nunca en grupos. Si un client
 H1('5. Navegación');
 B('Celular: toca el botón de menú (arriba a la izquierda) para abrir el menú lateral. Ciérralo con la X o tocando fuera.');
 B('Computadora: el menú queda fijo a la izquierda de la pantalla.');
-B('Secciones: Inicio (resumen del día), Vender (mostrador), Live TikTok (apartados en vivo), Caja (balance y cierre), Inventario (pacas y productos), Clientes (fiados y cobros) y Más (gastos, estadísticas y reporte).');
+B('Secciones: Inicio (resumen del día), Vender (mostrador), Live TikTok (apartados en vivo), Caja (balance y cierre), Inventario (productos), Clientes (fiados y cobros) y Más (gastos, estadísticas y reporte).');
 B('La barra superior muestra el nombre de tu tienda y tu usuario.');
 B('El botón de salida cierra la sesión y regresa al login. Tus datos quedan guardados en la nube.');
 
@@ -224,10 +224,10 @@ B('Cada noche, el corte guarda: ventas al contado del día (efectivo + transfere
 B('Es tu respaldo: si alguien pregunta cómo cerró la caja, ahí está todo.');
 
 S('6.8 La contabilidad del inventario');
-B('Costo por pieza de una paca = costo total entre total de prendas. Se calcula solo en el formulario.');
-B('Invertido (resumen del inventario) = la parte del costo de tus pacas proporcional a lo que ya vendiste. Ejemplo: paca de 100 prendas con costo C$6,000 con 40 vendidas: invertiste C$2,400.');
-B('Ganancia estimada = prendas que quedan x (precio promedio de venta - costo por pieza). Ejemplo: quedan 60 prendas, costo C$60 c/u, venta promedio C$150: ganancia estimada C$5,400 si vendes todo.');
-EX('Ejemplo de paca: 100 prendas, costo total C$6,000, venta promedio C$150. Costo por pieza: C$60. Ganancia por pieza: C$90.');
+B('Costo por pieza de un producto = costo total que pagaste entre cantidad de prendas. Se calcula solo en el formulario de ingreso.');
+B('Costo de lo vendido = la parte del costo de tus productos proporcional a lo que ya vendiste. Ejemplo: entraron 100 prendas con costo C$6,000 y llevas 40 vendidas: costo de lo vendido C$2,400.');
+B('Ganancia estimada = prendas que quedan x (precio de venta - costo por pieza). Ejemplo: quedan 60 prendas, costo C$60 c/u, venta C$150: ganancia estimada C$5,400 si vendes todo.');
+EX('Ejemplo de producto ingresado: 100 prendas, costo total C$6,000, venta C$150. Costo por pieza: C$60. Ganancia por pieza: C$90.');
 
 /* ---- 7 ---- */
 H1('7. Inicio: el apartado del día');
@@ -249,13 +249,13 @@ B('Si el saldo queda en C$0, el cliente sale de la lista de deudores. El abono s
 
 /* ---- 8 ---- */
 H1('8. Vender: venta al contado');
-P('Para vender en el mostrador. Se venden los productos que hayas agregado en Inventario (sección 14).');
-B('Paso 1: busca el producto por nombre en el buscador. Cada tarjeta muestra el producto y su precio.');
+P('Para vender en el mostrador. Se venden los productos que hayas ingresado en Inventario (sección 13).');
+B('Paso 1: busca el producto por nombre en el buscador. Cada tarjeta muestra el producto, su precio y cuántas quedan.');
 B('Paso 2: toca una tarjeta para agregar 1 pieza al carrito. Tócala otra vez para sumar otra.');
 B('Paso 3: en "Venta en curso" (el panel que aparece abajo) ajusta con los botones menos y más, o presiona "Vaciar" para empezar de nuevo.');
 B('Paso 4: deja marcado "Al contado" y presiona el botón rosa "Cobrar C$XXX" con el total.');
-B('Qué hace la app sola: la venta queda con folio en los movimientos, el pago entra a la caja del día, las piezas se descuentan de la paca asignada al producto (si tiene) y el contador de vendidos sube para las estadísticas.');
-TIP('El descuento de piezas de la paca solo ocurre si el producto tiene una paca asignada (sección 14).');
+B('Qué hace la app sola: la venta queda con folio en los movimientos, el pago entra a la caja del día, las piezas se descuentan del stock del producto y el contador de vendidos sube para las estadísticas.');
+TIP('El descuento de piezas solo ocurre si el producto fue ingresado con cantidad (sección 13).');
 
 /* ---- 9 ---- */
 H1('9. Vender: venta a fiado');
@@ -312,26 +312,19 @@ EX('Ejemplo: esperados C$200. Cuentas 1 billete de C$200 y 2 de C$100: físico C
 TIP('Cuenta el dinero en un momento tranquilo y dos veces: los errores de conteo son la causa más común de diferencias.');
 
 /* ---- 13 ---- */
-H1('13. Inventario: las pacas');
-S('13.1 Registrar una paca nueva');
-B('En Inventario presiona "Entró nueva paca / lote" (ingreso express, sin tallas).');
-B('Llena: nombre o categoría (ej. Paca Blusas Casuales Mixtas), total de prendas, costo total de la paca (lo que pagaste) y precio promedio de venta por pieza.');
-B('El costo por pieza se calcula solo mientras escribes (costo total entre prendas).');
-B('Presiona "Dar Entrada al Lote": la paca queda activa con su código (Paca #1, Paca #2...).');
-S('13.2 Leer el panel de pacas');
-B('Resumen de arriba: Prendas (stock total), Invertido (dinero inmovilizado, sección 6.8) y Ganancia estimada.');
-B('Cada paca muestra: código, % vendido con barra de progreso, "Quedan X de Y", costo por prenda, venta promedio y ganancia por pieza.');
-B('ALERTA: una paca con menos del 20% vendida después de más de una semana se resalta en rojo: es tu señal para rematarla o bajarle el precio.');
-TIP('Registra la paca apenas llegue a la tienda, así el inventario siempre refleja la realidad.');
+H1('13. Inventario: ingresar un producto');
+P('Un solo paso: llenas los datos del producto una vez y sale directo a Vender con su stock. Así la dueña no pierde tiempo con pasos intermedios.');
+B('En Inventario presiona "Ingresar producto" (botón rosa de arriba).');
+B('Llena los 4 campos: nombre del producto (ej. Blusa rosa), cantidad de prendas que entraron (ej. 100), costo total de lo que pagaste (ej. 6000) y precio de venta por prenda (ej. 150).');
+B('Mientras escribes, la app te calcula sola el costo por pieza y la ganancia por pieza: así sabes si el precio está bien puesto antes de guardar.');
+B('Presiona "Dar entrada a un producto". El producto queda en la lista con su código (P-001, P-002...) y YA está disponible en Vender.');
+TIP('Si no sabes el costo exacto, pon un estimado cercano: sirve para las ganancias y lo puedes corregir la próxima vez que compre.');
 
-/* ---- 14 ---- */
-H1('14. Inventario: los productos');
-P('Los productos son tu catálogo de venta: los que agregues aquí son los que aparecen en Vender.');
-B('"Agregar producto": nombre, precio de venta y (opcional) la paca a la que pertenece. El código (P-001, P-002...) se asigna solo.');
-B('Asignar la paca hace que las piezas se descuenten solas al vender ese producto en Vender.');
-B('Cada producto muestra cuántas unidades lleva vendidas.');
-B('Eliminar: botón de basura, pide confirmación. El producto desaparece de Vender.');
-B('Si no tienes productos aún, Vender te lo avisa: agrégalos primero aquí.');
+S('13.1 Leer la lista de productos');
+B('Cada producto muestra: código, nombre, cuántos lleva vendidos, "Quedan X" (piezas en stock) y su precio de venta.');
+B('"Quedan X" se actualiza solo con cada venta. Si quedan 5 o menos se resalta; si llega a 0 dice "Agotado".');
+B('El resumen de arriba se calcula solo con tus productos: Prendas en stock, En stock cuesta (dinero pendiente de recuperar), Costo de lo vendido y Ganancia estimada si vendes todo lo que queda.');
+B('Eliminar un producto: botón de basura. Pide confirmación y el producto desaparece de Vender.');
 
 /* ---- 15 ---- */
 H1('15. Clientes: la lista');
@@ -422,13 +415,13 @@ page.push(op('Guía de usuario', 21, 2, '1 1 1', M, H - 152));
 page.push(op('Sistema de venta para tiendas de ropa', 11, 1, PINK_SOFT, M, H - 178));
 page.push(op('Versión 1.2 - Septiembre 2026 - Nicaragua - Moneda: córdobas (C$)', 9.5, 1, PINK_SOFT, M, H - 198));
 y = H - 285;
-para('Bienvenido a PacaPOS. Esta guía explica, paso a paso y sin tecnicismos, cómo usar la aplicación completa: iniciar sesión, vender al contado y al fiado, hacer lives de TikTok, controlar pacas y productos, cobrar a clientes, registrar gastos y cerrar la caja con conteo de billetes.', 11, INK);
+para('Bienvenido a PacaPOS. Esta guía explica, paso a paso y sin tecnicismos, cómo usar la aplicación completa: iniciar sesión, ingresar productos, vender al contado y al fiado, hacer lives de TikTok, cobrar a clientes, registrar gastos y cerrar la caja con conteo de billetes.', 11, INK);
 gap(6);
 para('Incluye una sección dedicada a cómo funciona la contabilidad: qué significa cada número, cómo se calcula y un ejemplo completo de un día de tienda que se usa en todo el documento.', 11, SUB);
 gap(4);
 para('Importante: la contraseña de tu cuenta te la entrega el administrador del sistema. Nunca la compartas.', 10.5, PINK);
 y -= 16;
-para('Contenido: 1 Qué es - 2 Cuenta y roles - 3 Iniciar sesión - 4 Panel admin - 5 Navegación - 6 Contabilidad - 7 Inicio - 8 Vender contado - 9 Vender fiado - 10 Live TikTok - 11 Caja - 12 Cierre de caja - 13 Pacas - 14 Productos - 15 Lista de clientes - 16 Hoja de cliente - 17 Gastos - 18 Estadísticas - 19 Reporte - 20 Instalar en celular - 21 Problemas comunes - 22 Rutina del día', 9.5, SUB);
+para('Contenido: 1 Qué es - 2 Cuenta y roles - 3 Iniciar sesión - 4 Panel admin - 5 Navegación - 6 Contabilidad - 7 Inicio - 8 Vender contado - 9 Vender fiado - 10 Live TikTok - 11 Caja - 12 Cierre de caja - 13 Ingresar producto - 15 Lista de clientes - 16 Hoja de cliente - 17 Gastos - 18 Estadísticas - 19 Reporte - 20 Instalar en celular - 21 Problemas comunes - 22 Rutina del día', 9.5, SUB);
 endPage();
 
 for (const [t, s] of G) {
