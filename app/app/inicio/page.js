@@ -8,7 +8,7 @@ export default async function InicioPage() {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
 
-  const [sales, expenses, payments, debts, clients] = await Promise.all([
+  const [sales, expenses, payments, debts, clients, allPayments] = await Promise.all([
     supabase
       .from('sales')
       .select('id, total, items_count, channel, payment_method, client_name, notes, created_at')
@@ -37,6 +37,12 @@ export default async function InicioPage() {
       .select('id, name, phone, is_live_client')
       .order('created_at', { ascending: false })
       .limit(200),
+    // Historial de abonos (para el modal del deudor) — en paralelo, no secuencial
+    supabase
+      .from('payments')
+      .select('id, debt_id, sale_id, amount, method, created_at')
+      .order('created_at', { ascending: false })
+      .limit(150),
   ]);
 
   const saleList = sales.data || [];
@@ -49,6 +55,7 @@ export default async function InicioPage() {
 
   const debtByClient = {};
   debtList.forEach((d) => {
+    if (d.status !== 'pendiente') return;
     debtByClient[d.client_id] = (debtByClient[d.client_id] || 0) + Number(d.remaining);
   });
   const debtors = clientList
@@ -73,12 +80,6 @@ export default async function InicioPage() {
       date: d.created_at,
     });
   });
-  // Pagos históricos (todos, no solo hoy) para el historial — consultar aparte
-  const allPayments = await supabase
-    .from('payments')
-    .select('id, debt_id, sale_id, amount, method, created_at')
-    .order('created_at', { ascending: false })
-    .limit(300);
   (allPayments.data || []).forEach((p) => {
     if (p.sale_id) return; // cobros de ventas, no abonos de deuda
     const cid = p.debt_id ? debtById[p.debt_id] : null;
