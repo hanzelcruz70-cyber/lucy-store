@@ -48,7 +48,9 @@ export default function PwaRegister() {
       onClick={install}
       className="fixed bottom-20 right-4 z-50 bg-primary text-on-primary rounded-full shadow-lg px-4 py-2.5 flex items-center gap-1.5 font-label-badge text-label-badge active:scale-95 transition-transform"
     >
-      <span className="material-symbols-outlined text-[18px]">download</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3v12M7 10l5 5 5-5M4 21h16" />
+      </svg>
       Instalar App
     </button>
   );

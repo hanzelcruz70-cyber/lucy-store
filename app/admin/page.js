@@ -2,6 +2,22 @@
 
 import { useEffect, useState } from 'react';
 
+const Ico = ({ name, size = 22, cls = '' }) => {
+  const paths = {
+    admin: <path d="M12 3l4 2v5c0 3.5-1.7 5.5-4 7-2.3-1.5-4-3.5-4-7V5zM12 10.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM9.5 15.5a2.5 2.5 0 0 1 5 0" />,
+    lock: <path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v9H5zM12 15v2" />,
+    store: <path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 20V9M9.5 21.5v-6h5v6" />,
+    add_business: <path d="M3 9l1.5-5h11L17 9M3 9h14M3 9v11a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 17 20V9M19 14h-2v2h-2v2h2v2h2v-2h2v-2h-2z" />,
+    person_add: <path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c1-3.4 3.5-5 6.5-5s5.5 1.6 6.5 5M18 5v6M15 8h6" />,
+    delete: <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13M10 11v6M14 11v6" />,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={cls}>
+      {paths[name]}
+    </svg>
+  );
+};
+
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [pass, setPass] = useState('');
@@ -104,7 +120,7 @@ export default function AdminPage() {
         <div className="w-full bg-surface-container-lowest rounded-2xl p-space-lg shadow-lg space-y-space-md">
           <div className="flex items-center gap-space-sm">
             <div className="w-12 h-12 rounded-xl bg-inverse-surface text-inverse-on-surface flex items-center justify-center flex-shrink-0">
-              <span className="material-symbols-outlined text-[26px]">admin_panel_settings</span>
+              <Ico name="admin" size={26} />
             </div>
             <div>
               <h1 className="font-headline-md text-headline-md text-on-surface">Panel Admin</h1>
@@ -127,7 +143,7 @@ export default function AdminPage() {
             </div>
             {loginError && <p className="font-body-sm text-body-sm text-error font-semibold">{loginError}</p>}
             <button className="w-full min-h-[52px] bg-inverse-surface text-inverse-on-surface rounded-xl font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform">
-              <span className="material-symbols-outlined text-[22px]">lock_open</span>
+              <Ico name="lock" size={22} />
               Entrar al panel
             </button>
           </form>
@@ -142,7 +158,7 @@ export default function AdminPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-space-sm">
           <div className="w-11 h-11 rounded-xl bg-inverse-surface text-inverse-on-surface flex items-center justify-center">
-            <span className="material-symbols-outlined text-[24px]">admin_panel_settings</span>
+            <Ico name="admin" size={24} />
           </div>
           <div>
             <h1 className="font-headline-md text-headline-md text-on-surface">Panel Admin</h1>
@@ -156,7 +172,7 @@ export default function AdminPage() {
       {/* Crear tienda */}
       <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-lg space-y-space-md">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-[22px]">add_business</span>
+          <Ico name="add_business" size={22} cls="text-primary" />
           <h2 className="font-headline-sm text-headline-sm text-on-surface">Crear cuenta de cliente</h2>
         </div>
         <form onSubmit={createStore} className="space-y-space-sm">
@@ -224,7 +240,7 @@ export default function AdminPage() {
             disabled={busy}
             className="w-full min-h-[52px] bg-primary text-on-primary rounded-xl font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform disabled:opacity-60"
           >
-            <span className="material-symbols-outlined text-[22px]">person_add</span>
+            <Ico name="person_add" size={22} />
             {busy ? 'Creando...' : 'Crear tienda y cuenta'}
           </button>
         </form>
@@ -233,7 +249,7 @@ export default function AdminPage() {
       {/* Listado de tiendas */}
       <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-lg space-y-space-sm">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-[22px]">storefront</span>
+          <Ico name="store" size={22} cls="text-primary" />
           <h2 className="font-headline-sm text-headline-sm text-on-surface">Tiendas del sistema</h2>
         </div>
         {stores.length === 0 && (
@@ -257,7 +273,7 @@ export default function AdminPage() {
                   className="w-10 h-10 rounded-lg bg-error-container/40 text-error flex items-center justify-center flex-shrink-0 active:scale-95"
                   title="Eliminar tienda"
                 >
-                  <span className="material-symbols-outlined text-[20px]">delete</span>
+                  <Ico name="delete" size={20} />
                 </button>
               </div>
             );

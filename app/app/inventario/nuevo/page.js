@@ -53,7 +53,9 @@ export default function NuevoLotePage() {
     <div className="px-gutter-mobile py-space-md">
       <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-lg space-y-space-md max-w-md mx-auto">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-[28px]">add_shopping_cart</span>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+            <path d="M12 3v18M3 12h18M7 7h10v10H7z" />
+          </svg>
           <div>
             <h1 className="text-[16px] font-bold text-on-surface">Nueva Paca / Lote</h1>
             <p className="text-[12px] text-on-surface-variant">Ropa americana sin desglose de tallas</p>
@@ -93,7 +95,9 @@ export default function NuevoLotePage() {
               <span className="text-body-sm font-body-sm text-on-surface-variant block">Costo calculado por pieza:</span>
               <span className="font-display-pos-mobile text-[24px] font-bold text-secondary">C${unit} c/u</span>
             </div>
-            <span className="material-symbols-outlined text-secondary text-[32px]">calculate</span>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="text-secondary">
+              <path d="M5 7h2v2H5zM10 7h2v2h-2zM15 7h2v2h-2zM5 12h2v2H5zM10 12h2v2h-2zM15 12h2v2h-2zM7 16h10v2H7zM4 4h16v5H4zM4 9h16v11H4z" />
+            </svg>
           </div>
 
           {error && <p className="font-body-sm text-body-sm text-error font-semibold">{error}</p>}
@@ -103,10 +107,12 @@ export default function NuevoLotePage() {
             disabled={busy}
             className="w-full py-3.5 bg-primary text-on-primary font-headline-sm text-headline-sm rounded-xl shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            <span className="material-symbols-outlined">check_circle</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9zM8 12.5l2.5 2.5L16 9" />
+            </svg>
             <span>{busy ? 'Guardando...' : 'Dar Entrada al Lote'}</span>
           </button>
-          <a href="/app/inventario" className="w-full py-2.5 bg-surface-container-low border border-outline text-on-surface rounded-xl text-[13px] font-semibold py-2.5 text-center block">
+          <a href="/app/inventario" prefetch className="w-full py-2.5 bg-surface-container-low border border-outline text-on-surface rounded-xl text-[13px] font-semibold py-2.5 text-center block">
             Cancelar
           </a>
         </form>
