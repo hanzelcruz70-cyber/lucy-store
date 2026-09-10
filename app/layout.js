@@ -4,9 +4,7 @@ export const metadata = {
   title: 'PacaPOS · Punto de Venta',
   description: 'Caja, fiados, lotes y Lives de TikTok para tiendas de ropa americana.',
   manifest: '/manifest.json',
-  themeColor: '#D6337F',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'PacaPOS' },
-  icons: { icon: '/icons/icon-512.png', apple: '/icons/icon-192.png' },
+  icons: { icon: '/icons/favicon.png', apple: '/icons/icon-192.png' },
 };
 
 export const viewport = {

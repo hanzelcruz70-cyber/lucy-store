@@ -83,9 +83,8 @@ export default function LoginPage() {
       <div className="w-full space-y-4">
         <div className="flex items-center gap-3 justify-center">
           <div className="w-14 h-14 rounded-[14px] bg-primary text-on-primary flex items-center justify-center">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-              <path d="M12 2l9 5v10l-9 5-9-5V7z" />
-              <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 20V9M9.5 21.5v-6h5v6" />
             </svg>
           </div>
           <div>
