@@ -35,13 +35,21 @@ function registerFail(ip) {
   attempts.set(ip, rec);
 }
 
+// Comparación en tiempo constante (evita timing attacks en la contraseña del admin)
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 function checkAdmin(request) {
   const auth = request.headers.get('authorization') || '';
   const token = auth.replace('Bearer ', '');
   const adminPass = process.env.ADMIN_PASSWORD;
   const adminSecret = process.env.ADMIN_SECRET;
   if (!adminPass || !adminSecret) return false;
-  return token === adminPass || token === adminSecret;
+  return safeEqual(token, adminPass) || safeEqual(token, adminSecret);
 }
 
 function guard(request) {
