@@ -68,7 +68,6 @@ async function getData() {
 
 export default async function CajaPage() {
   const d = await getData();
-  const cobradoPct = d.total > 0 ? Math.round((d.collected / d.total) * 100) : 0;
 
   return (
     <div className="flex flex-col w-full px-3.5 py-3.5 gap-2.5">
@@ -142,17 +141,6 @@ export default async function CajaPage() {
             {d.net >= 0 ? '+' : ''}
             {money(d.net)}
           </b>
-        </div>
-        <div className="h-1.5 rounded-full bg-surface-container-highest overflow-hidden mt-2">
-          <div className="h-full bg-primary rounded-full" style={{ width: `${cobradoPct}%` }} />
-        </div>
-        <div className="flex justify-between text-[10.5px] text-on-surface-variant mt-1.5">
-          <span className="flex items-center gap-1">
-            <span className="w-[7px] h-[7px] rounded-full bg-primary inline-block" /> Cobrado
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-[7px] h-[7px] rounded-full bg-surface-container-highest inline-block" /> Fiado + gastos
-          </span>
         </div>
       </div>
 
