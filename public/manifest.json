@@ -1,0 +1,38 @@
+{
+  "name": "PacaPOS · Punto de Venta para Tiendas de Ropa",
+  "short_name": "PacaPOS",
+  "description": "Caja, fiados, lotes y Lives de TikTok para tiendas de ropa americana. Instalable y offline.",
+  "start_url": "/app/inicio",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF4F8",
+  "theme_color": "#D6337F",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

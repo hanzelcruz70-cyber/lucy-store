@@ -1,0 +1,543 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 6 0 R 7 0 R 8 0 R 9 0 R 10 0 R 11 0 R 12 0 R 13 0 R 14 0 R] /Count 10 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 15 0 R >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 16 0 R >>
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 17 0 R >>
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 18 0 R >>
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 19 0 R >>
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 20 0 R >>
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 21 0 R >>
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 22 0 R >>
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 23 0 R >>
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 24 0 R >>
+endobj
+15 0 obj
+<< /Length 1995 >>
+stream
+0.839 0.20 0.498 rg 0 542 612 250 re f
+BT /F2 44 Tf 1 1 1 rg 50 677 Td (PacaPOS) Tj ET
+BT /F2 21 Tf 1 1 1 rg 50 640 Td (Guía de usuario) Tj ET
+BT /F1 11 Tf 0.984 0.882 0.937 rg 50 614 Td (Sistema de venta para tiendas de ropa) Tj ET
+BT /F1 9.5 Tf 0.984 0.882 0.937 rg 50 594 Td (Versión 1.2 - Septiembre 2026 - Nicaragua - Moneda: córdobas \(C$\)) Tj ET
+BT /F1 11 Tf 0.20 0.075 0.165 rg 50 507 Td (Bienvenido a PacaPOS. Esta guía explica, paso a paso y sin tecnicismos, cómo usar la) Tj ET
+BT /F1 11 Tf 0.20 0.075 0.165 rg 50 490.5 Td (aplicación completa: iniciar sesión, vender al contado y al fiado, hacer lives de) Tj ET
+BT /F1 11 Tf 0.20 0.075 0.165 rg 50 474 Td (TikTok, controlar pacas y productos, cobrar a clientes, registrar gastos y cerrar la) Tj ET
+BT /F1 11 Tf 0.20 0.075 0.165 rg 50 457.5 Td (caja con conteo de billetes.) Tj ET
+BT /F1 11 Tf 0.576 0.439 0.498 rg 50 435 Td (Incluye una sección dedicada a cómo funciona la contabilidad: qué significa cada) Tj ET
+BT /F1 11 Tf 0.576 0.439 0.498 rg 50 418.5 Td (número, cómo se calcula y un ejemplo completo de un día de tienda que se usa en todo el) Tj ET
+BT /F1 11 Tf 0.576 0.439 0.498 rg 50 402 Td (documento.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 381.5 Td (Importante: la contraseña de tu cuenta te la entrega el administrador del sistema. Nunca la) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 365.75 Td (compartas.) Tj ET
+BT /F1 9.5 Tf 0.576 0.439 0.498 rg 50 334 Td (Contenido: 1 Qué es - 2 Cuenta y roles - 3 Iniciar sesión - 4 Panel admin - 5 Navegación - 6) Tj ET
+BT /F1 9.5 Tf 0.576 0.439 0.498 rg 50 319.75 Td (Contabilidad - 7 Inicio - 8 Vender contado - 9 Vender fiado - 10 Live TikTok - 11 Caja - 12 Cierre de) Tj ET
+BT /F1 9.5 Tf 0.576 0.439 0.498 rg 50 305.5 Td (caja - 13 Pacas - 14 Productos - 15 Lista de clientes - 16 Hoja de cliente - 17 Gastos - 18) Tj ET
+BT /F1 9.5 Tf 0.576 0.439 0.498 rg 50 291.25 Td (Estadísticas - 19 Reporte - 20 Instalar en celular - 21 Problemas comunes - 22 Rutina del día) Tj ET
+endstream
+endobj
+16 0 obj
+<< /Length 4925 >>
+stream
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 736 Td (1. Qué es PacaPOS) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 731 m 562 731 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 718 Td (PacaPOS es el sistema de punto de venta de tu tienda de ropa. Registra ventas al contado y) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 702.25 Td (al fiado, lives de TikTok, inventario de pacas, gastos del negocio y la cobranza de tus) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 686.5 Td (clientes. Todo en córdobas \(C$\), desde computadora o celular, y se instala en el teléfono) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 670.75 Td (como una app más.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 652 Td (Regla de oro: anota cada venta, abono y gasto EN EL MOMENTO en que ocurre. La app hace todas) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 636.25 Td (las cuentas por ti, pero solo con lo que le dices.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 611.5 Td (2. Antes de empezar: la cuenta y los roles) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 606.5 m 562 606.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 593.5 Td (• Necesitas: conexión a internet, un navegador \(Chrome o Edge recomendado\) y una cuenta. No) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 577.75 Td (hay registro público.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 561 Td (• El ADMINISTRADOR del sistema es quien crea las tiendas y entrega los correos y contraseñas.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 545.25 Td (No vende; solo administra cuentas.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 528.5 Td (• El DUEÑO DE TIENDA entra con su correo y contraseña y usa la app con los datos de SU tienda:) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 512.75 Td (caja, fiados, lotes, clientes y gastos.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 496 Td (• Cada tienda ve únicamente sus propios datos: ninguna otra tienda puede verlos ni) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 480.25 Td (modificarlos.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 463.5 Td (• La dirección de la app te la indica el administrador. Ejemplo: http://192.168.1.15:3001) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 440.75 Td (3. Iniciar sesión) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 435.75 m 562 435.75 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 422.75 Td (• Paso 1: abre la dirección de la app. Verás la pantalla con el logo PacaPOS y el botón) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 407 Td ("Entrar a mi tienda".) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 390.25 Td (• Paso 2: escribe tu correo y tu contraseña.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 373.5 Td (• Paso 3: presiona "Entrar a mi tienda". Al entrar aterrizas en Inicio, el resumen del día.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 356.75 Td (• Si los datos están mal verás en rojo: "Correo o contraseña incorrectos. Verifica tus datos.") Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 341 Td (Quedas en la misma pantalla para reintentar.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 324.25 Td (• Si no hay conexión: "No se pudo conectar al servidor. Revisa tu internet e intenta de) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 308.5 Td (nuevo.") Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 285.75 Td (4. Panel del administrador) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 280.75 m 562 280.75 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 267.75 Td (• Entra a la dirección de la app seguida de /admin. Ejemplo: http://192.168.1.15:3001/admin) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 251 Td (• Escribe la contraseña de administrador y presiona "Entrar al panel".) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 234.25 Td (• Crear una tienda: llena los 4 campos: nombre del dueño, nombre del negocio, correo del) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 218.5 Td (cliente y contraseña \(mínimo 8 caracteres\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 201.75 Td (• El botón "Generar" inventa una contraseña segura de 12 caracteres. Cópiala antes de guardar.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 185 Td (• Presiona "Crear tienda y cuenta". La tienda queda listada abajo con su dueño, correo y) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 169.25 Td (fecha.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 152.5 Td (• El nombre del negocio es EXACTAMENTE el que el cliente verá en su barra superior al entrar.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 135.75 Td (• Eliminar una tienda: botón de basura. Pide confirmación y borra TODOS sus datos \(ventas,) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 120 Td (clientes, deudas\). No se puede deshacer.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 103.25 Td (Entrega las contraseñas por mensaje privado, nunca en grupos. Si un cliente olvida la suya,) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 87.5 Td (no hay recuperación: crea la cuenta de nuevo.) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 50 30 Td (PacaPOS - Guía de usuario) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 525.96 30 Td (Página 2) Tj ET
+endstream
+endobj
+17 0 obj
+<< /Length 4755 >>
+stream
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 736 Td (5. Navegación) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 731 m 562 731 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 718 Td (• Celular: toca el botón de menú \(arriba a la izquierda\) para abrir el menú lateral. Ciérralo) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 702.25 Td (con la X o tocando fuera.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 685.5 Td (• Computadora: el menú queda fijo a la izquierda de la pantalla.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 668.75 Td (• Secciones: Inicio \(resumen del día\), Vender \(mostrador\), Live TikTok \(apartados en vivo\),) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 653 Td (Caja \(balance y cierre\), Inventario \(pacas y productos\), Clientes \(fiados y cobros\) y Más) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 637.25 Td (\(gastos, estadísticas y reporte\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 620.5 Td (• La barra superior muestra el nombre de tu tienda y tu usuario.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 603.75 Td (• El botón de salida cierra la sesión y regresa al login. Tus datos quedan guardados en la) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 588 Td (nube.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 565.25 Td (6. Cómo funciona la contabilidad) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 560.25 m 562 560.25 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 547.25 Td (Esta es la sección más importante de la guía: explica cómo la app cuenta tu dinero. Léela) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 531.5 Td (una vez con calma y después consulta las fórmulas cuando tengas dudas.) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 508.75 Td (6.1 Los tres tipos de dinero) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 505.75 m 76 505.75 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 495.75 Td (• COBRADO: dinero que ya entró. Son las ventas pagadas al momento \(efectivo o transferencia\) y) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 480 Td (los abonos que te pagan.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 463.25 Td (• FIADO \(por cobrar\): mercancía entregada a cuenta. NO es dinero en tu caja: lo será cuando el) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 447.5 Td (cliente abone.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 430.75 Td (• GASTO: dinero que salió del negocio \(bolsas, renta, proveedor\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 414 Td (• La caja neta del día = cobrado menos gastos. El fiado no entra ni sale: es una promesa de) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 398.25 Td (pago.) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 377.5 Td (6.2 Los cuatro números de la Caja del día \(Inicio\)) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 374.5 m 76 374.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 364.5 Td (• Contado: ventas de HOY cobradas al momento, en efectivo o transferencia. Venta fiada no) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 348.75 Td (incluye.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 332 Td (• Fiado: ventas de HOY que quedaron a cuenta de un cliente.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 315.25 Td (• Abonos: TODO pago registrado hoy. Ojo: además de los abonos de deudas, este contador suma) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 299.5 Td (los cobros de ventas al contado hechas en Vender y Live, porque también se registran como) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 283.75 Td (pagos.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 267 Td (• Gastos: suma de los gastos anotados hoy.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 250.25 Td (• Prendas: piezas vendidas hoy \(arriba del bloque\).) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 229.5 Td (6.3 Ejemplo completo de un día) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 226.5 m 76 226.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 216.5 Td (Día de ejemplo en la tienda, con su folio de Inicio:) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 197.75 Td (#001 10:15am - Venta en mostrador: 2 Blusas, C$250 en efectivo.) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 182 Td (#002 11:30am - Live: Vestido #43 apartado para @maria, C$150. A las 12:00pm María lo paga) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 166.25 Td (por transferencia.) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 150.5 Td (#003 1:00pm - Live: Vestido #44 apartado para Doña Lupita, C$120. Se marca como Fiado.) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 134.75 Td (#004 3:00pm - Doña Lupita abona C$100 en efectivo.) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 119 Td (#005 5:00pm - Gasto: bolsas para empaque, C$50, categoría operativo.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 103.25 Td (Con eso, la Caja del día muestra:) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 50 30 Td (PacaPOS - Guía de usuario) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 525.96 30 Td (Página 3) Tj ET
+endstream
+endobj
+18 0 obj
+<< /Length 5328 >>
+stream
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 742 Td (Contado: C$400 \(250 de la venta en efectivo + 150 del cobro por transferencia\).) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 726.25 Td (Fiado: C$120 \(el vestido #44 que quedó a cuenta\).) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 710.5 Td (Abonos: C$500 \(el abono de C$100 de Lupita + el cobro de C$250 + el cobro de C$150\).) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 694.75 Td (Gastos: C$50. Prendas: 4 \(2 blusas + 2 vestidos\).) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 679 Td (Ventas totales del día: C$520 \(400 contado + 120 fiado\). Margen neto: C$350 \(400 cobrado) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 663.25 Td (- 50 de gastos\).) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 643.5 Td (6.4 Cómo se pagan las deudas \(una por una, de la más vieja a la más nueva\)) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 640.5 m 76 640.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 630.5 Td (Cada fiado es una deuda aparte. Cuando el cliente abona, el dinero se descuenta en orden:) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 614.75 Td (primero la deuda más antigua, luego la siguiente.) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 596 Td (Ejemplo: Doña Lupita debe un fiado del lunes de C$120 y otro del martes de C$80 \(deuda) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 580.25 Td (total C$200\). Abona C$150: se salda el fiado del lunes completo \(C$120\) y del martes) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 564.5 Td (quedan C$30. Deuda total: C$30.) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 548.75 Td (Si abona más de lo que debe, el saldo simplemente queda en C$0; no hay cambio.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 533 Td (Un abono NUNCA borra el historial: la deuda queda marcada como saldada y el abono queda en) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 517.25 Td (los movimientos del cliente.) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 494.5 Td (6.5 Fiado en calle y Recuperado \(Clientes\)) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 491.5 m 76 491.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 481.5 Td (• Fiado en calle: total que te deben todos tus clientes ahora mismo \(solo deudas pendientes\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 464.75 Td (• Recuperado: total que te han pagado de fiados en la historia \(lo prestado menos lo que) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 449 Td (falta\).) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 432.25 Td (En el ejemplo: Fiado en calle C$20 \(los C$120 de Lupita menos su abono de C$100\).) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 416.5 Td (Recuperado: C$100.) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 396.75 Td (6.6 El efectivo esperado en el cajón \(cierre de caja\)) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 393.75 m 76 393.75 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 383.75 Td (Al hacer el cierre, la app calcula cuánto efectivo DEBERÍA haber en el cajón:) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 365 Td (Efectivo esperado = ventas de hoy cobradas en EFECTIVO - gastos del día.) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 349.25 Td (En el ejemplo: C$250 - C$50 = C$200 esperados.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 333.5 Td (• IMPORTANTE: los abonos que te paguen en efectivo también quedan en el cajón, pero hoy el) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 317.75 Td (cálculo del esperado no los suma. En el ejemplo, el abono de Lupita \(C$100 en efectivo\) hará) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 302 Td (que el físico sea C$300: esperados C$200 + abono C$100.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 285.25 Td (• Por eso, si recibiste abonos en efectivo, es NORMAL que el conteo físico sobrepase lo) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 269.5 Td (esperado exactamente por ese monto. Verifícalo y cierra con la diferencia anotada.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 252.75 Td (• Las transferencias tampoco están en el cajón \(están en el banco\): el esperado solo usa) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 237 Td (efectivo.) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 216.25 Td (6.7 Qué guarda el corte de caja) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 213.25 m 76 213.25 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 203.25 Td (• Cada noche, el corte guarda: ventas al contado del día \(efectivo + transferencia\), cuánto de) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 187.5 Td (eso fue en efectivo, los gastos, y en las notas el conteo físico, la diferencia y las) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 171.75 Td (transferencias.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 155 Td (• Es tu respaldo: si alguien pregunta cómo cerró la caja, ahí está todo.) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 134.25 Td (6.8 La contabilidad del inventario) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 131.25 m 76 131.25 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 121.25 Td (• Costo por pieza de una paca = costo total entre total de prendas. Se calcula solo en el) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 105.5 Td (formulario.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 88.75 Td (• Invertido \(resumen del inventario\) = la parte del costo de tus pacas proporcional a lo que) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 50 30 Td (PacaPOS - Guía de usuario) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 525.96 30 Td (Página 4) Tj ET
+endstream
+endobj
+19 0 obj
+<< /Length 4835 >>
+stream
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 742 Td (ya vendiste. Ejemplo: paca de 100 prendas con costo C$6,000 con 40 vendidas: invertiste) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 726.25 Td (C$2,400.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 709.5 Td (• Ganancia estimada = prendas que quedan x \(precio promedio de venta - costo por pieza\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 693.75 Td (Ejemplo: quedan 60 prendas, costo C$60 c/u, venta promedio C$150: ganancia estimada C$5,400 si) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 678 Td (vendes todo.) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 661.25 Td (Ejemplo de paca: 100 prendas, costo total C$6,000, venta promedio C$150. Costo por pieza:) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 645.5 Td (C$60. Ganancia por pieza: C$90.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 623.75 Td (7. Inicio: el apartado del día) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 618.75 m 562 618.75 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 605.75 Td (Es la primera pantalla al entrar y tu tablero de mando: de un vistazo sabes cómo va el día.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 587 Td (• Caja del día: los cuatro números de la sección 6.2 \(Contado, Fiado, Abonos, Gastos\) más el) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 571.25 Td (total de prendas.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 554.5 Td (• Movimientos de hoy: la línea de tiempo completa del día. Cada movimiento tiene su folio) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 538.75 Td (único \(#001, #002...\) en orden cronológico, para buscarlo después.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 522 Td (• Cada movimiento muestra su tipo con icono: venta o fiado \(flecha de entrada\), abono \(flecha) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 506.25 Td (con check\) o gasto \(flecha de salida\), su hora y su canal \(mostrador o Live\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 489.5 Td (• El buscador de arriba filtra por folio, cliente o concepto. Ejemplo: escribe #003 o) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 473.75 Td ("Lupita".) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 457 Td (• Con más de 5 movimientos la lista se hace desplazable: sigue bajando para verlos todos.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 440.25 Td (• Clientes que deben: los clientes con saldo pendiente y cuánto debes cobrarles. Toca uno para) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 424.5 Td (abrir su ventana de abono.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 407.75 Td (• Si nadie debe nada: "Nadie te debe nada. ¡Cobranza perfecta!") Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 387 Td (7.1 Cobrar un abono desde Inicio) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 384 m 76 384 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 374 Td (• Paso 1: toca la tarjeta del cliente que debe.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 357.25 Td (• Paso 2: escribe el monto del abono, o usa +C$100 y +C$200 \(suman\) o "Todo" \(pone el saldo) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 341.5 Td (completo\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 324.75 Td (• Paso 3: elige el método: Efectivo o Transferencia.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 308 Td (• Paso 4: presiona ABONAR. Verás "Abono de C$X confirmado. Nuevo saldo: C$X" y el saldo se) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 292.25 Td (actualiza al instante.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 275.5 Td (• Si el saldo queda en C$0, el cliente sale de la lista de deudores. El abono se descuenta de) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 259.75 Td (su deuda más antigua \(sección 6.4\).) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 237 Td (8. Vender: venta al contado) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 232 m 562 232 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 219 Td (Para vender en el mostrador. Se venden los productos que hayas agregado en Inventario) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 203.25 Td (\(sección 14\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 184.5 Td (• Paso 1: busca el producto por nombre en el buscador. Cada tarjeta muestra el producto y su) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 168.75 Td (precio.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 152 Td (• Paso 2: toca una tarjeta para agregar 1 pieza al carrito. Tócala otra vez para sumar otra.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 135.25 Td (• Paso 3: en "Venta en curso" \(el panel que aparece abajo\) ajusta con los botones menos y más,) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 119.5 Td (o presiona "Vaciar" para empezar de nuevo.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 102.75 Td (• Paso 4: deja marcado "Al contado" y presiona el botón rosa "Cobrar C$XXX" con el total.) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 50 30 Td (PacaPOS - Guía de usuario) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 525.96 30 Td (Página 5) Tj ET
+endstream
+endobj
+20 0 obj
+<< /Length 5103 >>
+stream
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 742 Td (• Qué hace la app sola: la venta queda con folio en los movimientos, el pago entra a la caja) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 726.25 Td (del día, las piezas se descuentan de la paca asignada al producto \(si tiene\) y el contador de) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 710.5 Td (vendidos sube para las estadísticas.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 693.75 Td (El descuento de piezas de la paca solo ocurre si el producto tiene una paca asignada) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 678 Td (\(sección 14\).) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 653.25 Td (9. Vender: venta a fiado) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 648.25 m 562 648.25 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 635.25 Td (• Paso 1: arma el carrito igual que en la venta al contado.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 618.5 Td (• Paso 2: marca "Fiado". Aparece un campo: escribe el nombre del cliente. Si no existe se crea) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 602.75 Td (solo; si ya existe, la deuda se suma a su cuenta.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 586 Td (• Paso 3: presiona "Fiar C$XXX". Verás "Fiado de C$X registrado".) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 569.25 Td (• Resultado: la deuda queda pendiente, el cliente aparece en "Clientes que deben" \(Inicio\) y) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 553.5 Td (en la sección Clientes con su estado, y las piezas se descuentan de la paca igual que al) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 537.75 Td (contado.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 521 Td (El fiado no aparece como dinero en caja hasta que el cliente abone. Ese mismo día verás el) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 505.25 Td (fiado en la cifra "Fiado" de Inicio.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 480.5 Td (10. Live TikTok: apartados al vuelo) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 475.5 m 562 475.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 462.5 Td (Para vender durante un live: anotas cada prenda apartada en segundos, sin detenerte.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 443.75 Td (• Contadores de arriba \(se actualizan solos\): "Apartadas hoy" \(piezas del live de hoy\) y) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 428 Td ("Monto en live" \(dinero total del live de hoy, sin importar si ya cobraste o fiaste\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 411.25 Td (• Paso 1: en "Apartado ultrarrápido" escribe el @usuario o nombre \(ej. Doña Lupita\), la prenda) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 395.5 Td (\(ej. #43 Vestido liso\) y el precio. Botones de precios rápidos: 100, 120, 150, 180, 250 y 300.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 378.75 Td (• Paso 2: presiona "Apartar prenda al vuelo". Aparece en "Apartados en curso" con el estado) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 363 Td (PENDIENTE y los contadores suben.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 346.25 Td (• Paso 3: al momento o al final del live, resuelve cada pendiente con sus dos botones:) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 325.5 Td (10.1 El botón "Cobrar" \(el cliente ya pagó\)) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 322.5 m 76 322.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 312.5 Td (• Marca la venta como Cobrado y registra el pago: el dinero entra a la caja del día) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 296.75 Td (\(efectivo\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 280 Td (• En el ejemplo de la sección 6.3: el vestido de @maria de C$150 se apartó pendiente y al) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 264.25 Td (presionar Cobrar quedó Cobrado.) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 243.5 Td (10.2 El botón "Fiado" \(se lo lleva a cuenta\)) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 240.5 m 76 240.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 230.5 Td (• Busca el cliente por el nombre; si no existe lo crea solo y queda marcado con la etiqueta) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 214.75 Td (TikTok.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 198 Td (• Registra la deuda a su nombre \(con la prenda como descripción\) y actualiza su saldo.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 181.25 Td (• La venta pasa a estado FIADO y el cliente aparece en Clientes y en "Clientes que deben".) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 164.5 Td (• Una misma venta no se puede fiar dos veces: la app avisa "Esta venta ya está en cuenta".) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 143.75 Td (10.3 Los tres estados de un apartado) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 140.75 m 76 140.75 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 130.75 Td (• PENDIENTE \(etiqueta clara\): aún no resuelto. Es el único con botones.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 114 Td (• COBRADO \(etiqueta con check\): pagado al instante.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 97.25 Td (• FIADO \(etiqueta oscura\): pasó a la cuenta del cliente.) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 50 30 Td (PacaPOS - Guía de usuario) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 525.96 30 Td (Página 6) Tj ET
+endstream
+endobj
+21 0 obj
+<< /Length 5027 >>
+stream
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 742 Td (Antes de terminar el live, resuelve TODOS los pendientes: los que quedan sin resolver siguen) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 726.25 Td (apareciendo en la lista hasta que los marques.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 701.5 Td (11. Caja: el balance en vivo) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 696.5 m 562 696.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 683.5 Td (El estado del dinero del día, para revisarlo antes del cierre.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 664.75 Td (• Ventas totales de hoy y prendas vendidas \(etiqueta del encabezado\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 648 Td (• Cobrado: efectivo más transferencias cobrados hoy. En el ejemplo: C$400.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 631.25 Td (• Fiado: lo vendido a crédito hoy, marcado "Por cobrar". En el ejemplo: C$120.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 614.5 Td (• Margen neto en caja: cobrado menos gastos \(C$350 en el ejemplo\), con la barra que muestra) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 598.75 Td (qué porcentaje de lo vendido ya está cobrado \(77% en el ejemplo\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 582 Td (• Movimientos del corte: todas las ventas y gastos del día en lista, con su detalle \(cliente o) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 566.25 Td (concepto, canal, método\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 549.5 Td (• Arriba está el botón "Realizar cierre de caja", que se explica en la siguiente sección.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 526.75 Td (12. Cierre de caja con conteo de billetes) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 521.75 m 562 521.75 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 508.75 Td (Se hace UNA vez al día, al terminar la jornada. Es el arqueo: comparar lo que dice el) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 493 Td (sistema contra el dinero físico.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 474.25 Td (• Paso 1: presiona "Realizar cierre de caja". La app muestra lo esperado: ventas al contado,) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 458.5 Td (cuánto fue por transferencia, gastos y el EFECTIVO ESPERADO en el cajón \(sección 6.6\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 441.75 Td (• Paso 2: cuenta tus billetes y monedas por denominación \(C$1000, 500, 200, 100, 50, 20, 10, 5) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 426 Td (y 1\) y anota cuántos de cada uno. Cada fila suma sola y ves el total físico.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 409.25 Td (• Paso 3: revisa la verificación: "¡Cuadra perfecto!" si coincide, o "Sobra" o "Falta" con la) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 393.5 Td (diferencia exacta.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 376.75 Td (• Paso 4: presiona "Cerrar caja del día". El corte queda guardado con todo el detalle.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 360 Td (• Si hay diferencia puedes cerrar igual: la diferencia queda anotada en el corte para) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 344.25 Td (revisarla después.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 327.5 Td (• Hecho el cierre, el botón cambia a "Corte ya realizado hoy" y se bloquea hasta el día) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 311.75 Td (siguiente.) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 295 Td (Ejemplo: esperados C$200. Cuentas 1 billete de C$200 y 2 de C$100: físico C$400...) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 279.25 Td (espera: la diferencia de C$200 corresponde a los abonos en efectivo del día \(sección) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 263.5 Td (6.6\). Revisa, entiende la diferencia y cierra con ella anotada.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 247.75 Td (Cuenta el dinero en un momento tranquilo y dos veces: los errores de conteo son la causa más) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 232 Td (común de diferencias.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 207.25 Td (13. Inventario: las pacas) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 202.25 m 562 202.25 l S
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 185.25 Td (13.1 Registrar una paca nueva) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 182.25 m 76 182.25 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 172.25 Td (• En Inventario presiona "Entró nueva paca / lote" \(ingreso express, sin tallas\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 155.5 Td (• Llena: nombre o categoría \(ej. Paca Blusas Casuales Mixtas\), total de prendas, costo total) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 139.75 Td (de la paca \(lo que pagaste\) y precio promedio de venta por pieza.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 123 Td (• El costo por pieza se calcula solo mientras escribes \(costo total entre prendas\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 106.25 Td (• Presiona "Dar Entrada al Lote": la paca queda activa con su código \(Paca #1, Paca #2...\).) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 50 30 Td (PacaPOS - Guía de usuario) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 525.96 30 Td (Página 7) Tj ET
+endstream
+endobj
+22 0 obj
+<< /Length 4828 >>
+stream
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 738 Td (13.2 Leer el panel de pacas) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 735 m 76 735 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 725 Td (• Resumen de arriba: Prendas \(stock total\), Invertido \(dinero inmovilizado, sección 6.8\) y) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 709.25 Td (Ganancia estimada.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 692.5 Td (• Cada paca muestra: código, % vendido con barra de progreso, "Quedan X de Y", costo por) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 676.75 Td (prenda, venta promedio y ganancia por pieza.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 660 Td (• ALERTA: una paca con menos del 20% vendida después de más de una semana se resalta en rojo:) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 644.25 Td (es tu señal para rematarla o bajarle el precio.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 627.5 Td (Registra la paca apenas llegue a la tienda, así el inventario siempre refleja la realidad.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 602.75 Td (14. Inventario: los productos) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 597.75 m 562 597.75 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 584.75 Td (Los productos son tu catálogo de venta: los que agregues aquí son los que aparecen en) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 50 569 Td (Vender.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 550.25 Td (• "Agregar producto": nombre, precio de venta y \(opcional\) la paca a la que pertenece. El) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 534.5 Td (código \(P-001, P-002...\) se asigna solo.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 517.75 Td (• Asignar la paca hace que las piezas se descuenten solas al vender ese producto en Vender.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 501 Td (• Cada producto muestra cuántas unidades lleva vendidas.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 484.25 Td (• Eliminar: botón de basura, pide confirmación. El producto desaparece de Vender.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 467.5 Td (• Si no tienes productos aún, Vender te lo avisa: agrégalos primero aquí.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 444.75 Td (15. Clientes: la lista) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 439.75 m 562 439.75 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 426.75 Td (• Arriba: "Fiado en calle" \(total por cobrar y cuántos clientes deben\) y "Recuperado" \(abonos) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 411 Td (recibidos en total\). Ver sección 6.5.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 394.25 Td (• "Agregar cliente": nombre \(obligatorio\), teléfono y usuario de TikTok \(opcionales\).) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 377.5 Td (• Filtros: Todos, Con deuda y Al corriente, cada uno con su conteo.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 360.75 Td (• Buscador: por nombre, apodo o celular.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 344 Td (• Los clientes del live se crean solos al fiarles y quedan con la etiqueta TikTok.) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 323.25 Td (15.1 El estado de cada cliente \(según su último fiado\)) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 320.25 m 76 320.25 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 310.25 Td (• Al corriente: sin deuda.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 293.5 Td (• Debe: su fiado más reciente tiene menos de 3 días.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 276.75 Td (• Pendiente: 3 días o más desde su último fiado.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 260 Td (• Moroso: 7 días o más.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 243.25 Td (• 30-60 días y 60+ días: cuando el último fiado tiene un mes o más. Prioriza cobrar a estos) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 227.5 Td (primero.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 204.75 Td (16. Clientes: la hoja de cliente) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 199.75 m 562 199.75 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 186.75 Td (• Toca cualquier cliente para abrir su hoja: estado, saldo pendiente, abono rápido,) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 171 Td (movimientos y acciones.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 154.25 Td (• Anotar abono: igual que en Inicio \(monto, +C$100, +C$200, "Todo", método, ABONAR\). El saldo) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 138.5 Td (baja al instante.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 121.75 Td (• Movimientos: cada FIADO suma a su deuda y cada ABONO la resta, con su fecha. Es el historial) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 106 Td (completo y en orden.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 89.25 Td (• "Dar nuevo fiado": registra un monto directo a su cuenta, para cuando el cliente se lleva) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 50 30 Td (PacaPOS - Guía de usuario) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 525.96 30 Td (Página 8) Tj ET
+endstream
+endobj
+23 0 obj
+<< /Length 4710 >>
+stream
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 742 Td (mercancía sin pasar por Vender o el Live. Muestra el saldo que quedará.) Tj ET
+BT /F1 10.5 Tf 0.576 0.439 0.498 rg 66 725.25 Td (Ejemplo: Lupita debe C$20 y le das un fiado directo de C$80: queda debiendo C$100.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 709.5 Td (• "Eliminar cliente": borra también su deuda y su historial. Pide confirmación; no se puede) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 693.75 Td (deshacer.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 677 Td (El fiado directo no aparece en las cifras de ventas del día \(no es una venta\): se refleja en) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 661.25 Td (la hoja del cliente y en "Fiado en calle".) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 636.5 Td (17. Más: los gastos) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 631.5 m 562 631.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 618.5 Td (• Pestaña Gastos: registra cada gasto con concepto, monto y categoría: operativo \(bolsas,) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 602.75 Td (transporte\), proveedor \(mercaduría\), renta u otro.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 586 Td (• La lista muestra cada gasto con categoría y fecha.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 569.25 Td (• Los gastos restan automáticamente del margen neto de Caja, del efectivo esperado en el) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 553.5 Td (cierre y aparecen en el reporte.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 536.75 Td (Anota los gastos el mismo día en que ocurren: el cierre de la noche los descuenta esa misma) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 521 Td (tarde.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 496.25 Td (18. Más: las estadísticas) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 491.25 m 562 491.25 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 478.25 Td (• Pestaña Estadísticas: se calculan solas con tus ventas \(Vender, Live y mostrador\). No hay) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 462.5 Td (que alimentarlas a mano.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 445.75 Td (• "Más vendidos - invierte en esto": tu top 8 de productos con barras y el ingreso que deja) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 430 Td (cada uno.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 413.25 Td (• "Menos vendidos - remata o no recompres": lo que no se mueve. Bájale el precio o no vuelvas) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 397.5 Td (a comprarlo.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 380.75 Td (• Cómo lo calcula: lee la descripción de cada venta. "2x Blusa" cuenta 2 Blusas; una venta de) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 365 Td (una sola prenda con nombre \(ej. "Vestido #43"\) cuenta 1 de ese nombre. Los apartados del Live) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 349.25 Td (aparecen aquí solos.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 332.5 Td (• Si aún no hay ventas con productos, verás un aviso.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 309.75 Td (19. Exportar el reporte) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 304.75 m 562 304.75 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 291.75 Td (• En Más, botón "Exportar reporte": descarga un archivo que se abre en Excel, con el resumen) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 276 Td (\(ventas al contado, fiado, gastos y caja neta\), el detalle de cada venta \(fecha, cliente,) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 260.25 Td (canal, método, productos, total\) y el detalle de gastos.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 243.5 Td (• El archivo se llama "reporte-pacapos" más la fecha. Se puede compartir por WhatsApp o) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 227.75 Td (correo.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 211 Td (• El mismo aviso aparece arriba en Caja, pero la descarga se hace desde Más.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 194.25 Td (Expórtalo justo después del cierre para que coincida con el corte del día.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 169.5 Td (20. Instalar la app en el celular \(PWA\)) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 164.5 m 562 164.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 151.5 Td (• Android: menú de Chrome, "Agregar a pantalla de inicio". Si dentro de PacaPOS ves el botón) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 135.75 Td ("Instalar App", úsalo: es lo mismo con un toque.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 119 Td (• iPhone: botón Compartir, luego "Añadir a pantalla de inicio".) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 102.25 Td (• Instalada, abre a pantalla completa con su propio ícono.) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 50 30 Td (PacaPOS - Guía de usuario) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 525.96 30 Td (Página 9) Tj ET
+endstream
+endobj
+24 0 obj
+<< /Length 3844 >>
+stream
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 742 Td (• Sin internet verás la página "Sin conexión"; al volver la señal, la app se recarga sola.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 719.25 Td (21. Problemas comunes) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 714.25 m 562 714.25 l S
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 697.25 Td (21.1 Para entrar) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 694.25 m 76 694.25 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 684.25 Td (• "Correo o contraseña incorrectos" - revisa el correo \(sin espacios\) y la contraseña, o pide) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 668.5 Td (ayuda al administrador.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 651.75 Td (• "No se pudo conectar al servidor" - revisa tu internet y reintenta.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 635 Td (• "Cuenta sin tienda" - tu cuenta quedó mal creada. Contacta al administrador.) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 614.25 Td (21.2 Del día a día) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 611.25 m 76 611.25 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 601.25 Td (• Los números no se ven actualizados - recarga la página.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 584.5 Td (• "Corte ya realizado hoy" - ya cerraste caja hoy; el botón se desbloquea mañana.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 567.75 Td (• Un botón no responde - espera dos segundos \(está guardando\) y reintenta; si sigue, recarga.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 551 Td (• "Esta venta ya está en cuenta" - esa venta del live ya está fiada; revisa la lista de) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 535.25 Td (apartados.) Tj ET
+BT /F2 11.5 Tf 0.20 0.075 0.165 rg 50 514.5 Td (21.3 Por qué puede no cuadrar mi caja) Tj ET
+0.576 0.439 0.498 RG 0.5 w 50 511.5 m 76 511.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 501.5 Td (• Recibiste abonos en EFECTIVO: el esperado no los suma \(sección 6.6\). La diferencia debe ser) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 485.75 Td (exactamente ese monto.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 469 Td (• Un gasto salió de tu bolsillo y no lo registraste: anótalo en Más, Gastos.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 452.25 Td (• Pagaste algo con dinero de la caja sin anotarlo como gasto.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 435.5 Td (• Contaste mal los billetes: vuelve a contar, sobre todo las monedas.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 418.75 Td (• Una transferencia la contaste como efectivo físico: las transferencias están en el banco, no) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 403 Td (en el cajón.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 386.25 Td (• Una venta fiada la diste por cobrada: revisa la lista de Clientes que deben.) Tj ET
+BT /F2 15 Tf 0.839 0.20 0.498 rg 50 363.5 Td (22. Rutina recomendada del día) Tj ET
+0.839 0.20 0.498 RG 0.9 w 50 358.5 m 562 358.5 l S
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 345.5 Td (• Apertura: entra a tu cuenta y revisa Inicio. Los saldos pendientes de ayer siguen ahí.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 328.75 Td (• Durante el día: vende en Vender \(mostrador\) o aparta en el Live. Anota los gastos cuando) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 313 Td (ocurran.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 296.25 Td (• Cuando un fiado paga: toca su tarjeta \(Inicio o Clientes\) y registra el abono al instante.) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 56 279.5 Td (• Fin del día: revisa Caja, cuenta el dinero físico, haz el cierre de caja y exporta el) Tj ET
+BT /F1 10.5 Tf 0.20 0.075 0.165 rg 70 263.75 Td (reporte.) Tj ET
+BT /F1 10.5 Tf 0.839 0.20 0.498 rg 50 247 Td (Diez minutos de cierre al día te ahorran horas de cuentas a fin de mes.) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 50 30 Td (PacaPOS - Guía de usuario) Tj ET
+BT /F1 8.5 Tf 0.576 0.439 0.498 rg 521.455 30 Td (Página 10) Tj ET
+endstream
+endobj
+xref
+0 25
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000175 00000 n 
+0000000272 00000 n 
+0000000374 00000 n 
+0000000511 00000 n 
+0000000648 00000 n 
+0000000785 00000 n 
+0000000922 00000 n 
+0000001059 00000 n 
+0000001197 00000 n 
+0000001335 00000 n 
+0000001473 00000 n 
+0000001611 00000 n 
+0000001749 00000 n 
+0000003797 00000 n 
+0000008775 00000 n 
+0000013583 00000 n 
+0000018964 00000 n 
+0000023852 00000 n 
+0000029008 00000 n 
+0000034088 00000 n 
+0000038969 00000 n 
+0000043732 00000 n 
+trailer
+<< /Size 25 /Root 1 0 R >>
+startxref
+47629
+%%EOF

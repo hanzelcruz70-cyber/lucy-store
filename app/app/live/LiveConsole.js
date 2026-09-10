@@ -1,0 +1,379 @@
+'use client';
+
+import { useState } from 'react';
+import { createClient } from '@/lib/supabase-browser';
+import { getMyContext } from '@/lib/get-store';
+
+const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
+
+const Label = ({ children, className = '' }) => (
+  <div className={`text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase flex items-center gap-1.5 ${className}`}>
+    {children}
+  </div>
+);
+
+const Badge = ({ children, dark = false, line = false }) => (
+  <span
+    className={`inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-[3px] rounded-full whitespace-nowrap ${
+      dark
+        ? 'bg-inverse-surface text-inverse-on-surface'
+        : line
+          ? 'bg-surface-container-lowest border border-primary-fixed-dim text-primary'
+          : 'bg-primary-fixed text-primary'
+    }`}
+  >
+    {children}
+  </span>
+);
+
+export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
+  const [sales, setSales] = useState(initialSales);
+  const [debtSaleIds, setDebtSaleIds] = useState(new Set(initialDebtSaleIds || []));
+  const [client, setClient] = useState('');
+  const [desc, setDesc] = useState('');
+  const [price, setPrice] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [processingId, setProcessingId] = useState(null);
+
+  // Validación del precio: solo número positivo razonable (rechaza texto, comas, montos absurdos)
+  const setPriceSafe = (raw) => {
+    const v = String(raw).replace(/[^0-9.]/g, '');
+    setPrice(v);
+  };
+  const priceNum = parseFloat(price);
+  const priceValid = priceNum > 0 && priceNum <= 100000;
+  const priceWarn = priceNum > 5000;
+
+  const totalPieces = sales.reduce((a, s) => a + s.items_count, 0);
+  const totalAmount = sales.reduce((a, s) => a + Number(s.total), 0);
+
+  const showToast = (m, ok = true) => {
+    setToast({ m, ok });
+    setTimeout(() => setToast(null), 2600);
+  };
+
+  const submitHold = async (e) => {
+    e.preventDefault();
+    if (busy || !client.trim() || !priceValid) return;
+    setBusy(true);
+    try {
+      const supabase = createClient();
+      const ctx = await getMyContext();
+      const amt = parseFloat(price) || 0;
+      const { data, error } = await supabase
+        .from('sales')
+        .insert({
+          total: amt,
+          items_count: 1,
+          channel: 'tiktok_live',
+          payment_method: 'fiado',
+          client_name: client.trim(),
+          notes: desc.trim() || null,
+          store_id: ctx.storeId,
+          user_id: ctx.userId,
+        })
+        .select('id, total, items_count, channel, payment_method, client_name, notes, created_at')
+        .single();
+      if (error) throw error;
+      setSales((s) => [data, ...s]);
+      setClient('');
+      setDesc('');
+      setPrice('');
+      showToast('Prenda apartada al vuelo');
+    } catch (err) {
+      showToast('Error: ' + err.message, false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const markPaid = async (sale) => {
+    if (processingId || debtSaleIds.has(sale.id)) return;
+    setProcessingId(sale.id);
+    try {
+      const supabase = createClient();
+      const ctx = await getMyContext();
+      const { error: errUpd } = await supabase
+        .from('sales')
+        .update({ payment_method: 'efectivo' })
+        .eq('id', sale.id);
+      if (errUpd) throw errUpd;
+      const { error: errPay } = await supabase.from('payments').insert({
+        sale_id: sale.id,
+        amount: Number(sale.total),
+        method: 'efectivo',
+        store_id: ctx.storeId,
+        user_id: ctx.userId,
+      });
+      if (errPay) throw errPay;
+      setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: 'efectivo' } : x)));
+      showToast('Cobrado y registrado en caja');
+    } catch (err) {
+      showToast('Error: ' + err.message, false);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const markFiado = async (sale) => {
+    if (processingId) return;
+    if (debtSaleIds.has(sale.id)) {
+      showToast('Esta venta ya está en cuenta', false);
+      return;
+    }
+    setProcessingId(sale.id);
+    try {
+      const supabase = createClient();
+      const ctx = await getMyContext();
+      const name = (sale.client_name || 'Cliente Live').trim();
+
+      // Verificar PRIMERO si ya existe deuda ligada a esta venta (protección contra doble fiado
+      // incluso si la venta se fió desde otra sesión/dispositivo)
+      const { data: existingDebt } = await supabase
+        .from('debts')
+        .select('id')
+        .eq('sale_id', sale.id)
+        .limit(1);
+      if (existingDebt && existingDebt.length > 0) {
+        setDebtSaleIds((ids) => new Set(ids).add(sale.id));
+        showToast('Esta venta ya está en cuenta', false);
+        return;
+      }
+
+      const { data: found } = await supabase
+        .from('clients')
+        .select('id, name, balance')
+        .ilike('name', name)
+        .limit(5);
+      const exact =
+        (found || []).find((f) => (f.name || '').toLowerCase() === name.toLowerCase()) || null;
+
+      let clientId;
+      let prevBalance = 0;
+      if (exact) {
+        clientId = exact.id;
+        prevBalance = Number(exact.balance || 0);
+      } else {
+        const { data: newClient, error: errClient } = await supabase
+          .from('clients')
+          .insert({ name, is_live_client: true, store_id: ctx.storeId, balance: 0 })
+          .select('id, balance')
+          .single();
+        if (errClient) throw errClient;
+        clientId = newClient.id;
+      }
+
+      const amt = Number(sale.total);
+      const { error: errDebt } = await supabase.from('debts').insert({
+        client_id: clientId,
+        original_amount: amt,
+        remaining: amt,
+        description: sale.notes || 'Prenda de Live',
+        status: 'pendiente',
+        sale_id: sale.id,
+        store_id: ctx.storeId,
+        user_id: ctx.userId,
+      });
+      if (errDebt) throw errDebt;
+
+      const newBalance = prevBalance + amt;
+      const { error: errBal, data: balData } = await supabase
+        .from('clients')
+        .update({ balance: newBalance })
+        .eq('id', clientId)
+        .select('balance')
+        .single();
+      if (errBal) throw new Error('No se pudo actualizar el saldo: ' + errBal.message);
+      if (Math.abs(Number(balData?.balance) - newBalance) > 0.01) {
+        throw new Error('El saldo no se actualizó correctamente');
+      }
+
+      setDebtSaleIds((ids) => new Set(ids).add(sale.id));
+      showToast(`Deuda de ${money(amt)} registrada a ${name}`);
+    } catch (err) {
+      showToast('Error: ' + err.message, false);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const fieldCls =
+    'flex items-center gap-2 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] text-on-surface-variant';
+
+  return (
+    <div className="flex flex-col w-full px-3.5 py-3.5 gap-2.5">
+      {/* Contadores en bloque soft */}
+      <div className="bg-primary-fixed border border-primary-fixed-dim rounded-[14px] p-3.5">
+        <Label className="text-primary-deep">
+          <span className="w-[7px] h-[7px] rounded-full bg-primary flex-none" /> Live en curso ·{' '}
+          <span className="normal-case tracking-normal font-medium">auto-sincronizado</span>
+        </Label>
+        <div className="grid grid-cols-2 gap-2.5 mt-3">
+          <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3">
+            <Label>Apartadas hoy</Label>
+            <div className="text-[20px] font-bold text-on-surface mt-1 leading-tight">
+              {totalPieces} <span className="text-[12px] text-on-surface-variant font-medium">piezas</span>
+            </div>
+          </div>
+          <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3">
+            <Label>Monto en live</Label>
+            <div className="text-[20px] font-bold text-primary mt-1 leading-tight">{money(totalAmount)}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Apartado ultrarrápido */}
+      <div className="bg-primary-fixed border border-primary-fixed-dim rounded-[14px] p-3.5">
+        <b className="text-[14px] text-on-surface flex items-center gap-1.5">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D6337F" strokeWidth="1.9" strokeLinejoin="round">
+            <path d="M13 2L4 14h6l-1 8 9-12h-6z" />
+          </svg>
+          Apartado ultrarrápido
+        </b>
+        <form className="mt-3 space-y-2" onSubmit={submitHold}>
+          <input
+            value={client}
+            onChange={(e) => setClient(e.target.value)}
+            required
+            placeholder="@usuario o Doña Lupita"
+            className={fieldCls}
+          />
+          <div className="grid grid-cols-[1.5fr_1fr] gap-2">
+            <input
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="#43 Vestido liso"
+              className={fieldCls}
+            />
+            <input
+              value={price}
+              onChange={(e) => setPriceSafe(e.target.value)}
+              required
+              inputMode="decimal"
+              placeholder="C$ 150"
+              className="bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] font-semibold text-on-surface outline-none focus:border-primary"
+            />
+          </div>
+          {price !== '' && !priceValid && (
+            <p className="text-[11px] text-error font-semibold">Escribe un precio válido (hasta C$100,000)</p>
+          )}
+          {priceWarn && priceValid && (
+            <p className="text-[11px] text-on-surface-variant">Precio fuera de lo normal, revisa antes de apartar</p>
+          )}
+          <div className="text-[12px] text-on-surface-variant mt-3 mb-1.5">Precios rápidos boutique</div>
+          <div className="grid grid-cols-6 gap-1.5">
+            {[100, 120, 150, 180, 250, 300].map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPrice(String(p))}
+                className={`py-2 rounded-[9px] text-[12.5px] font-semibold border transition-colors ${
+                  String(p) === price
+                    ? 'bg-inverse-surface border-inverse-surface text-inverse-on-surface'
+                    : 'bg-surface-container-lowest border-outline text-on-surface'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+          <button
+            type="submit"
+            disabled={busy || !priceValid}
+            className="w-full py-3 mt-3 rounded-xl bg-primary text-on-primary text-[13.5px] font-semibold flex items-center justify-center gap-2 active:bg-primary-deep transition-colors disabled:opacity-60"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 8v8M8 12h8" />
+            </svg>
+            {busy ? 'Apartando…' : 'Apartar prenda al vuelo'}
+          </button>
+        </form>
+      </div>
+
+      {/* Lista de apartados */}
+      <div className="flex justify-between items-center px-0.5">
+        <b className="text-[14px] text-on-surface">Apartados en curso</b>
+        <Badge>{sales.length}</Badge>
+      </div>
+
+      {sales.length === 0 && (
+        <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-6 text-center">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#93707F" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="mx-auto">
+            <path d="M3 7a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 10l5-3v10l-5-3" />
+          </svg>
+          <p className="text-[13px] text-on-surface-variant mt-1.5">Sin apartados aún. ¡Arranca el Live!</p>
+        </div>
+      )}
+
+      {sales.length > 0 && (
+        <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
+          {sales.map((s) => {
+            const paid = s.payment_method !== 'fiado';
+            const inDebt = debtSaleIds.has(s.id);
+            const processing = processingId === s.id;
+            const time = new Date(s.created_at).toLocaleTimeString('es-NI', { hour: 'numeric', minute: '2-digit' });
+            return (
+              <div key={s.id} className="flex items-center gap-2.5 py-2.5 border-b border-surface-container last:border-0">
+                <div className="flex-1 min-w-0">
+                  <div>
+                    <span className="inline-block bg-primary text-on-primary text-[10px] font-bold px-2 py-[2px] rounded-md tracking-wide mr-1.5 align-middle uppercase">
+                      {s.notes || 'Prenda'}
+                    </span>
+                    <b className="text-[13.5px] font-semibold text-on-surface align-middle">{s.client_name || 'Cliente live'}</b>
+                  </div>
+                  <span className="block text-[11.5px] text-on-surface-variant mt-0.5">{time}</span>
+                </div>
+                <div className="text-right">
+                  <b className="block text-[14px] text-on-surface">{money(s.total)}</b>
+                  <div className="mt-[3px]">
+                    {paid ? (
+                      <Badge line>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12l5 5L20 7" /></svg>
+                        Cobrado
+                      </Badge>
+                    ) : inDebt ? (
+                      <Badge dark>Fiado</Badge>
+                    ) : (
+                      <Badge>Pendiente</Badge>
+                    )}
+                  </div>
+                </div>
+                {!paid && !inDebt && (
+                  <div className="flex flex-col gap-1 ml-1">
+                    <button
+                      onClick={() => markPaid(s)}
+                      disabled={processing}
+                      className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-primary text-on-primary active:bg-primary-deep disabled:opacity-50 transition-colors"
+                    >
+                      {processing ? '…' : 'Cobrar'}
+                    </button>
+                    <button
+                      onClick={() => markFiado(s)}
+                      disabled={processing}
+                      className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-inverse-surface text-inverse-on-surface active:opacity-80 disabled:opacity-50 transition-colors"
+                    >
+                      {processing ? '…' : 'Fiado'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed top-16 inset-x-4 z-50 flex justify-center pointer-events-none">
+          <div className={`px-4 py-2.5 rounded-full flex items-center gap-2 text-[13px] font-semibold ${toast.ok ? 'bg-primary text-on-primary' : 'bg-inverse-surface text-inverse-on-surface'}`}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              {toast.ok ? <path d="M4 12l5 5L20 7" /> : <path d="M6 6l12 12M18 6L6 18" />}
+            </svg>
+            <span>{toast.m}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

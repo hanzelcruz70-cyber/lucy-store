@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* ===== PacaPOS v2 · acabado plano con bordes finos ===== */
+/* Cards blancas y tinted llevan borde 1px del sistema de líneas */
+.bg-surface-container-lowest {
+  border: 1px solid #F1DCE7;
+}
+.bg-surface-container-low {
+  border: 1px solid #F1DCE7;
+}
+
+/* Divider punteado del mockup */
+.divider-d {
+  border: none;
+  border-top: 1px dashed #F1DCE7;
+  margin: 10px 0;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Cajitas con scroll lateral (movimientos / clientes del dashboard) */
+.scroll-box {
+  -ms-overflow-style: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #F4CBE2 transparent;
+  overscroll-behavior: contain;
+}
+.scroll-box::-webkit-scrollbar {
+  display: block;
+  width: 5px;
+}
+.scroll-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-box::-webkit-scrollbar-thumb {
+  background: #F4CBE2;
+  border-radius: 999px;
+}
+.scroll-box::-webkit-scrollbar-thumb:hover {
+  background: #d6337f;
+}
