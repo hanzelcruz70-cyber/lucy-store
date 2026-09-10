@@ -10,8 +10,12 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -29,9 +33,11 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
 
       - name: Security: secrets en commits (constraint: 0 hallazgos)
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gitleaks_version=8.24.3
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${gitleaks_version}/gitleaks_${gitleaks_version}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks detect --redact --no-banner --verbose
 
       - name: Security: deps runtime (constraint: 0 critical; W1 cubre el high build-time de Next 15)
         run: npm audit --omit=dev --audit-level=critical
