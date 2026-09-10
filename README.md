@@ -3,6 +3,9 @@
 PWA instalable en celular, con Next.js 15, Supabase (datos + auth + RLS) y despliegue en Vercel.
 Cada tienda (tenant) solo ve sus propios datos: caja, fiados, lotes y lives de TikTok.
 
+> Repo público: el código es abierto, pero las llaves (Supabase, admin) viven solo en
+> `.env.local` (gitignored) y los datos de cada tienda están protegidos por RLS en Supabase.
+
 ## Estructura
 
 ```
