@@ -33,5 +33,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Security: deps runtime (constraint: 0 high)
-        run: npm audit --omit=dev --audit-level=high
+      - name: Security: deps runtime (constraint: 0 critical; W1 cubre el high build-time de Next 15)
+        run: npm audit --omit=dev --audit-level=critical

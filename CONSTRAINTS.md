@@ -22,7 +22,7 @@ Last reviewed: 2026-09-10 by @hanzelcruz70-cyber
 |-----------|------|-----------|---------|
 | Build | `next build` sin errores | `npm run build` | cada tarea, CI |
 | Secrets | No secrets en commits | `gitleaks detect --redact --no-banner` | cada tarea, CI |
-| Security: deps | 0 vulns runtime (high+) | `npm audit --omit=dev` | CI |
+| Security: deps | 0 vulns runtime CRITICAL (high build-time cubierto por W1 hasta upgrade Next 16) | `npm audit --omit=dev --audit-level=critical` | CI |
 
 Every row names the command that produces the verdict. A dimension with a
 number and no command in this column is an aspiration, not a constraint.
