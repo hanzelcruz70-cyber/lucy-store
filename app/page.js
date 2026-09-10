@@ -18,7 +18,7 @@ const Icon = ({ name, size = 20 }) => {
 const features = [
   { icon: 'point_of_sale', title: 'Caja y Corte', desc: 'Registra ventas en segundos. Arqueo diario contando billetes.' },
   { icon: 'videocam', title: 'Lives de TikTok', desc: 'Aparta prendas en vivo al vuelo y pásalas a fiado o cobro.' },
-  { icon: 'inventory_2', title: 'Inventario', desc: 'Pacas y productos: costo por pieza, margen y rotación.' },
+  { icon: 'inventory_2', title: 'Inventario', desc: 'Productos con stock: costo por pieza, margen y rotación.' },
   { icon: 'groups', title: 'Fiados y Clientes', desc: 'Cuentas por cobrar, abonos rápidos y estados de morosidad.' },
 ];
 
@@ -32,7 +32,7 @@ export default function Home() {
           </div>
           <h1 className="text-[28px] font-bold text-on-surface tracking-tight">PacaPOS</h1>
           <p className="text-[13.5px] text-on-surface-variant leading-relaxed">
-            Punto de venta para tiendas de ropa americana. Caja, fiados, lotes y Lives.
+            Punto de venta para tiendas de ropa americana. Caja, fiados, inventario y Lives.
           </p>
         </div>
 
