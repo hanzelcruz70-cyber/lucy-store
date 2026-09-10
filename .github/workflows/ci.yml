@@ -10,34 +10,23 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
       - name: Install dependencies
         run: npm ci
-
-      - name: Build (constraint: build sin errores)
+      - name: Build
         run: npm run build
         env:
-          # Variables publicas dummy: el build no necesita las reales para compilar
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
-
-      - name: Security - secrets en commits (constraint: 0 hallazgos)
-        run: |
-          gitleaks_version=8.24.3
-          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${gitleaks_version}/gitleaks_${gitleaks_version}_linux_x64.tar.gz" \
-            | tar -xz -C /usr/local/bin gitleaks
-          gitleaks detect --redact --no-banner --verbose
-
-      - name: Security - deps runtime (constraint: 0 critical; W1 cubre el high build-time de Next 15)
+      - name: Security deps
         run: npm audit --omit=dev --audit-level=critical
+      - name: Security secrets
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz -o /tmp/gl.tgz
+          tar -xz -C /tmp -f /tmp/gl.tgz gitleaks
+          /tmp/gitleaks detect --redact --no-banner --verbose
