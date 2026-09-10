@@ -1,7 +1,7 @@
 # PacaPOS · Punto de venta multitenant para tiendas de ropa
 
 PWA instalable en celular, con Next.js 15, Supabase (datos + auth + RLS) y despliegue en Vercel.
-Cada tienda (tenant) solo ve sus propios datos: caja, fiados, lotes y lives de TikTok.
+Cada tienda (tenant) solo ve sus propios datos: caja, fiados, inventario y lives de TikTok.
 
 > Repo público: el código es abierto, pero las llaves (Supabase, admin) viven solo en
 > `.env.local` (gitignored) y los datos de cada tienda están protegidos por RLS en Supabase.
@@ -19,7 +19,7 @@ lucy-store/
 │   │   ├── vender/          # Venta mostrador (carrito, stock, sugerencias de clientes)
 │   │   ├── live/            # Lives de TikTok (apartados al vuelo)
 │   │   ├── caja/            # Caja y corte diario con arqueo
-│   │   ├── stock/           # Lotes/pacas + nuevo lote
+│   │   ├── inventario/        # Ingresar producto (un paso) + lista con stock
 │   │   ├── clientes/        # Fiados y abonos
 │   │   └── mas/             # Gastos, estadísticas, exportar
 │   └── api/

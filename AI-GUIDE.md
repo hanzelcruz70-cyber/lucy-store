@@ -5,11 +5,13 @@
 
 ## Qué es
 
-PacaPOS es un **Punto de Venta (POS) multitenant en modo PWA** para tiendas de ropa (paca/americana) que venden por mostrador y por **Lives de TikTok**, con gestión de **fiados (créditos)**, lotes/pacas, gastos y estadísticas de productos. Moneda: **Córdobas (C$)** — Nicaragua.
+PacaPOS es un **Punto de Venta (POS) multitenant en modo PWA** para tiendas de ropa (paca/americana) que venden por mostrador y por **Lives de TikTok**, con gestión de **fiados (créditos)**, inventario de productos con stock, gastos y estadísticas. Moneda: **Córdobas (C$)** — Nicaragua.
 
 **Marca/Nombre:** PacaPOS (opciones de dominio: pacapos.app, pacapos.mx)
 
-**DECISIÓN DE PRODUCTO:** el catálogo web público fue CANCELADO (2026-09-10). No construir catálogo ni páginas públicas de tienda. El roadmap vivo está al final de este archivo.
+**DECISIONES DE PRODUCTO:**
+- El catálogo web público fue CANCELADO (2026-09-10). No construir catálogo ni páginas públicas de tienda.
+- El concepto de "paca/lote" fue ELIMINADO DE LA UI (2026-09-10): la dueña ingresa un PRODUCTO en un solo paso (nombre, cantidad, costo total, precio) y sale directo a Vender. La tabla `lots` sigue existiendo como mecanismo interno de stock/costo (invisible), se crea automáticamente al ingresar un producto y se vincula por `products.lot_id`. NO exponer `lots` en la UI ni crear flujos separados de lote.
 
 ## Stack
 
@@ -36,11 +38,11 @@ lucy-store/
 │   ├── app/                       # Área PROTEGIDA (middleware exige sesión)
 │   │   ├── layout.js             # Carga perfil+tienda; "Cuenta sin tienda" si falta
 │   │   ├── inicio/               # Dashboard del día + abono con historial en vivo
-│   │   ├── vender/               # Venta mostrador: carrito, stock por lote, sugerencias de clientes
+│   │   ├── vender/               # Venta mostrador: carrito, stock por producto, sugerencias de clientes
 │   │   ├── live/                 # Live TikTok: apartado con precio validado
 │   │   ├── caja/                 # Balance + cierre con arqueo (incluye abonos en efectivo)
-│   │   ├── inventario/           # Pacas (4 métricas) + productos
-│   │   │   └── nuevo/            # Formulario nueva paca
+│   │   ├── inventario/           # Ingreso unificado de producto + lista con stock
+│   │   │   └── nuevo/            # Formulario "Ingresar producto" (crea lote interno + producto)
 │   │   ├── clientes/             # Hoja de cliente: abono con método, historial, fiado directo
 │   │   └── mas/                  # Gastos + estadísticas + exportar CSV
 │   └── api/
@@ -84,8 +86,8 @@ ADMIN_SECRET=...                             # token alterno para scripts
 | `profiles` | Usuario ↔ tienda | id (=auth.users), store_id, role, display_name |
 | `sales` | Ventas | store_id, user_id, total, items_count, channel (mostrador/tiktok_live), payment_method (efectivo/transferencia/fiado), client_name, notes |
 | `expenses` | Gastos | concept, amount, category (operativo/proveedor/renta/otro) |
-| `lots` | Pacas/lotes | code, pieces_total, pieces_left, total_cost, avg_sale_price |
-| `products` | Productos | code, name, sale_price, sold_count, lot_id |
+| `lots` | Stock interno por producto (INVISIBLE en UI) | code, name, pieces_total, pieces_left, total_cost, avg_sale_price |
+| `products` | Productos (lo que ve la dueña) | code, name, sale_price, sold_count, lot_id |
 | `clients` | Clientes | name, phone, tiktok, balance, is_live_client |
 | `debts` | Fiados | client_id, original_amount, remaining, status, sale_id |
 | `payments` | Abonos/pagos | debt_id?, sale_id?, amount, method |
@@ -180,7 +182,7 @@ node scripts/generar-guia-pdf.cjs   # regenera GUIA-USUARIO.pdf (24 secciones)
 ## Roadmap pendiente (sin catálogo — cancelado)
 
 - [ ] Exportar Excel real .xlsx (hoy es CSV con BOM)
-- [ ] Edición de lotes (descuento manual de piezas al vender)
+- [ ] Edición de stock (ajuste manual de piezas de un producto)
 - [ ] Notificaciones push para cobros
 - [ ] Reportes históricos por rango de fechas
 - [ ] Upgrade a Next 16 (cierra vulnerabilidades build-time de sharp/postcss — ver W1 en CONSTRAINTS.md)
