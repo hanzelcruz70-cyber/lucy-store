@@ -49,6 +49,7 @@ export default async function InventarioPage() {
         </div>
         <a
           href="/app/inventario/nuevo"
+          prefetch
           className="w-full py-3 mt-3 rounded-xl bg-surface-container-lowest text-primary-deep text-[13.5px] font-semibold flex items-center justify-center gap-2 active:opacity-80 transition-opacity"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">

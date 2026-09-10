@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { clearStoreCache } from '@/lib/get-store';
 import PwaRegister from '@/components/PwaRegister';
@@ -102,7 +103,7 @@ export default function AppShell({ storeName, userName, children }) {
           {NAV.map((item) => {
             const active = isActive(item.href);
             return (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13.5px] font-semibold transition-colors ${
@@ -118,7 +119,7 @@ export default function AppShell({ storeName, userName, children }) {
                     LIVE
                   </span>
                 )}
-              </a>
+              </Link>
             );
           })}
         </nav>
@@ -165,7 +166,7 @@ export default function AppShell({ storeName, userName, children }) {
                 {NAV.map((item) => {
                   const active = isActive(item.href);
                   return (
-                    <a
+                    <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => setMenuOpen(false)}
@@ -182,7 +183,7 @@ export default function AppShell({ storeName, userName, children }) {
                           LIVE
                         </span>
                       )}
-                    </a>
+                    </Link>
                   );
                 })}
               </nav>
