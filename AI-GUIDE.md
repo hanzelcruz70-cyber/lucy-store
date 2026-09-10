@@ -1,12 +1,15 @@
 # PacaPOS · Documentación del Proyecto
 
 > **Guía para IAs y desarrolladores.** Todo lo necesario para entender, modificar y desplegar este proyecto sin contexto previo.
+> **ANTES DE ESCRIBIR CÓDIGO: leer `CONSTRAINTS.md`.** Ese archivo es el contrato de calidad y no se debilita para que un cambio pase.
 
 ## Qué es
 
 PacaPOS es un **Punto de Venta (POS) multitenant en modo PWA** para tiendas de ropa (paca/americana) que venden por mostrador y por **Lives de TikTok**, con gestión de **fiados (créditos)**, lotes/pacas, gastos y estadísticas de productos. Moneda: **Córdobas (C$)** — Nicaragua.
 
-**Marca/Nombre:** PacaPOS (opciones de dominio: pacapos.app, pacapos.mx, fiadona.com, cortecaja.app)
+**Marca/Nombre:** PacaPOS (opciones de dominio: pacapos.app, pacapos.mx)
+
+**DECISIÓN DE PRODUCTO:** el catálogo web público fue CANCELADO (2026-09-10). No construir catálogo ni páginas públicas de tienda. El roadmap vivo está al final de este archivo.
 
 ## Stack
 
@@ -17,6 +20,8 @@ PacaPOS es un **Punto de Venta (POS) multitenant en modo PWA** para tiendas de r
 | Backend/DB/Auth | Supabase (PostgreSQL + RLS) | — |
 | PWA | manifest.json + sw.js (offline-first) | — |
 | Deploy | Vercel | — |
+| CI | GitHub Actions (build + gitleaks + npm audit) | `.github/workflows/ci.yml` |
+| Repo | github.com/hanzelcruz70-cyber/lucy-store (privado) | — |
 | Puerto local | 3001 | `npm run dev` o `npm run start` |
 
 ## Estructura
@@ -26,50 +31,36 @@ lucy-store/
 ├── app/                          # Next.js App Router
 │   ├── layout.js                 # Layout raíz: fuentes, SW registration, metadata PWA
 │   ├── page.js                   # Landing pública (solo botón login)
-│   ├── login/page.js             # Login del cliente (alerta en pantalla, nunca se va en blanco)
+│   ├── login/page.js             # Login del cliente
 │   ├── admin/page.js             # PANEL ADMIN (crea cuentas de tiendas) — contraseña en .env
 │   ├── app/                       # Área PROTEGIDA (middleware exige sesión)
-│   │   ├── layout.js             # Carga perfil+tienda del usuario; "Cuenta sin tienda" si falta
-│   │   ├── inicio/               # Dashboard: caja del día, movimientos, deudores (tap = abonar)
-│   │   │   ├── page.js           # Server: consulta ventas/gastos/deudas de HOY
-│   │   │   └── InicioClient.js   # Client: abono modal a deudores
-│   │   ├── live/                 # Live TikTok: apartado ultrarrápido
-│   │   │   ├── page.js           # Server: ventas channel=tiktok_live de hoy
-│   │   │   └── LiveConsole.js    # Client: apartar, Cobrado (paga), A Fiado (crea deuda)
-│   │   ├── caja/                 # Balance del día + corte diario (DailyCutButton)
-│   │   ├── stock/                # Lotes/pacas: margen, rotación
-│   │   │   └── nuevo/            # Formulario nueva paca (cálculo costo unitario en vivo)
-│   │   ├── clientes/             # Clientes: agregar, buscar, tap → hoja (abonar/fiado/eliminar)
-│   │   │   └── ClientsList.js    # Toda la lógica cliente
-│   │   ├── mas/                  # Gastos del negocio + exportar Excel + estadísticas productos
-│   │   │   └── MasClient.js      # CSV con BOM (abre en Excel), top/bottom vendidos
-│   │   └── catalogo/             # Placeholder (futuro catálogo público)
+│   │   ├── layout.js             # Carga perfil+tienda; "Cuenta sin tienda" si falta
+│   │   ├── inicio/               # Dashboard del día + abono con historial en vivo
+│   │   ├── vender/               # Venta mostrador: carrito, stock por lote, sugerencias de clientes
+│   │   ├── live/                 # Live TikTok: apartado con precio validado
+│   │   ├── caja/                 # Balance + cierre con arqueo (incluye abonos en efectivo)
+│   │   ├── inventario/           # Pacas (4 métricas) + productos
+│   │   │   └── nuevo/            # Formulario nueva paca
+│   │   ├── clientes/             # Hoja de cliente: abono con método, historial, fiado directo
+│   │   └── mas/                  # Gastos + estadísticas + exportar CSV
 │   └── api/
-│       └── admin/stores/         # GET/POST/DELETE tiendas — guard con rate limit (8/15min)
+│       └── admin/stores/         # GET/POST/DELETE tiendas — rate limit + safeEqual
 ├── components/
-│   ├── AppShell.js               # Sidebar (desktop) + nav inferior (móvil) + logout
-│   ├── DailyCutButton.js         # Corte de caja → inserta en cash_cuts
-│   ├── LogoutButton.js           # Botón cerrar sesión (para pantalla "sin tienda")
-│   └── PwaRegister.js            # Botón "Instalar App" (beforeinstallprompt)
+│   ├── AppShell.js               # Sidebar + nav móvil + logout (limpia caché de contexto)
+│   ├── CierreCaja.js             # Arqueo por denominaciones
+│   └── PwaRegister.js            # "Instalar App" SOLO en móvil (pointer coarse + <768px)
 ├── lib/
 │   ├── supabase-server.js        # Cliente Supabase server-side (cookies)
 │   ├── supabase-browser.js       # Cliente Supabase browser-side
-│   ├── get-store.js              # getMyContext(): {storeId, userId} — CACHÉ, usar en TODO insert
-│   └── rate-limit.js             # Constante límite de tiendas/día
-├── middleware.js                 # Bloquea /app sin sesión; login→inicio si logueado
+│   ├── get-store.js              # getMyContext(): caché memoria + localStorage
+│   └── rate-limit.js             # Límite de tiendas/día
 ├── supabase/
-│   ├── schema.sql                # Migración 1: 9 tablas + RLS + policies (EJECUTAR PRIMERO)
-│   ├── migration2-products.sql   # Migración 2: tabla products + estadísticas
-│   ├── migration3-triggers.sql  # Migración 3: triggers fill store_id (obsoleta, ver 5)
-│   ├── migration4-user-triggers.sql # Migración 4: triggers fill store+user (obsoleta, ver 5)
-│   └── migration5-fix-triggers.sql  # Migración 5: CORRECTA — triggers separados por tabla
-├── public/
-│   ├── manifest.json             # PWA manifest (rosa #E040A0)
-│   ├── sw.js                     # Service worker: offline-first, no cachea /api ni Supabase
-│   ├── offline.html              # Página sin conexión
-│   └── icons/                    # 4 íconos PNG (192/512, normal + maskable)
-├── next.config.mjs                # Headers de seguridad (DENY frame, nosniff, etc)
-├── tailwind.config.js             # Paleta rosa personalizada (ver abajo)
+│   ├── schema.sql                # Migración 1: 9 tablas + RLS (EJECUTAR PRIMERO)
+│   ├── migration2-products.sql   # Migración 2: products
+│   └── migration5-fix-triggers.sql # Migración 5: triggers correctos (3,4 obsoletos)
+├── .github/workflows/ci.yml      # CI: build + secrets + deps en cada push
+├── CONSTRAINTS.md                # CONTRATO DE CALIDAD (leer antes de codificar)
+├── GUIA-USUARIO.pdf              # Guía del dueño de tienda (se genera con scripts/generar-guia-pdf.cjs)
 └── .env.local                    # LLAVES (NO commitear)
 ```
 
@@ -85,103 +76,111 @@ ADMIN_SECRET=...                             # token alterno para scripts
 
 ## Modelo de datos (Supabase / PostgreSQL)
 
-**Regla de oro del multitenant:** TODA tabla transaccional tiene `store_id`. El RLS filtra por `current_store_id()` (función que lee el perfil del usuario autenticado).
+**Regla de oro del multitenant:** TODA tabla transaccional tiene `store_id`. El RLS filtra por `current_store_id()`.
 
 | Tabla | Para qué | Campos clave |
 |---|---|---|
 | `stores` | Tenant/tienda | id, name, slug, owner_email |
 | `profiles` | Usuario ↔ tienda | id (=auth.users), store_id, role, display_name |
-| `sales` | Ventas | store_id, user_id, total, items_count, channel (mostrador/tiktok_live/whatsapp), payment_method (efectivo/transferencia/fiado), client_name, notes |
+| `sales` | Ventas | store_id, user_id, total, items_count, channel (mostrador/tiktok_live), payment_method (efectivo/transferencia/fiado), client_name, notes |
 | `expenses` | Gastos | concept, amount, category (operativo/proveedor/renta/otro) |
 | `lots` | Pacas/lotes | code, pieces_total, pieces_left, total_cost, avg_sale_price |
-| `products` | Productos (estadísticas) | code, name, sale_price, sold_count, lot_id |
+| `products` | Productos | code, name, sale_price, sold_count, lot_id |
 | `clients` | Clientes | name, phone, tiktok, balance, is_live_client |
-| `debts` | Fiados | client_id, original_amount, remaining, status (pendiente/saldada), sale_id |
+| `debts` | Fiados | client_id, original_amount, remaining, status, sale_id |
 | `payments` | Abonos/pagos | debt_id?, sale_id?, amount, method |
-| `cash_cuts` | Cortes de caja diarios | sales_total, collected_total, credit_total, expenses_total |
+| `cash_cuts` | Cortes diarios | sales_total, collected_total, expenses_total, notes |
 
-### RLS — cómo funciona la seguridad
-
-1. **Cada policy** compara `store_id = current_store_id()`, que lee el perfil del JWT autenticado
-2. En inserts de sales/payments/expenses/lots/debts también exige `user_id = auth.uid()`
-3. **Triggers de respaldo** (migration5): `fill_store_and_user()` rellena store_id+user_id en tablas que los tienen; `fill_store_only()` solo store_id en clients/products — **NO usar el trigger completo en clients/products (no tienen user_id y revienta)**
-
-### Errores conocidos y sus causas
-
-| Error SQL | Causa | Fix |
-|---|---|---|
-| `new row violates row-level security policy` | Insert sin store_id o user_id | Código ya manda ambos vía `getMyContext()`; triggers son respaldo |
-| `record "new" has no field "user_id"` | Trigger completo en tabla sin esa columna | Solo usar fill_store_only en clients/products (migration5 lo corrige) |
-| `deadlock detected` al correr migración | App conectada mientras SQL pide locks | Detener servidor → Run SQL → encender |
+**Claves de integridad de dinero (aprendidas de QA):**
+- Los `payments` con `sale_id` son cobros de venta (no abonos de deuda): NO cuentan como "Abonos" ni salen como "Abono recibido" en Inicio
+- Todo abono de deuda inserta `debt_id` (deuda más antigua del cliente, FIFO) — sin él el historial del cliente no lo encuentra
+- El efectivo esperado del cierre = ventas efectivo + abonos en efectivo − gastos
+- Sobrepago: se registra solo hasta el saldo; el excedente es vuelto (confirm() avisa antes)
 
 ## Flujos clave
 
-### 1. Admin crea tienda (flujo de negocio principal)
-`/admin` (password) → POST /api/admin/stores → service_role crea: auth user (email_confirm: true) → stores → profiles vinculados → El cliente recibe email+contraseña → entra en `/login` → aterriza en `/app/inicio` viendo **el nombre exacto que el admin le dio a la tienda** (header).
+### 1. Admin crea tienda
+`/admin` (password) → POST /api/admin/stores → service_role crea: auth user → stores → profiles. El cliente entra en `/login` → aterriza en `/app/inicio`.
 
-### 2. Venta fiado desde Live
-Apartar (insert sales, payment_method='fiado') → botón "A Fiado" → busca/crea client → insert debts (remaining=total) → update clients.balance → deudor aparece en Inicio/Clientes.
+### 2. Venta fiado (Vender o Live)
+Insert sales(payment_method='fiado') → buscar cliente exacto (case-insensitive, tolerante a duplicados) o crear → insert debts → update clients.balance. En Live: check de deuda existente por sale_id ANTES de fiar (anti doble-fiado).
 
-### 3. Cobrar deuda
-Tap en tarjeta de deudor (Inicio o Clientes) → hoja de acción → Registrar Abono → insert payments → descuenta debts (FIFO por created_at) → update clients.balance → UI al instante.
+### 3. Abono
+Modal (Inicio o Clientes) → validaciones (monto>0, sobrepago pide confirm con vuelto) → insert payments CON debt_id FIFO → descuenta debts → update balance → UI en vivo (saldo + historial).
 
 ### 4. Corte de caja
-Caja → "Realizar Corte Diario" → confirm con resumen → insert cash_cuts → botón queda deshabilitado el resto del día.
+Caja → arqueo: esperado = efectivo + abonos efectivo − gastos. Conteo por denominaciones. Insert cash_cuts. Botón bloqueado hasta mañana.
 
 ## Reglas de UI
 
-- **Paleta rosa** (tailwind.config.js): primary `#E040A0`, texto `#19010C`, secundario `#952964` (sustituye verde éxito), superficies `#F7F4F5/#F7E9EC/#F6CCD9`
+- **Paleta rosa**: primary `#E040A0`, texto `#19010C`, secundario `#952964`, superficies `#F7F4F5/#F7E9EC/#F6CCD9`
 - **Moneda:** SIEMPRE `C$` + `toLocaleString('es-NI')` — función `money()` al inicio de cada componente
-- Tipografías: Plus Jakarta Sans (texto) + Space Grotesk (números/display)
-- Iconos: Material Symbols Outlined
-- Responsive: sidebar ≥768px; nav inferior + header solo móvil; listados grid lg:grid-cols-2
+- Tipografías: Plus Jakarta Sans + Space Grotesk; iconos SVG inline de línea
+- Responsive: sidebar ≥768px; nav inferior + drawer móvil
+- Buscadores: normalización sin acentos (`norm()`), tolerante a espacios
 
-## Convenciones CRÍTICAS (para no romper nada)
+## Convenciones CRÍTICAS
 
-1. **TODO insert de cliente-side** debe llamar `getMyContext()` y mandar `store_id` + `user_id` (excepto clients/products: solo store_id)
-2. **Nunca** uses `eval`, `innerHTML` con datos, ni expongas SERVICE_ROLE en el cliente
-3. **Encoding de archivos**: guardar SIEMPRE UTF-8 sin BOM — PowerShell con `Set-Content` corrompe tildes; usar `[System.IO.File]::WriteAllText($path, $content, [Text.UTF8Encoding]::new($false))`
-4. Reemplazos masivos con regex: cuidado con `' + '` (concatenación JS) — un replace de `$` o `+` global rompe el código
-5. Server components (`page.js`) consultan datos; client components (`*Client.js`) manejan interactividad
-6. Páginas protegidas usan `export const dynamic = 'force-dynamic'` (datos frescos por tienda)
+1. **TODO insert cliente-side** llama `getMyContext()` (caché localStorage) y manda `store_id` + `user_id` (clients/products: solo store_id)
+2. **Nunca** expongas SERVICE_ROLE en el cliente; nunca `eval`/`innerHTML` con datos
+3. **Encoding**: UTF-8 sin BOM — PowerShell `Set-Content` corrompe tildes; usar `[System.IO.File]::WriteAllText($p, $c, [Text.UTF8Encoding]::new($false))`
+4. Reemplazos masivos con regex: cuidado con `' + '` (concatenación JS)
+5. Server components consultan; client components interactúan; `force-dynamic` en protegidas
+6. **Commits atómicos** (~100 líneas, qué+cómo) — ver CONSTRAINTS.md
+7. El Service Worker cachea navegaciones: tras un deploy puede servir HTML viejo; el SW se auto-actualiza con nueva versión (bump de `CACHE` en sw.js)
 
 ## Despliegue
 
 ### Local (puerto 3001)
 ```bash
 npm install
-npm run dev        # desarrollo con hot-reload
-# o producción:
-npm run build && npm run start
+npm run dev         # desarrollo
+npm run build && npm run start   # producción local
 ```
-**Red local (celular):** el servidor de Next escucha en todas las interfaces por defecto en `start`; abrir `http://TU-IP:3001` (ej. http://192.168.1.15:3001). Si el firewall de Windows lo bloquea: permitir Node.js en Firewall (Red privada). En dev, usar `npx next dev -p 3001 -H 0.0.0.0`.
+**Red local:** `http://TU-IP:3001`. Firewall: permitir Node.js en Red privada.
 
 ### Vercel
 ```bash
-npm i -g vercel
-vercel          # primera vez: aceptar todo
-vercel --prod   # producción
+vercel --prod
 ```
-Agregar en Dashboard → Settings → Environment Variables: las 5 variables de `.env.local`, luego redeploy. PWA requiere HTTPS (Vercel lo da).
+Variables en Dashboard: las 5 de `.env.local`. CI de GitHub corre build+audits en cada push.
 
 ### Migraciones Supabase (en orden)
-1. `schema.sql` (obligatorio base)
-2. `migration2-products.sql`
-3. `migration5-fix-triggers.sql` (3, 4 son obsoletos)
-**Siempre detener el servidor local antes (deadlock).**
+1. `schema.sql` → 2. `migration2-products.sql` → 3. `migration5-fix-triggers.sql`
+**Detener servidor local antes (deadlock).**
 
-## Estado de seguridad (auditoría npm)
+### Guía de usuario (PDF)
+```bash
+node scripts/generar-guia-pdf.cjs   # regenera GUIA-USUARIO.pdf (24 secciones)
+```
 
-- Next 15.5.25, supabase-js latest: **sin vulnerabilidades runtime**
-- postcss 8.4.31 interno de Next: riesgo build-time únicamente, aceptado
-- Rate limiting: API admin 8 intentos/15min por IP
+## QA y verificación
+
+- **Flujo de verificación estándar** (antes de cada deploy): login → venta contado (sin "abono fantasma") → fiado → abono (historial en vivo) → live con precio válido → cierre con abonos
+- Herramienta de test navegador en `C:\Users\Hanzel\AppData\Local\Temp\opencode\navegar.cjs` (puppeteer-core + Edge headless, puerto CDP 9333) — maneja confirm() dialogs y desactiva el SW para datos frescos
+- Credenciales de prueba: lucystore@gmail.com / 123456789 (tienda Lucy Store)
+
+## Seguridad
+
+- Rate limiting: API admin 8 intentos/15min por IP (en memoria — se resetea entre instancias serverless, es capa extra no única)
+- `safeEqual` en comparación de contraseña admin (timing-safe)
 - Headers: X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy
-- Secrets: solo en .env.local (gitignored)
+- RLS en TODAS las tablas por `store_id`
+- Secrets: solo `.env.local` (gitignored, gitleaks en CI)
+- Excepción W1 documentada en CONSTRAINTS.md (sharp/postcss build-time de Next 15)
 
-## Roadmap pendiente
+## Historial de fixes importantes (contexto de QA 2026-09-09/10)
 
-- [ ] Catálogo web público por tienda
+**Bugs ALTOS corregidos:** fiado a cliente duplicado (error técnico), abonos fantasma (pagos de venta duplicados como abonos), doble fiado en Live, precio Live sin validación ("250,200" aceptado), sobrepago desaparecía sin aviso, historial de cliente vacío (abonos sin debt_id).
+
+**MEDIOS:** arqueo sin abonos en efectivo, buscadores con acentos/espacios, método de pago en hoja de cliente, "Invertido" C$0 (ahora 4 métricas), advertencia de clientes duplicados.
+
+**Features:** historial de movimientos en modal de abono (Inicio), stock "Quedan X" en Vender con bloqueo de sobreventa, sugerencias de clientes al fiar (datalist + "Ya existe"), "Instalar App" solo móvil, badge "Sin lote", contexto cacheado (localStorage) para velocidad, updates de stock en paralelo.
+
+## Roadmap pendiente (sin catálogo — cancelado)
+
 - [ ] Exportar Excel real .xlsx (hoy es CSV con BOM)
 - [ ] Edición de lotes (descuento manual de piezas al vender)
 - [ ] Notificaciones push para cobros
 - [ ] Reportes históricos por rango de fechas
+- [ ] Upgrade a Next 16 (cierra vulnerabilidades build-time de sharp/postcss — ver W1 en CONSTRAINTS.md)
