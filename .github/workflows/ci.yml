@@ -28,16 +28,16 @@ jobs:
       - name: Build (constraint: build sin errores)
         run: npm run build
         env:
-          # Variables públicas dummy: el build no necesita las reales para compilar
+          # Variables publicas dummy: el build no necesita las reales para compilar
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
 
-      - name: Security: secrets en commits (constraint: 0 hallazgos)
+      - name: Security - secrets en commits (constraint: 0 hallazgos)
         run: |
           gitleaks_version=8.24.3
           curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${gitleaks_version}/gitleaks_${gitleaks_version}_linux_x64.tar.gz" \
             | tar -xz -C /usr/local/bin gitleaks
           gitleaks detect --redact --no-banner --verbose
 
-      - name: Security: deps runtime (constraint: 0 critical; W1 cubre el high build-time de Next 15)
+      - name: Security - deps runtime (constraint: 0 critical; W1 cubre el high build-time de Next 15)
         run: npm audit --omit=dev --audit-level=critical
