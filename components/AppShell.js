@@ -5,7 +5,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { clearStoreCache } from '@/lib/get-store';
+import { clearQueue } from '@/lib/offline-queue';
 import PwaRegister from '@/components/PwaRegister';
+import OfflineBanner from '@/components/OfflineBanner';
 
 const NAV = [
   { href: '/app/inicio', label: 'Inicio', icon: 'home' },
@@ -22,9 +24,22 @@ const Icon = ({ name, size = 20, sw = 1.8, className = '' }) => {
   const paths = {
     home: <path d="M4 11l8-7 8 7v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20zM9.5 21v-6h5v6" />,
     sell: <path d="M12 2l9 5v10l-9 5-9-5V7zM12 12v9M12 12L3 7M12 12l9-5" />,
-    store: <path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v11a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 20V9M9.5 21.5v-6h5v6" />,
+    store: (
+      <>
+        {/* Tienda con toldo festoneado (igual que el favicon/PWA) */}
+        <path d="M4 10.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.5" />
+        <path d="M3.5 6.5L5 3h14l1.5 3.5" />
+        <path d="M3.5 6.5c0 1.4 1.2 2.5 2.6 2.5s2.6-1.1 2.6-2.5c0 1.4 1.2 2.5 2.6 2.5s2.6-1.1 2.6-2.5c0 1.4 1.2 2.5 2.6 2.5s2.6-1.1 2.6-2.5" />
+        <path d="M9.75 21v-5.5a1.25 1.25 0 0 1 1.25-1.25h2a1.25 1.25 0 0 1 1.25 1.25V21" />
+      </>
+    ),
     videocam: <path d="M3 7a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 10l5-3v10l-5-3" />,
-    point_of_sale: <path d="M4 4h16v4H4zM6 8v3h12V8M5 11h14v9H5zM9 15h6" />,
+    point_of_sale: (
+      <>
+        {/* Caja registradora (solo para la pestaña Caja) */}
+        <path d="M4 4h16v4H4zM6 8v3h12V8M5 11h14v9H5zM9 15h6" />
+      </>
+    ),
     inventory_2: <path d="M12 3l9 4.5v9L12 21l-9-4.5v-9zM3 7.5l9 4.5 9-4.5M12 12v9" />,
     groups: <path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c1-3.4 3.5-5 6.5-5s5.5 1.6 6.5 5M16 11a3 3 0 1 0 0-6M17.5 20c-.4-1.6-1-2.9-1.8-3.8M21.5 20c-.3-1.2-.8-2.2-1.4-3" />,
     menu: <path d="M4 7h16M4 12h16M4 17h16" />,
@@ -56,6 +71,7 @@ export default function AppShell({ storeName, userName, children }) {
   const logout = async () => {
     const supabase = createClient();
     clearStoreCache();
+    clearQueue();
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
@@ -207,6 +223,7 @@ export default function AppShell({ storeName, userName, children }) {
       </div>
 
       <PwaRegister />
+      <OfflineBanner />
     </div>
   );
 }
