@@ -1,5 +1,5 @@
 -- =====================================================
--- PACAPOS · Migración 5: CORRECCIÓN de triggers
+-- MI PRENDA · Migración 5: CORRECCIÓN de triggers
 -- Arregla: "record new has no field user_id"
 -- Causa: clients y products NO tienen columna user_id,
 -- pero el trigger de la migración 4 intentaba rellenarla.

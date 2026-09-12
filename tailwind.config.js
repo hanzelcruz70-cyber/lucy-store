@@ -4,7 +4,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // PacaPOS v2 — paleta plana rosa/vino (mockup redesign)
+        // Mi Prenda v2 — paleta plana rosa/vino (mockup redesign)
         primary: '#D6337F',
         'primary-deep': '#B92B6C',
         'primary-container': '#B92B6C',

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================
- * PacaPOS · gate de secretos
+ * Mi Prenda · gate de secretos
  * Bloque el commit si el diff staged contiene:
  *  - JWT de Supabase (anon/service/usuario)
  *  - URLs postgres con password embebido

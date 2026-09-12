@@ -1,5 +1,5 @@
 /* Genera icono de TIENDA (fachada con toldo) en PNG puro: 512, 192, 32 (favicon)
-   Paleta PacaPOS: fondo rosa #E040A0, tienda blanca, sin dependencias externas */
+   Paleta Mi Prenda: fondo rosa #E040A0, tienda blanca, sin dependencias externas */
 const fs = require('fs');
 const path = require('path');
 

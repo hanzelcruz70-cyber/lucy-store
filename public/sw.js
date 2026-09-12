@@ -1,5 +1,5 @@
-/* PacaPOS Service Worker v7 — datos frescos, estáticos rápidos, sin fuente de iconos */
-const CACHE = 'pacapos-v7';
+/* Mi Prenda Service Worker v8 — datos frescos, estáticos rápidos, sin fuente de iconos */
+const CACHE = 'miprenda-v8';
 const PRECACHE = [
   '/offline.html',
   '/manifest.json',

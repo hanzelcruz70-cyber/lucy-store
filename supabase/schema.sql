@@ -1,5 +1,5 @@
 -- =====================================================
--- PACAPOS · Esquema Supabase multitenant con RLS
+-- MI PRENDA · Esquema Supabase multitenant con RLS
 -- Ejecutar todo este archivo en: Supabase Dashboard > SQL Editor
 -- =====================================================
 

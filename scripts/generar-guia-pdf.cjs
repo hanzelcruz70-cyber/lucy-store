@@ -52,7 +52,7 @@ function need(h) {
 }
 function endPage() {
   if (!isCover) {
-    page.push(op('PacaPOS - Guía de usuario', 8.5, 1, SUB, M, 30));
+    page.push(op('Mi Prenda - Guía de usuario', 8.5, 1, SUB, M, 30));
     const pn = 'Página ' + (pages.length + 1);
     page.push(op(pn, 8.5, 1, SUB, W - M - wpx(pn, 8.5, false), 30));
   }
@@ -130,8 +130,8 @@ function TIP(t){ G.push(['tip', t]); }
 function EX(t){ G.push(['ex', t]); }
 
 /* ---- 1 ---- */
-H1('1. Qué es PacaPOS');
-P('PacaPOS es el sistema de punto de venta de tu tienda de ropa. Registra ventas al contado y al fiado, lives de TikTok, inventario de productos, gastos del negocio y la cobranza de tus clientes. Todo en córdobas (C$), desde computadora o celular, y se instala en el teléfono como una app más.');
+H1('1. Qué es Mi Prenda');
+P('Mi Prenda es el sistema de punto de venta de tu tienda de ropa. Registra ventas al contado y al fiado, lives de TikTok, inventario de productos, gastos del negocio y la cobranza de tus clientes. Todo en córdobas (C$), desde computadora o celular, y se instala en el teléfono como una app más.');
 TIP('Regla de oro: anota cada venta, abono y gasto EN EL MOMENTO en que ocurre. La app hace todas las cuentas por ti, pero solo con lo que le dices.');
 
 /* ---- 2 ---- */
@@ -144,7 +144,7 @@ B('La dirección de la app te la indica el administrador. Ejemplo: http://192.16
 
 /* ---- 3 ---- */
 H1('3. Iniciar sesión');
-B('Paso 1: abre la dirección de la app. Verás la pantalla con el logo PacaPOS y el botón "Entrar a mi tienda".');
+B('Paso 1: abre la dirección de la app. Verás la pantalla con el logo Mi Prenda y el botón "Entrar a mi tienda".');
 B('Paso 2: escribe tu correo y tu contraseña.');
 B('Paso 3: presiona "Entrar a mi tienda". Al entrar aterrizas en Inicio, el resumen del día.');
 B('Si los datos están mal verás en rojo: "Correo o contraseña incorrectos. Verifica tus datos." Quedas en la misma pantalla para reintentar.');
@@ -368,13 +368,13 @@ B('Si aún no hay ventas con productos, verás un aviso.');
 /* ---- 19 ---- */
 H1('19. Exportar el reporte');
 B('En Más, botón "Exportar reporte": descarga un archivo que se abre en Excel, con el resumen (ventas al contado, fiado, gastos y caja neta), el detalle de cada venta (fecha, cliente, canal, método, productos, total) y el detalle de gastos.');
-B('El archivo se llama "reporte-pacapos" más la fecha. Se puede compartir por WhatsApp o correo.');
+B('El archivo se llama "reporte-miprenda" más la fecha. Se puede compartir por WhatsApp o correo.');
 B('El mismo aviso aparece arriba en Caja, pero la descarga se hace desde Más.');
 TIP('Expórtalo justo después del cierre para que coincida con el corte del día.');
 
 /* ---- 20 ---- */
 H1('20. Instalar la app en el celular (PWA)');
-B('Android: menú de Chrome, "Agregar a pantalla de inicio". Si dentro de PacaPOS ves el botón "Instalar App", úsalo: es lo mismo con un toque.');
+B('Android: menú de Chrome, "Agregar a pantalla de inicio". Si dentro de Mi Prenda ves el botón "Instalar App", úsalo: es lo mismo con un toque.');
 B('iPhone: botón Compartir, luego "Añadir a pantalla de inicio".');
 B('Instalada, abre a pantalla completa con su propio ícono.');
 B('Sin internet verás la página "Sin conexión"; al volver la señal, la app se recarga sola.');
@@ -410,12 +410,12 @@ TIP('Diez minutos de cierre al día te ahorran horas de cuentas a fin de mes.');
 
 // Portada
 page.push(PINK + ' rg 0 ' + (H - 250) + ' ' + W + ' 250 re f');
-page.push(op('PacaPOS', 44, 2, '1 1 1', M, H - 115));
+page.push(op('Mi Prenda', 44, 2, '1 1 1', M, H - 115));
 page.push(op('Guía de usuario', 21, 2, '1 1 1', M, H - 152));
 page.push(op('Sistema de venta para tiendas de ropa', 11, 1, PINK_SOFT, M, H - 178));
 page.push(op('Versión 1.2 - Septiembre 2026 - Nicaragua - Moneda: córdobas (C$)', 9.5, 1, PINK_SOFT, M, H - 198));
 y = H - 285;
-para('Bienvenido a PacaPOS. Esta guía explica, paso a paso y sin tecnicismos, cómo usar la aplicación completa: iniciar sesión, ingresar productos, vender al contado y al fiado, hacer lives de TikTok, cobrar a clientes, registrar gastos y cerrar la caja con conteo de billetes.', 11, INK);
+para('Bienvenido a Mi Prenda. Esta guía explica, paso a paso y sin tecnicismos, cómo usar la aplicación completa: iniciar sesión, ingresar productos, vender al contado y al fiado, hacer lives de TikTok, cobrar a clientes, registrar gastos y cerrar la caja con conteo de billetes.', 11, INK);
 gap(6);
 para('Incluye una sección dedicada a cómo funciona la contabilidad: qué significa cada número, cómo se calcula y un ejemplo completo de un día de tienda que se usa en todo el documento.', 11, SUB);
 gap(4);

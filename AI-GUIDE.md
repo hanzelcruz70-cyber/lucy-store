@@ -1,13 +1,13 @@
-# PacaPOS · Documentación del Proyecto
+# Mi Prenda · Documentación del Proyecto
 
 > **Guía para IAs y desarrolladores.** Todo lo necesario para entender, modificar y desplegar este proyecto sin contexto previo.
 > **ANTES DE ESCRIBIR CÓDIGO: leer `CONSTRAINTS.md`.** Ese archivo es el contrato de calidad y no se debilita para que un cambio pase.
 
 ## Qué es
 
-PacaPOS es un **Punto de Venta (POS) multitenant en modo PWA** para tiendas de ropa (paca/americana) que venden por mostrador y por **Lives de TikTok**, con gestión de **fiados (créditos)**, inventario de productos con stock, gastos y estadísticas. Moneda: **Córdobas (C$)** — Nicaragua.
+Mi Prenda es un **Punto de Venta (POS) multitenant en modo PWA** para tiendas de ropa (paca/americana) que venden por mostrador y por **Lives de TikTok**, con gestión de **fiados (créditos)**, inventario de productos con stock, gastos y estadísticas. Moneda: **Córdobas (C$)** — Nicaragua.
 
-**Marca/Nombre:** PacaPOS (opciones de dominio: pacapos.app, pacapos.mx)
+**Marca/Nombre:** Mi Prenda (antes Mi Prenda, renombrado 2026-09-11) — app multitenant: cada tienda es un cliente; nunca nombrar con el nombre de UNA tienda (Lucy Store fue el primero, el nombre del repo es histórico)
 
 **DECISIONES DE PRODUCTO:**
 - El catálogo web público fue CANCELADO (2026-09-10). No construir catálogo ni páginas públicas de tienda.
@@ -23,7 +23,7 @@ PacaPOS es un **Punto de Venta (POS) multitenant en modo PWA** para tiendas de r
 | PWA | manifest.json + sw.js (offline-first) | — |
 | Deploy | Vercel | — |
 | CI | GitHub Actions (build + gitleaks + npm audit) | `.github/workflows/ci.yml` |
-| Repo | github.com/hanzelcruz70-cyber/lucy-store (privado) | — |
+| Repo | github.com/hanzelcruz70-cyber/lucy-store (privado, nombre histórico) | — |
 | Puerto local | 3001 | `npm run dev` o `npm run start` |
 
 ## Estructura
@@ -117,7 +117,7 @@ Modal (Inicio o Clientes) → validaciones (monto>0, sobrepago pide confirm con 
 Caja → arqueo: esperado = efectivo + abonos efectivo − gastos. Conteo por denominaciones (input o botones +/−). Insert cash_cuts. Botón bloqueado hasta mañana. Debajo: historial de cortes con filtro 7/15/30 días.
 
 ### 5. Modo offline (se cayó la luz/internet)
-Toda escritura cliente-side revisa `isOffline()` (lib/offline-queue.js). Sin conexión: se guarda en la cola local (localStorage `pacapos_outbox`) con id uuid pre-generado y la UI se actualiza igual. Al volver la red, `lib/offline-sync.js` procesa la cola FIFO automáticamente (evento `online`, focus, o cada 60s). Cada operación es IDEMPOTENTE (insert con id local, verificación anti-doble-fiado, abonos con debt_id FIFO, recálculo de balance desde la BD) para que un reintento no duplique dinero. Funciona offline: venta contado/fiado (Vender), apartar/cobrar/fiar (Live), abonos (Inicio/Clientes), fiado directo, cliente nuevo, gastos, corte de caja, producto nuevo. Banner `components/OfflineBanner.js` muestra estado ("Sin internet · N cambios guardados" / "Sincronizando…"). El SW cachea páginas para que la app abra offline (network-first con fallback a caché).
+Toda escritura cliente-side revisa `isOffline()` (lib/offline-queue.js). Sin conexión: se guarda en la cola local (localStorage `miprenda_outbox`) con id uuid pre-generado y la UI se actualiza igual. Al volver la red, `lib/offline-sync.js` procesa la cola FIFO automáticamente (evento `online`, focus, o cada 60s). Cada operación es IDEMPOTENTE (insert con id local, verificación anti-doble-fiado, abonos con debt_id FIFO, recálculo de balance desde la BD) para que un reintento no duplique dinero. Funciona offline: venta contado/fiado (Vender), apartar/cobrar/fiar (Live), abonos (Inicio/Clientes), fiado directo, cliente nuevo, gastos, corte de caja, producto nuevo. Banner `components/OfflineBanner.js` muestra estado ("Sin internet · N cambios guardados" / "Sincronizando…"). El SW cachea páginas para que la app abra offline (network-first con fallback a caché).
 
 ## Reglas de UI
 
@@ -136,7 +136,7 @@ Toda escritura cliente-side revisa `isOffline()` (lib/offline-queue.js). Sin con
 4. Reemplazos masivos con regex: cuidado con `' + '` (concatenación JS)
 5. Server components consultan; client components interactúan; `force-dynamic` en protegidas
 6. **Commits atómicos** (~100 líneas, qué+cómo) — ver CONSTRAINTS.md
-7. El Service Worker cachea navegaciones: tras un deploy puede servir HTML viejo; el SW se auto-actualiza con nueva versión (bump de `CACHE` en sw.js — actual: `pacapos-v5`)
+7. El Service Worker cachea navegaciones: tras un deploy puede servir HTML viejo; el SW se auto-actualiza con nueva versión (bump de `CACHE` en sw.js — actual: `miprenda-v5`)
 
 ## Despliegue
 
@@ -188,7 +188,7 @@ node scripts/generar-guia-pdf.cjs   # regenera GUIA-USUARIO.pdf (24 secciones)
 
 **MEDIOS:** arqueo sin abonos en efectivo, buscadores con acentos/espacios, método de pago en hoja de cliente, "Invertido" C$0 (ahora 4 métricas), advertencia de clientes duplicados.
 
-**Features:** historial de movimientos en modal de abono (Inicio), stock "Quedan X" en Vender con bloqueo de sobreventa, sugerencias de clientes al fiar (búsqueda con dropdown máx 6 + "Ya existe"), "Instalar App" solo móvil, badge "Sin lote", contexto cacheado (localStorage) para velocidad, updates de stock en paralelo, exportar Excel con formato PacaPOS (exceljs lazy-chunk), edición de clientes/productos/apartados del Live, historial de cortes con filtro 7/15/30 días, arqueo con botones +/- clickeables, estadísticas sin repetir top en "menos vendidos", abonos en vivo en Inicio (folio correlativo sin recargar).
+**Features:** historial de movimientos en modal de abono (Inicio), stock "Quedan X" en Vender con bloqueo de sobreventa, sugerencias de clientes al fiar (búsqueda con dropdown máx 6 + "Ya existe"), "Instalar App" solo móvil, badge "Sin lote", contexto cacheado (localStorage) para velocidad, updates de stock en paralelo, exportar Excel con formato Mi Prenda (exceljs lazy-chunk), edición de clientes/productos/apartados del Live, historial de cortes con filtro 7/15/30 días, arqueo con botones +/- clickeables, estadísticas sin repetir top en "menos vendidos", abonos en vivo en Inicio (folio correlativo sin recargar).
 
 ## Roadmap pendiente (sin catálogo — cancelado)
 

@@ -6,7 +6,7 @@ const path = require('path');
 
 const hookPath = path.join(__dirname, '..', '.git', 'hooks', 'pre-commit');
 const hook = `#!/bin/sh
-# PacaPOS pre-commit: bloquea secretos
+# Mi Prenda pre-commit: bloquea secretos
 node scripts/check-secrets.cjs
 `;
 

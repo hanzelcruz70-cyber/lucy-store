@@ -187,9 +187,9 @@ export default function LoginPage() {
             <Icon name="store" size={32} />
           </Link>
           <div>
-            <h1 className="text-[26px] font-bold text-on-surface tracking-tight leading-none">
-              PacaPOS
-            </h1>
+          <h1 className="text-[26px] font-bold text-on-surface tracking-tight leading-none">
+            Mi Prenda
+          </h1>
             <p className="text-[13px] text-on-surface-variant mt-1">
               Caja, fiados, inventario y Lives. Todo en tu bolsillo.
             </p>

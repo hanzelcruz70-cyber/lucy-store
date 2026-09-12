@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 /* ============================================================
- * LANDING PacaPOS — plantilla v3 adaptada:
- * logo de tienda + paleta rosa PacaPOS, moneda C$,
+ * LANDING Mi Prenda — plantilla v3 adaptada:
+ * logo de tienda + paleta rosa Mi Prenda, moneda C$,
  * Material Symbols → SVG inline (sin CDN), links a /login.
  * ============================================================ */
 
@@ -193,7 +193,7 @@ export default function Home() {
             <div className="w-9 h-9 rounded-[10px] bg-primary text-on-primary flex items-center justify-center">
               <M name="storefront" size={20} />
             </div>
-            <span className="font-headline-sm text-headline-sm text-on-surface tracking-tight font-extrabold">PacaPOS</span>
+            <span className="font-headline-sm text-headline-sm text-on-surface tracking-tight font-extrabold">Mi Prenda</span>
           </div>
           <nav className="hidden lg:flex items-center gap-5">
             <span className="font-label-md text-label-md bg-mint-surface text-primary font-bold rounded-lg px-2.5 py-1.5">Inicio</span>
@@ -235,7 +235,7 @@ export default function Home() {
                   y en tu bolsillo
                 </h1>
                 <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                  PacaPOS es el punto de venta para tiendas de americana: caja, fiados, inventario y Lives de TikTok
+                  Mi Prenda es el punto de venta para tiendas de americana: caja, fiados, inventario y Lives de TikTok
                   en una sola app. Sin libretas, sin Excel, sin cuentas a mano al final del día.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
@@ -322,14 +322,14 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* AHORA: Tranquilidad Total con PacaPOS */}
+                {/* AHORA: Tranquilidad Total con Mi Prenda */}
                 <div className="bg-primary text-on-primary rounded-2xl p-8 shadow-lg relative overflow-hidden flex flex-col justify-between">
                   <div className="absolute -right-12 -top-12 w-48 h-48 bg-secondary/30 rounded-full blur-2xl pointer-events-none" />
                   <div>
                     <div className="flex items-center justify-between mb-5">
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-mint-badge text-on-secondary-container font-label-sm text-label-sm font-extrabold">
                         <M name="verified" size={16} />
-                        Ahora con PacaPOS: Tranquilidad Total
+                        Ahora con Mi Prenda: Tranquilidad Total
                       </div>
                       <span className="text-mint-badge"><M name="spa" size={28} /></span>
                     </div>
@@ -611,7 +611,7 @@ export default function Home() {
                     Toma el control de tu tienda hoy mismo
                   </h2>
                   <p className="font-body-lg text-body-lg text-on-surface-variant mb-8">
-                    Deja atrás la incertidumbre de la libreta y las horas perdidas sacando cuentas. PacaPOS es el
+                    Deja atrás la incertidumbre de la libreta y las horas perdidas sacando cuentas. Mi Prenda es el
                     aliado comercial de los mejores bazares.
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">
@@ -658,7 +658,7 @@ export default function Home() {
                 <div className="w-9 h-9 rounded-[10px] bg-primary text-on-primary flex items-center justify-center">
                   <M name="storefront" size={20} />
                 </div>
-                <span className="font-headline-sm text-headline-sm text-on-surface font-extrabold">PacaPOS</span>
+                <span className="font-headline-sm text-headline-sm text-on-surface font-extrabold">Mi Prenda</span>
               </div>
               <p className="font-body-sm text-body-sm text-on-surface-variant mb-3">
                 El sistema de punto de venta y apartados en vivo creado para bazares, pacas y vendedores en TikTok e
@@ -716,7 +716,7 @@ export default function Home() {
           </div>
           <div className="mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 bg-surface-container-high/40 p-3 rounded-xl">
             <p className="font-caption text-caption text-on-surface-variant">
-              © 2026 PacaPOS Inc. Todos los derechos reservados. Diseñado para comerciantes de ropa vintage y bazares.
+              © 2026 Mi Prenda. Todos los derechos reservados. Diseñado para comerciantes de ropa vintage y bazares.
             </p>
             <div className="flex items-center gap-5 font-caption text-caption text-on-surface-variant">
               <a href="#" className="hover:text-on-surface transition-colors">Términos del Servicio</a>

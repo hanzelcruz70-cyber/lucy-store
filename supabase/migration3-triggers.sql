@@ -1,5 +1,5 @@
 -- =====================================================
--- PACAPOS · Migración 3: auto-relleno de store_id con trigger
+-- MI PRENDA · Migración 3: auto-relleno de store_id con trigger
 -- Ejecutar en Supabase > SQL Editor
 -- Arregla: "new row violates row-level security policy"
 -- Motivo: el cliente no mandaba store_id y RLS lo exige.

@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'PacaPOS · Punto de Venta',
+  title: 'Mi Prenda · Punto de Venta',
   description: 'Caja, fiados, inventario y Lives de TikTok para tiendas de ropa americana.',
   manifest: '/manifest.json',
   icons: { icon: '/icons/favicon.png', apple: '/icons/icon-192.png' },

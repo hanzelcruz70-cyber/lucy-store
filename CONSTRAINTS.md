@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-09-10 by @hanzelcruz70-cyber
 
-> Contrato de calidad de PacaPOS. Todo agente (IA o humano) debe leerlo antes
+> Contrato de calidad de Mi Prenda. Todo agente (IA o humano) debe leerlo antes
 > de escribir código. Este archivo no se debilita para que un cambio pase.
 
 ## Floor (always enforced, no setup required)

@@ -1,5 +1,5 @@
 -- =====================================================
--- PACAPOS · Migración 2: estadísticas de productos
+-- MI PRENDA · Migración 2: estadísticas de productos
 -- Ejecutar en Supabase > SQL Editor (además del schema.sql original)
 -- =====================================================
 

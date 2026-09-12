@@ -1,4 +1,4 @@
-# PacaPOS · Punto de venta multitenant para tiendas de ropa
+# Mi Prenda · Punto de venta multitenant para tiendas de ropa
 
 PWA instalable en celular, con Next.js 15, Supabase (datos + auth + RLS) y despliegue en Vercel.
 Cada tienda (tenant) solo ve sus propios datos: caja, fiados, inventario y lives de TikTok.

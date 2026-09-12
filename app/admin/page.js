@@ -138,7 +138,7 @@ export default function AdminPage() {
             </div>
             <div>
               <h1 className="font-headline-md text-headline-md text-on-surface">Panel Admin</h1>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">PacaPOS · Solo el dueño del sistema</p>
+              <p className="font-body-sm text-body-sm text-on-surface-variant">Mi Prenda · Solo el dueño del sistema</p>
             </div>
           </div>
           <form onSubmit={tryLogin} className="space-y-space-sm">

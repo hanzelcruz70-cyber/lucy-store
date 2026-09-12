@@ -78,7 +78,7 @@ async function getData() {
     .filter((p) => !p.sale_id && p.method === 'efectivo')
     .reduce((a, p) => a + Number(p.amount), 0);
 
-  return { todaySales, todayExpenses, cutDone, cutsHistory: cutsHistory.data || [], storeName: profile.data?.stores?.name || 'PacaPOS', total, collected, efectivoSolo, transf, credit, expTotal, pieces, net, abonosEfectivo };
+  return { todaySales, todayExpenses, cutDone, cutsHistory: cutsHistory.data || [], storeName: profile.data?.stores?.name || 'Mi Prenda', total, collected, efectivoSolo, transf, credit, expTotal, pieces, net, abonosEfectivo };
 }
 
 export default async function CajaPage() {
@@ -86,7 +86,7 @@ export default async function CajaPage() {
 
   return (
     <div className="flex flex-col w-full px-3.5 py-3.5 gap-2.5">
-      {/* Export (descarga el reporte Excel con formato PacaPOS) */}
+      {/* Export (descarga el reporte Excel con formato Mi Prenda) */}
       <ExportButton sales={d.todaySales} expenses={d.todayExpenses} storeName={d.storeName} />
 
       {/* Cierre de caja */}

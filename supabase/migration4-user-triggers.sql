@@ -1,5 +1,5 @@
 -- =====================================================
--- PACAPOS · Migración 4: auto-relleno de user_id con trigger
+-- MI PRENDA · Migración 4: auto-relleno de user_id con trigger
 -- Ejecutar en Supabase > SQL Editor
 -- Arregla: "new row violates row-level security policy"
 -- en sales/payments/expenses/lots: el RLS exige user_id = auth.uid()

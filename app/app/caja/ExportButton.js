@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { buildReportWorkbook, workbookToBlob } from '@/lib/excel-report';
 
-export default function ExportButton({ sales, expenses, storeName = 'PacaPOS' }) {
+export default function ExportButton({ sales, expenses, storeName = 'Mi Prenda' }) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -34,7 +34,7 @@ export default function ExportButton({ sales, expenses, storeName = 'PacaPOS' })
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `reporte-pacapos-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.download = `reporte-miprenda-${new Date().toISOString().slice(0, 10)}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
