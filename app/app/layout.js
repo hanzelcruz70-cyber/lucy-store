@@ -15,7 +15,7 @@ export default async function AppLayout({ children }) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, display_name, store_id, stores(name)')
+    .select('role, display_name, store_id, stores(name, active, paid_until, blocked_reason)')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -32,6 +32,37 @@ export default async function AppLayout({ children }) {
           <h1 className="font-headline-md text-headline-md text-on-surface">Cuenta sin tienda</h1>
           <p className="font-body-lg text-body-lg text-on-surface-variant">
             Tu cuenta aún no está vinculada a una tienda. Contacta al administrador del sistema.
+          </p>
+          <LogoutButton />
+        </div>
+      </div>
+    );
+  }
+
+  // Suscripción: cuenta desactivada por el admin o pago vencido
+  const store = profile.stores || {};
+  const vencidaSuscripcion =
+    store.active === false ||
+    (store.paid_until && new Date(store.paid_until) <= new Date());
+  if (vencidaSuscripcion) {
+    const razon = store.active === false
+      ? store.blocked_reason || 'Cuenta suspendida por el administrador'
+      : 'Tu suscripción mensual ha vencido';
+    return (
+      <div className="min-h-screen flex items-center justify-center px-gutter-mobile max-w-md mx-auto">
+        <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-lg text-center space-y-space-sm w-full">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+            <circle cx="12" cy="13" r="8" />
+            <path d="M12 13V9M9 2.5h6" />
+          </svg>
+          <h1 className="font-headline-md text-headline-md text-on-surface">Suscripción pausada</h1>
+          <p className="font-body-lg text-body-lg text-on-surface-variant">
+            {razon}. Realiza tu pago para continuar usando Mi Prenda en tu tienda.{' '}
+            {store.paid_until && store.active !== false && (
+              <span className="block mt-2 font-body-sm text-body-sm">
+                Venció el {new Date(store.paid_until).toLocaleDateString('es-NI')}
+              </span>
+            )}
           </p>
           <LogoutButton />
         </div>

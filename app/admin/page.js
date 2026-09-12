@@ -117,6 +117,33 @@ export default function AdminPage() {
     }
   };
 
+  const patchStore = async (storeId, action, name) => {
+    if (action === 'renew') {
+      if (!confirm(`¿Registrar pago de 31 días para "${name}"?`)) return;
+    }
+    try {
+      const res = await fetch('/api/admin/stores', {
+        method: 'PATCH',
+        headers: headers(),
+        body: JSON.stringify({ storeId, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error');
+      setMsg({
+        type: 'ok',
+        text:
+          action === 'renew'
+            ? `Pago registrado: "${name}" activa hasta el ${new Date(data.paid_until).toLocaleDateString('es-NI')}`
+            : data.active
+              ? `Cuenta "${name}" activada`
+              : `Cuenta "${name}" suspendida`,
+      });
+      await load(pass);
+    } catch (err) {
+      setMsg({ type: 'err', text: err.message });
+    }
+  };
+
   const genPassword = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
     let p = '';
@@ -273,22 +300,71 @@ export default function AdminPage() {
           {stores.map((s) => {
             const profile = profiles.find((p) => p.store_id === s.id);
             const owner = profile ? `${profile.display_name} · ${s.owner_email}` : s.owner_email;
+            const vencida =
+              s.active === false ||
+              (s.paid_until && new Date(s.paid_until) <= new Date());
+            const diasRestantes = s.paid_until
+              ? Math.ceil((new Date(s.paid_until) - new Date()) / (24 * 60 * 60 * 1000))
+              : null;
             return (
-              <div key={s.id} className="bg-surface-container-low rounded-xl p-space-sm flex items-center justify-between gap-space-sm">
-                <div className="min-w-0">
-                  <p className="font-headline-sm text-body-md text-on-surface truncate">{s.name}</p>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant truncate">{owner}</p>
-                  <p className="font-body-sm text-[11px] text-on-surface-variant">
-                    Creada: {new Date(s.created_at).toLocaleDateString('es-MX')}
-                  </p>
+              <div key={s.id} className="bg-surface-container-low rounded-xl p-space-sm space-y-space-sm">
+                <div className="flex items-center justify-between gap-space-sm">
+                  <div className="min-w-0">
+                    <p className="font-headline-sm text-body-md text-on-surface truncate">{s.name}</p>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant truncate">{owner}</p>
+                    <p className="font-body-sm text-[11px] text-on-surface-variant">
+                      Creada: {new Date(s.created_at).toLocaleDateString('es-MX')}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => profile && deleteStore(profile.id, s.name)}
+                    className="w-10 h-10 rounded-lg bg-error-container/40 text-error flex items-center justify-center flex-shrink-0 active:scale-95"
+                    title="Eliminar tienda"
+                  >
+                    <Ico name="delete" size={20} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => profile && deleteStore(profile.id, s.name)}
-                  className="w-10 h-10 rounded-lg bg-error-container/40 text-error flex items-center justify-center flex-shrink-0 active:scale-95"
-                  title="Eliminar tienda"
-                >
-                  <Ico name="delete" size={20} />
-                </button>
+                {/* Estado de suscripción */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-body-sm text-body-sm font-semibold ${
+                      vencida
+                        ? 'bg-error-container/40 text-error'
+                        : 'bg-secondary-container/40 text-on-secondary-container'
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${vencida ? 'bg-error' : 'bg-primary'}`}
+                    />
+                    {s.active === false
+                      ? 'Suspendida'
+                      : vencida
+                        ? 'Suscripción vencida'
+                        : diasRestantes !== null
+                          ? `Activa · vence en ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}`
+                          : 'Activa'}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => patchStore(s.id, 'renew', s.name)}
+                      className="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-body-sm text-body-sm font-semibold active:scale-95"
+                      title="Registrar pago y renovar 31 días"
+                    >
+                      Pago 31 días
+                    </button>
+                    <button
+                      onClick={() => patchStore(s.id, 'toggle', s.name)}
+                      className={`px-3 py-1.5 rounded-lg font-body-sm text-body-sm font-semibold active:scale-95 ${
+                        s.active === false
+                          ? 'bg-secondary-container text-on-secondary-container'
+                          : 'bg-surface-container-highest text-on-surface-variant'
+                      }`}
+                      title={s.active === false ? 'Activar cuenta' : 'Suspender cuenta'}
+                    >
+                      {s.active === false ? 'Activar' : 'Suspender'}
+                    </button>
+                  </div>
+                </div>
               </div>
             );
           })}

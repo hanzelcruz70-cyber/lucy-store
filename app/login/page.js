@@ -83,6 +83,21 @@ function LoginForm() {
         );
         return;
       }
+      // Suscripción: verificar que la tienda esté activa y al día
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('store_id, stores(active, paid_until)')
+        .maybeSingle();
+      const store = profile?.stores;
+      if (store && (store.active === false || (store.paid_until && new Date(store.paid_until) <= new Date()))) {
+        await supabase.auth.signOut();
+        setError(
+          store.active === false
+            ? 'Tu cuenta está suspendida. Contacta al administrador.'
+            : 'Tu suscripción mensual ha vencido. Realiza tu pago para volver a entrar.'
+        );
+        return;
+      }
       router.push(redirectTo);
       router.refresh();
     } catch (err) {

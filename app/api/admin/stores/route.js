@@ -90,7 +90,7 @@ export async function GET(request) {
 
   const { data: stores, error } = await admin
     .from('stores')
-    .select('id, name, slug, owner_email, created_at')
+    .select('id, name, slug, owner_email, created_at, active, paid_until, blocked_reason')
     .order('created_at', { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -103,6 +103,85 @@ export async function GET(request) {
     stores: stores || [],
     profiles: profiles || [],
   });
+}
+
+// PATCH: activar/desactivar cuenta o registrar pago de suscripción
+// body: { action: 'toggle' | 'renew', storeId, amount?, method? }
+export async function PATCH(request) {
+  const blocked = guard(request);
+  if (blocked) return blocked;
+  try {
+    const body = await request.json();
+    const action = String(body.action || '');
+    const storeId = body.storeId;
+    if (!isUuid(storeId)) {
+      return NextResponse.json({ error: 'storeId inválido' }, { status: 400 });
+    }
+
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const admin = createSupabaseClient(url, key, { auth: { persistSession: false } });
+
+    const { data: store } = await admin
+      .from('stores')
+      .select('id, active, paid_until')
+      .eq('id', storeId)
+      .maybeSingle();
+    if (!store) return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404 });
+
+    if (action === 'toggle') {
+      const nextActive = !store.active;
+      const { error } = await admin
+        .from('stores')
+        .update({
+          active: nextActive,
+          blocked_reason: nextActive ? null : 'Cuenta suspendida por el administrador',
+        })
+        .eq('id', storeId);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ ok: true, active: nextActive });
+    }
+
+    if (action === 'renew') {
+      // Ciclo de 31 días: renueva desde la fecha actual (o desde el vencimiento
+      // anterior si aún no pasa, para no regalar días por pagar adelantado)
+      const DIAS = 31;
+      const base =
+        store.paid_until && new Date(store.paid_until) > new Date()
+          ? new Date(store.paid_until)
+          : new Date();
+      const paidUntil = new Date(base.getTime() + DIAS * 24 * 60 * 60 * 1000);
+
+      const amount = Number(body.amount) || 0;
+      const method = ['efectivo', 'transferencia', 'otro'].includes(body.method)
+        ? body.method
+        : 'efectivo';
+
+      const { error } = await admin
+        .from('stores')
+        .update({ active: true, paid_until: paidUntil.toISOString(), blocked_reason: null })
+        .eq('id', storeId);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+      const { error: errPay } = await admin.from('subscription_payments').insert({
+        store_id: storeId,
+        paid_until: paidUntil.toISOString(),
+        amount,
+        method,
+      });
+      if (errPay) return NextResponse.json({ error: errPay.message }, { status: 500 });
+
+      return NextResponse.json({
+        ok: true,
+        active: true,
+        paid_until: paidUntil.toISOString(),
+      });
+    }
+
+    return NextResponse.json({ error: 'Acción inválida' }, { status: 400 });
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
 
 // POST: crear usuario + tienda + perfil (flujo admin)
@@ -152,12 +231,16 @@ export async function POST(request) {
     const userId = userData.user.id;
 
     // 2) Crear la tienda con el nombre EXACTO dado por el admin
+    //    Suscripción: primer ciclo de 31 días desde la creación
+    const firstPaidUntil = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000);
     const { data: store, error: errStore } = await admin
       .from('stores')
       .insert({
         name: storeName,
         slug: `${slugify(storeName)}-${Math.random().toString(36).slice(2, 6)}`,
         owner_email: email,
+        active: true,
+        paid_until: firstPaidUntil.toISOString(),
       })
       .select('id')
       .single();
