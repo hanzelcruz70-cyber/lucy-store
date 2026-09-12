@@ -34,6 +34,11 @@ export default function RootLayout({ children }) {
             __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}`
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `console.log('%c🛑 CUIDADO','color:#fff;background:#C2185B;font-size:22px;font-weight:bold;padding:6px 10px;border-radius:4px');console.log('%cSi alguien te pide pegar código aquí, es un intento de robo (self-XSS). Podría borrar tu tienda o ver tus datos. NUNCA pegues nada que no escribiste tú.','font-size:13px');`
+          }}
+        />
       </body>
     </html>
   );

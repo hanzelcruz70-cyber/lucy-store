@@ -171,11 +171,15 @@ node scripts/generar-guia-pdf.cjs   # regenera GUIA-USUARIO.pdf (24 secciones)
 
 ## Seguridad
 
-- Rate limiting: API admin 8 intentos/15min por IP (en memoria — se resetea entre instancias serverless, es capa extra no única)
+- **CSP estricta** (`next.config.mjs`): connect-src solo `*.supabase.co`, object-src none, frame-ancestors none. Agregar un servicio externo = tocar la CSP a propósito
+- **Gate de secretos**: `scripts/check-secrets.cjs` bloquea commits con JWT/postgres-passwords (hook pre-commit vía `npm run hooks:install` + CI). Regla: secreto filtrado = rotar en Supabase (borrar no basta)
+- `.env.example` template; secretos solo en `.env.local` (gitignored, gitleaks en CI)
+- Rate limiting: API admin 8 intentos/15min por IP (en memoria — capa extra, no única)
 - `safeEqual` en comparación de contraseña admin (timing-safe)
-- Headers: X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy
-- RLS en TODAS las tablas por `store_id`
-- Secrets: solo `.env.local` (gitignored, gitleaks en CI)
+- **Sanitización de input** (`lib/validation.js`): sanitizeString/isUuid/isEmail en TODO lo que llega al API antes de tocar la BD
+- Aviso anti-ingeniería-social en consola (self-XSS) para usuarios no técnicos
+- Headers: X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy, CSP
+- RLS en TODAS las tablas por `store_id` (aislamiento multitenant en la BD, no en el código)
 - Excepción W1 documentada en CONSTRAINTS.md (sharp/postcss build-time de Next 15)
 
 ## Historial de fixes importantes (contexto de QA 2026-09-09/10)

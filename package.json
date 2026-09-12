@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start -p 3001"
+    "start": "next start -p 3001",
+    "check:secrets": "node scripts/check-secrets.cjs",
+    "hooks:install": "node scripts/install-hooks.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

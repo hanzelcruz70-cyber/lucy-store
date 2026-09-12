@@ -10,6 +10,8 @@ Last reviewed: 2026-09-10 by @hanzelcruz70-cyber
 - No new suppression comments: `@ts-ignore`, `eslint-disable`, `// noqa`
 - No unimplemented stubs: `throw new Error("Not implemented")`, empty `catch {}`
 - No secrets in source (las llaves viven solo en `.env.local`, gitignored)
+- `npm run check:secrets` verde antes de cada commit (gate: JWT/postgres/keys en el diff → bloquea)
+- Todo input que llega a `/api` pasa por `lib/validation.js` (sanitizeString/isUuid/isEmail) antes de tocar la BD
 - TODO insert de cliente manda `store_id` + `user_id` vía `getMyContext()` (clients/products: solo `store_id`)
 - Moneda SIEMPRE `C$` + `toLocaleString('es-NI')` con función `money()`
 - Archivos SIEMPRE UTF-8 sin BOM (PowerShell `Set-Content` corrompe tildes)

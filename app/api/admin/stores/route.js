@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { sanitizeString, isUuid, isEmail } from '@/lib/validation';
 
 // Rate limit en memoria: 8 intentos fallidos por ventana de 15 min
 const attempts = new Map();
@@ -111,14 +112,15 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const ownerName = String(body.ownerName || '').trim();
-    const storeName = String(body.storeName || '').trim();
-    const email = String(body.email || '').trim().toLowerCase();
+    // Sanitización: nada de caracteres de control, longitudes acotadas
+    const ownerName = sanitizeString(body.ownerName, 80);
+    const storeName = sanitizeString(body.storeName, 80);
+    const email = sanitizeString(body.email, 120).toLowerCase();
     const password = String(body.password || '');
 
-    if (!ownerName || !storeName || !email || password.length < 8) {
+    if (!ownerName || !storeName || !isEmail(email) || password.length < 8) {
       return NextResponse.json(
-        { error: 'Faltan datos o la contraseña es menor a 8 caracteres' },
+        { error: 'Faltan datos, correo inválido o contraseña menor a 8 caracteres' },
         { status: 400 }
       );
     }
@@ -193,7 +195,9 @@ export async function DELETE(request) {
   if (blocked) return blocked;
   try {
     const { userId } = await request.json();
-    if (!userId) return NextResponse.json({ error: 'Falta userId' }, { status: 400 });
+    if (!isUuid(userId)) {
+      return NextResponse.json({ error: 'userId inválido' }, { status: 400 });
+    }
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;

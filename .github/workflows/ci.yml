@@ -18,6 +18,12 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Security secrets (gate local + gitleaks)
+        run: |
+          node scripts/check-secrets.cjs
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz -o /tmp/gl.tgz
+          tar -xz -C /tmp -f /tmp/gl.tgz gitleaks
+          /tmp/gitleaks detect --redact --no-banner --verbose
       - name: Build
         run: npm run build
         env:
@@ -25,8 +31,3 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
       - name: Security deps
         run: npm audit --omit=dev --audit-level=critical
-      - name: Security secrets
-        run: |
-          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz -o /tmp/gl.tgz
-          tar -xz -C /tmp -f /tmp/gl.tgz gitleaks
-          /tmp/gitleaks detect --redact --no-banner --verbose
