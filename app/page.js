@@ -726,6 +726,39 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Datos estructurados JSON-LD: Google entiende qué es Mi Prenda
+          (aplicación, features, público) y puede mostrar rich results. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'SoftwareApplication',
+            name: 'Mi Prenda',
+            applicationCategory: 'BusinessApplication',
+            operatingSystem: 'Web, Android, iOS',
+            url: 'https://mi-prenda.vercel.app',
+            description:
+              'Punto de venta para tiendas de ropa americana y bazares: caja con arqueo diario, fiados con abonos, inventario con ganancias por pieza y apartados en Lives de TikTok. Funciona sin internet e instalable en el celular.',
+            inLanguage: 'es-NI',
+            offers: {
+              '@type': 'Offer',
+              price: '0',
+              priceCurrency: 'NIO',
+              description: 'Solicita tu cuenta vía WhatsApp',
+            },
+            featureList: [
+              'Caja y corte diario con arqueo por denominaciones',
+              'Fiados y abonos con historial por cliente',
+              'Inventario con costo y ganancia por pieza',
+              'Apartados en Lives de TikTok',
+              'Modo offline con sincronización automática',
+              'Instalable como app en el celular (PWA)',
+            ],
+          }),
+        }}
+      />
     </div>
   );
 }

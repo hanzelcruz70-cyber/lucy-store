@@ -1,10 +1,57 @@
 import './globals.css';
 
+const SITE_URL = 'https://mi-prenda.vercel.app';
+
 export const metadata = {
-  title: 'Mi Prenda · Punto de Venta',
-  description: 'Caja, fiados, inventario y Lives de TikTok para tiendas de ropa americana.',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'Mi Prenda · Punto de Venta para Tiendas de Ropa Americana',
+    template: '%s · Mi Prenda',
+  },
+  description:
+    'App de punto de venta para tiendas de ropa americana y bazares: caja con arqueo diario, fiados con abonos, inventario con ganancias y Lives de TikTok. Funciona sin internet e instalable en tu celular.',
+  applicationName: 'Mi Prenda',
+  keywords: [
+    'punto de venta ropa americana',
+    'POS para paca',
+    'sistema de ventas para tienda de ropa',
+    'control de fiados y abonos',
+    'inventario tienda de ropa',
+    'ventas en lives de TikTok',
+    'app para bazares',
+    'arqueo de caja diario',
+  ],
   manifest: '/manifest.json',
   icons: { icon: '/icons/favicon.png', apple: '/icons/icon-192.png' },
+  openGraph: {
+    type: 'website',
+    url: SITE_URL,
+    siteName: 'Mi Prenda',
+    title: 'Mi Prenda · Punto de Venta para Tiendas de Ropa Americana',
+    description:
+      'Caja, fiados, inventario y Lives de TikTok en una sola app. Funciona sin internet e instalable en tu celular.',
+    locale: 'es_NI',
+    images: [{ url: '/icons/icon-512.png', width: 512, height: 512, alt: 'Mi Prenda — logo de tienda' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Mi Prenda · Punto de Venta para Tiendas de Ropa',
+    description: 'Caja, fiados, inventario y Lives de TikTok en una sola app. Instalable y offline.',
+    images: ['/icons/icon-512.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'Y1SjT4bsLW7WUn-fkQpkfNqyBDPEw6grN1aAB6hqkK8',
+  },
 };
 
 export const viewport = {
