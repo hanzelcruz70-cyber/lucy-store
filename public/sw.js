@@ -1,5 +1,5 @@
-/* PacaPOS Service Worker v4 — datos frescos, estáticos rápidos, sin fuente de iconos */
-const CACHE = 'pacapos-v4';
+/* PacaPOS Service Worker v7 — datos frescos, estáticos rápidos, sin fuente de iconos */
+const CACHE = 'pacapos-v7';
 const PRECACHE = [
   '/offline.html',
   '/manifest.json',

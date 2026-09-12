@@ -55,11 +55,14 @@ lucy-store/
 │   ├── supabase-server.js        # Cliente Supabase server-side (cookies)
 │   ├── supabase-browser.js       # Cliente Supabase browser-side
 │   ├── get-store.js              # getMyContext(): caché memoria + localStorage
+│   ├── offline-queue.js           # Cola offline (outbox) en localStorage + eventos
+│   ├── offline-sync.js            # Sincronizador FIFO idempotente (auto al volver red)
 │   └── rate-limit.js             # Límite de tiendas/día
 ├── supabase/
 │   ├── schema.sql                # Migración 1: 9 tablas + RLS (EJECUTAR PRIMERO)
 │   ├── migration2-products.sql   # Migración 2: products
-│   └── migration5-fix-triggers.sql # Migración 5: triggers correctos (3,4 obsoletos)
+│   ├── migration5-fix-triggers.sql # Migración 5: triggers correctos (3,4 obsoletos)
+│   └── migration6-expenses.sql   # Migración 6: categorías de gastos ampliadas + policy UPDATE
 ├── .github/workflows/ci.yml      # CI: build + secrets + deps en cada push
 ├── CONSTRAINTS.md                # CONTRATO DE CALIDAD (leer antes de codificar)
 ├── GUIA-USUARIO.pdf              # Guía del dueño de tienda (se genera con scripts/generar-guia-pdf.cjs)
@@ -85,7 +88,7 @@ ADMIN_SECRET=...                             # token alterno para scripts
 | `stores` | Tenant/tienda | id, name, slug, owner_email |
 | `profiles` | Usuario ↔ tienda | id (=auth.users), store_id, role, display_name |
 | `sales` | Ventas | store_id, user_id, total, items_count, channel (mostrador/tiktok_live), payment_method (efectivo/transferencia/fiado), client_name, notes |
-| `expenses` | Gastos | concept, amount, category (operativo/proveedor/renta/otro) |
+| `expenses` | Gastos | concept, amount, category (luz/agua/internet/transporte/empaque/publicidad/telefono/salario/limpieza/mantenimiento/renta/proveedor/impuestos/otro) |
 | `lots` | Stock interno por producto (INVISIBLE en UI) | code, name, pieces_total, pieces_left, total_cost, avg_sale_price |
 | `products` | Productos (lo que ve la dueña) | code, name, sale_price, sold_count, lot_id |
 | `clients` | Clientes | name, phone, tiktok, balance, is_live_client |
@@ -111,7 +114,10 @@ Insert sales(payment_method='fiado') → buscar cliente exacto (case-insensitive
 Modal (Inicio o Clientes) → validaciones (monto>0, sobrepago pide confirm con vuelto) → insert payments CON debt_id FIFO → descuenta debts → update balance → UI en vivo (saldo + historial).
 
 ### 4. Corte de caja
-Caja → arqueo: esperado = efectivo + abonos efectivo − gastos. Conteo por denominaciones. Insert cash_cuts. Botón bloqueado hasta mañana.
+Caja → arqueo: esperado = efectivo + abonos efectivo − gastos. Conteo por denominaciones (input o botones +/−). Insert cash_cuts. Botón bloqueado hasta mañana. Debajo: historial de cortes con filtro 7/15/30 días.
+
+### 5. Modo offline (se cayó la luz/internet)
+Toda escritura cliente-side revisa `isOffline()` (lib/offline-queue.js). Sin conexión: se guarda en la cola local (localStorage `pacapos_outbox`) con id uuid pre-generado y la UI se actualiza igual. Al volver la red, `lib/offline-sync.js` procesa la cola FIFO automáticamente (evento `online`, focus, o cada 60s). Cada operación es IDEMPOTENTE (insert con id local, verificación anti-doble-fiado, abonos con debt_id FIFO, recálculo de balance desde la BD) para que un reintento no duplique dinero. Funciona offline: venta contado/fiado (Vender), apartar/cobrar/fiar (Live), abonos (Inicio/Clientes), fiado directo, cliente nuevo, gastos, corte de caja, producto nuevo. Banner `components/OfflineBanner.js` muestra estado ("Sin internet · N cambios guardados" / "Sincronizando…"). El SW cachea páginas para que la app abra offline (network-first con fallback a caché).
 
 ## Reglas de UI
 
@@ -124,12 +130,13 @@ Caja → arqueo: esperado = efectivo + abonos efectivo − gastos. Conteo por de
 ## Convenciones CRÍTICAS
 
 1. **TODO insert cliente-side** llama `getMyContext()` (caché localStorage) y manda `store_id` + `user_id` (clients/products: solo store_id)
-2. **Nunca** expongas SERVICE_ROLE en el cliente; nunca `eval`/`innerHTML` con datos
+2. **Operaciones con dinero offline**: SIEMPRE por la cola (`enqueueOp` con tipo de `offline-sync.js`), nunca inserts directos si `isOffline()`. Toda op nueva debe tener procesador idempotente.
+3. **Nunca** expongas SERVICE_ROLE en el cliente; nunca `eval`/`innerHTML` con datos
 3. **Encoding**: UTF-8 sin BOM — PowerShell `Set-Content` corrompe tildes; usar `[System.IO.File]::WriteAllText($p, $c, [Text.UTF8Encoding]::new($false))`
 4. Reemplazos masivos con regex: cuidado con `' + '` (concatenación JS)
 5. Server components consultan; client components interactúan; `force-dynamic` en protegidas
 6. **Commits atómicos** (~100 líneas, qué+cómo) — ver CONSTRAINTS.md
-7. El Service Worker cachea navegaciones: tras un deploy puede servir HTML viejo; el SW se auto-actualiza con nueva versión (bump de `CACHE` en sw.js)
+7. El Service Worker cachea navegaciones: tras un deploy puede servir HTML viejo; el SW se auto-actualiza con nueva versión (bump de `CACHE` en sw.js — actual: `pacapos-v5`)
 
 ## Despliegue
 
@@ -148,7 +155,7 @@ vercel --prod
 Variables en Dashboard: las 5 de `.env.local`. CI de GitHub corre build+audits en cada push.
 
 ### Migraciones Supabase (en orden)
-1. `schema.sql` → 2. `migration2-products.sql` → 3. `migration5-fix-triggers.sql`
+1. `schema.sql` → 2. `migration2-products.sql` → 3. `migration5-fix-triggers.sql` → 4. `migration6-expenses.sql`
 **Detener servidor local antes (deadlock).**
 
 ### Guía de usuario (PDF)
@@ -177,7 +184,7 @@ node scripts/generar-guia-pdf.cjs   # regenera GUIA-USUARIO.pdf (24 secciones)
 
 **MEDIOS:** arqueo sin abonos en efectivo, buscadores con acentos/espacios, método de pago en hoja de cliente, "Invertido" C$0 (ahora 4 métricas), advertencia de clientes duplicados.
 
-**Features:** historial de movimientos en modal de abono (Inicio), stock "Quedan X" en Vender con bloqueo de sobreventa, sugerencias de clientes al fiar (datalist + "Ya existe"), "Instalar App" solo móvil, badge "Sin lote", contexto cacheado (localStorage) para velocidad, updates de stock en paralelo.
+**Features:** historial de movimientos en modal de abono (Inicio), stock "Quedan X" en Vender con bloqueo de sobreventa, sugerencias de clientes al fiar (búsqueda con dropdown máx 6 + "Ya existe"), "Instalar App" solo móvil, badge "Sin lote", contexto cacheado (localStorage) para velocidad, updates de stock en paralelo, exportar Excel con formato PacaPOS (exceljs lazy-chunk), edición de clientes/productos/apartados del Live, historial de cortes con filtro 7/15/30 días, arqueo con botones +/- clickeables, estadísticas sin repetir top en "menos vendidos", abonos en vivo en Inicio (folio correlativo sin recargar).
 
 ## Roadmap pendiente (sin catálogo — cancelado)
 

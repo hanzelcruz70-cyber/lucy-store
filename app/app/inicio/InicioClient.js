@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
+import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -61,12 +62,16 @@ const SearchField = ({ value, onChange, placeholder }) => (
   </div>
 );
 
-export default function InicioClient({ contado, fiado, abonos, gastos, piezas, sales, expenses, payments, debtors, folioByMov, debtorNameByPayment = {}, movsByClient: initialMovsByClient = {} }) {
+export default function InicioClient({ contado, fiado, abonos, gastos, piezas, sales, expenses, payments: initialPayments, debtors, folioByMov, debtorNameByPayment = {}, movsByClient: initialMovsByClient = {} }) {
   const [movSearch, setMovSearch] = useState('');
   const [cliSearch, setCliSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
   const [debtList, setDebtList] = useState(debtors);
+  // Métrica de abonos EN VIVO: crece al registrar un abono sin recargar
+  const [abonosVivo, setAbonosVivo] = useState(abonos);
+  // Espejo local de pagos: al abonar, el movimiento aparece EN VIVO sin recargar
+  const [payments, setPayments] = useState(initialPayments);
   // Historial de movimientos por cliente (se actualiza en vivo al abonar)
   const [movsByClient, setMovsByClient] = useState(initialMovsByClient);
 
@@ -111,11 +116,65 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
     }
     setBusy(true);
     try {
-      const supabase = createClient();
-      const ctx = await getMyContext();
-
       // Si el abono excede la deuda, registrar solo hasta el saldo (el resto es vuelto)
       const montoReal = Math.min(amt, abono.balance);
+
+      if (isOffline()) {
+        // ===== MODO OFFLINE: abono local =====
+        enqueueOp({
+          type: 'abono',
+          payload: {
+            localId: uuid(),
+            clientId: abono.id,
+            amount: montoReal,
+            method,
+          },
+        });
+        const newBalance = Math.max(0, abono.balance - montoReal);
+        setDebtList((list) =>
+          newBalance <= 0
+            ? list.filter((c) => c.id !== abono.id)
+            : list.map((c) => (c.id === abono.id ? { ...c, balance: newBalance } : c))
+        );
+        setMovsByClient((movs) => {
+          const list = [...(movs[abono.id] || [])];
+          list.unshift({
+            id: 'p-off-' + Date.now(),
+            type: 'ABONO',
+            amount: montoReal,
+            description: null,
+            date: new Date().toISOString(),
+          });
+          return { ...movs, [abono.id]: list };
+        });
+        const offFolioNum =
+          Math.max(
+            0,
+            ...[...sales, ...payments, ...expenses].reduce(
+              (acc, m) => {
+                const n = parseInt(String(folioByMov[m.id] || '').replace('#', ''), 10);
+                acc.push(isNaN(n) ? 0 : n);
+                return acc;
+              },
+              [0]
+            )
+          ) + 1;
+        setPayments((list) => [
+          { id: 'p-off-' + Date.now(), sale_id: null, debt_id: null, amount: montoReal, method, created_at: new Date().toISOString(), _clientName: abono.name, _folio: '#' + String(offFolioNum).padStart(3, '0') },
+          ...list,
+        ]);
+        setAbonosVivo((a) => a + montoReal);
+        setAbono(null);
+        const msg =
+          amt > abono.balance
+            ? `Abono de ${money(montoReal)} guardado (vuelto ${money(amt - montoReal)}). Se sincroniza solo.`
+            : `Abono de ${money(montoReal)} guardado. Se sincroniza solo.`;
+        showToast(msg);
+        return;
+      }
+
+      const supabase = createClient();
+      const ctx = await getMyContext();
 
       // Leer las deudas pendientes primero para vincular el pago a la más antigua
       // (sin debt_id el abono no aparece en el historial del cliente)
@@ -173,6 +232,27 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
           : list.map((c) => (c.id === abono.id ? { ...c, balance: newBalance } : c))
       );
 
+      // Insertar el abono EN VIVO en los movimientos de hoy (sin recargar la página)
+      const nextFolioNum =
+        Math.max(
+          0,
+          ...[...sales, ...payments, ...expenses].reduce(
+            (acc, m) => {
+              const n = parseInt(String(folioByMov[m.id] || '').replace('#', ''), 10);
+              acc.push(isNaN(n) ? 0 : n);
+              return acc;
+            },
+            [0]
+          )
+        ) + 1;
+      const livePaymentId = 'p-live-' + Date.now();
+      const liveFolio = '#' + String(nextFolioNum).padStart(3, '0');
+      setPayments((list) => [
+        { id: livePaymentId, sale_id: null, debt_id: null, amount: montoReal, method, created_at: new Date().toISOString(), _clientName: abono.name, _folio: liveFolio },
+        ...list,
+      ]);
+      setAbonosVivo((a) => a + montoReal);
+
       // Agregar el abono al historial del cliente EN VIVO (registro de cuánto abonó y cuándo)
       setMovsByClient((movs) => {
         const list = [...(movs[abono.id] || [])];
@@ -217,9 +297,9 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
     })),
     ...payments.map((p) => ({
       key: p.id,
-      folio: folioByMov[p.id] || '',
+      folio: p._folio || folioByMov[p.id] || '',
       tipo: 'abono',
-      titulo: debtorNameByPayment[p.id] ? `Abono recibido · ${debtorNameByPayment[p.id]}` : 'Abono recibido',
+      titulo: p._clientName || debtorNameByPayment[p.id] ? `Abono recibido · ${p._clientName || debtorNameByPayment[p.id]}` : 'Abono recibido',
       sub: `${new Date(p.created_at).toLocaleTimeString('es-NI', { hour: 'numeric', minute: '2-digit' })} · ${
         p.method === 'efectivo' ? 'Efectivo' : 'Transferencia'
       }`,
@@ -281,7 +361,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
           </div>
           <div className="bg-surface-container-low border border-outline rounded-[10px] p-2.5">
             <Label>Abonos</Label>
-            <div className="text-[20px] font-bold text-primary mt-1 leading-tight">{money(abonos)}</div>
+            <div className="text-[20px] font-bold text-primary mt-1 leading-tight">{money(abonosVivo)}</div>
           </div>
           <div className="bg-surface-container-low border border-outline rounded-[10px] p-2.5">
             <Label>Gastos</Label>

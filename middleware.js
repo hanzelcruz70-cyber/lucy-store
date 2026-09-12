@@ -25,21 +25,24 @@ export async function middleware(request) {
     }
   );
 
+  // Optimización: getSession lee la cookie local (sin llamada de red).
+  // La verificación real del token la hace el layout del servidor en /app/*,
+  // que consulta auth.getUser() una sola vez al cargar el layout.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
   const path = request.nextUrl.pathname;
   const isProtected = path.startsWith('/app');
 
-  if (!user && isProtected) {
+  if (!session && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirect', path);
     return NextResponse.redirect(url);
   }
 
-  if (user && (path === '/login' || path === '/signup')) {
+  if (session && (path === '/login' || path === '/signup')) {
     const url = request.nextUrl.clone();
     url.pathname = '/app/inicio';
     url.search = '';

@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase-server';
 import CierreCaja from '@/components/CierreCaja';
+import ExportButton from './ExportButton';
+import CutsHistory from './CutsHistory';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,8 +12,9 @@ async function getData() {
   const supabase = createClient();
   const start = new Date();
   start.setHours(0, 0, 0, 0);
+  const cutsSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [sales, expenses, cuts, abonosHoy] = await Promise.all([
+  const [sales, expenses, cuts, abonosHoy, cutsHistory, profile] = await Promise.all([
     supabase
       .from('sales')
       .select('id, total, items_count, channel, payment_method, client_name, notes, created_at')
@@ -35,6 +38,18 @@ async function getData() {
       .select('id, amount, method, sale_id')
       .gte('created_at', start.toISOString())
       .limit(100),
+    // Historial de cortes (máximo 30 días)
+    supabase
+      .from('cash_cuts')
+      .select('id, sales_total, expenses_total, notes, created_at')
+      .gte('created_at', cutsSince.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(31),
+    // Nombre de la tienda para el encabezado del Excel
+    supabase
+      .from('profiles')
+      .select('stores(name)')
+      .maybeSingle(),
   ]);
 
   const todaySales = sales.data || [];
@@ -63,7 +78,7 @@ async function getData() {
     .filter((p) => !p.sale_id && p.method === 'efectivo')
     .reduce((a, p) => a + Number(p.amount), 0);
 
-  return { todaySales, todayExpenses, cutDone, total, collected, efectivoSolo, transf, credit, expTotal, pieces, net, abonosEfectivo };
+  return { todaySales, todayExpenses, cutDone, cutsHistory: cutsHistory.data || [], storeName: profile.data?.stores?.name || 'PacaPOS', total, collected, efectivoSolo, transf, credit, expTotal, pieces, net, abonosEfectivo };
 }
 
 export default async function CajaPage() {
@@ -71,20 +86,8 @@ export default async function CajaPage() {
 
   return (
     <div className="flex flex-col w-full px-3.5 py-3.5 gap-2.5">
-      {/* Export (cinta rosa del mockup) */}
-      <div className="bg-primary rounded-[14px] px-3.5 py-3 text-on-primary flex items-center gap-2.5 active:bg-primary-deep transition-colors">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="4" y="4" width="16" height="16" rx="2" />
-          <path d="M4 10h16M10 10v10" />
-        </svg>
-        <div className="flex-1">
-          <b className="text-[13.5px]">
-            Exportar corte Excel <span className="bg-white/20 text-[10px] font-bold px-1.5 py-[1px] rounded-md ml-1">.XLSX</span>
-          </b>
-          <small className="block text-[11px] opacity-85">Listo para compartir por WhatsApp</small>
-        </div>
-        <span className="text-[16px]">›</span>
-      </div>
+      {/* Export (descarga el reporte Excel con formato PacaPOS) */}
+      <ExportButton sales={d.todaySales} expenses={d.todayExpenses} storeName={d.storeName} />
 
       {/* Cierre de caja */}
       <CierreCaja
@@ -179,6 +182,9 @@ export default async function CajaPage() {
           </div>
         ))}
       </div>
+
+      {/* Historial de cortes de caja (filtro máximo 30 días) */}
+      <CutsHistory cuts={d.cutsHistory} />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
+import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -35,6 +36,8 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
   const [processingId, setProcessingId] = useState(null);
+  const [editSale, setEditSale] = useState(null); // apartado pendiente en edición
+  const [editForm, setEditForm] = useState({ client: '', desc: '', price: '' });
 
   // Validación del precio: solo número positivo razonable (rechaza texto, comas, montos absurdos)
   const setPriceSafe = (raw) => {
@@ -58,9 +61,31 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
     if (busy || !client.trim() || !priceValid) return;
     setBusy(true);
     try {
+      const amt = parseFloat(price) || 0;
+      if (isOffline()) {
+        // ===== MODO OFFLINE: apartado local =====
+        const localId = uuid();
+        enqueueOp({
+          type: 'live_hold',
+          payload: {
+            localId,
+            total: amt,
+            clientName: client.trim(),
+            notes: desc.trim() || null,
+          },
+        });
+        setSales((s) => [
+          { id: localId, total: amt, items_count: 1, channel: 'tiktok_live', payment_method: 'fiado', client_name: client.trim(), notes: desc.trim() || null, created_at: new Date().toISOString() },
+          ...s,
+        ]);
+        setClient('');
+        setDesc('');
+        setPrice('');
+        showToast('Prenda apartada (se sincroniza sola)');
+        return;
+      }
       const supabase = createClient();
       const ctx = await getMyContext();
-      const amt = parseFloat(price) || 0;
       const { data, error } = await supabase
         .from('sales')
         .insert({
@@ -92,6 +117,20 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
     if (processingId || debtSaleIds.has(sale.id)) return;
     setProcessingId(sale.id);
     try {
+      if (isOffline()) {
+        // ===== MODO OFFLINE: cobro local =====
+        enqueueOp({
+          type: 'live_collect',
+          payload: {
+            saleLocalId: sale.id,
+            paymentLocalId: uuid(),
+            amount: Number(sale.total),
+          },
+        });
+        setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: 'efectivo' } : x)));
+        showToast('Cobrado (se sincroniza solo)');
+        return;
+      }
       const supabase = createClient();
       const ctx = await getMyContext();
       const { error: errUpd } = await supabase
@@ -124,9 +163,24 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
     }
     setProcessingId(sale.id);
     try {
+      const name = (sale.client_name || 'Cliente Live').trim();
+      if (isOffline()) {
+        // ===== MODO OFFLINE: fiado local =====
+        enqueueOp({
+          type: 'live_fiado',
+          payload: {
+            saleLocalId: sale.id,
+            clientName: name,
+            amount: Number(sale.total),
+            notes: sale.notes || 'Prenda de Live',
+          },
+        });
+        setDebtSaleIds((ids) => new Set(ids).add(sale.id));
+        showToast(`Fiado de ${money(Number(sale.total))} guardado (se sincroniza solo)`);
+        return;
+      }
       const supabase = createClient();
       const ctx = await getMyContext();
-      const name = (sale.client_name || 'Cliente Live').trim();
 
       // Verificar PRIMERO si ya existe deuda ligada a esta venta (protección contra doble fiado
       // incluso si la venta se fió desde otra sesión/dispositivo)
@@ -200,6 +254,92 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
 
   const fieldCls =
     'flex items-center gap-2 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] text-on-surface-variant';
+
+  /* ===== EDITAR APARTADO PENDIENTE ===== */
+  const openEditSale = (s) => {
+    setEditForm({
+      client: s.client_name || '',
+      desc: s.notes || '',
+      price: String(Number(s.total)),
+    });
+    setEditSale(s);
+  };
+
+  const saveEditSale = async (e) => {
+    e.preventDefault();
+    if (!editSale || busy) return;
+    const name = editForm.client.trim();
+    const priceNum = parseFloat(editForm.price);
+    if (!name) {
+      showToast('Escribe el nombre del cliente', false);
+      return;
+    }
+    if (!priceNum || priceNum <= 0 || priceNum > 100000) {
+      showToast('Precio inválido (hasta C$100,000)', false);
+      return;
+    }
+    setBusy(true);
+    try {
+      const patch = {
+        client_name: name,
+        notes: editForm.desc.trim() || null,
+        total: priceNum,
+      };
+      if (isOffline()) {
+        // ===== MODO OFFLINE: edición local =====
+        enqueueOp({
+          type: 'live_edit',
+          payload: { saleLocalId: editSale.id, ...patch },
+        });
+        setSales((list) => list.map((s) => (s.id === editSale.id ? { ...s, ...patch } : s)));
+        setEditSale(null);
+        showToast('Apartado actualizado (se sincroniza solo)');
+        return;
+      }
+      const supabase = createClient();
+      const { error } = await supabase.from('sales').update(patch).eq('id', editSale.id);
+      if (error) throw error;
+      setSales((list) => list.map((s) => (s.id === editSale.id ? { ...s, ...patch } : s)));
+      setEditSale(null);
+      showToast('Apartado actualizado');
+    } catch (err) {
+      showToast('Error: ' + err.message, false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /* ===== ELIMINAR APARTADO PENDIENTE ===== */
+  const deleteSale = async (s) => {
+    if (busy) return;
+    const ok = confirm(
+      `¿Eliminar el apartado de ${s.client_name || 'cliente live'} (${money(s.total)})?\n\n` +
+        (s.notes || 'Prenda') + ' · Esta acción no se puede deshacer.'
+    );
+    if (!ok) return;
+    setBusy(true);
+    try {
+      if (isOffline()) {
+        // ===== MODO OFFLINE: borrado local =====
+        enqueueOp({
+          type: 'live_delete',
+          payload: { saleLocalId: s.id },
+        });
+        setSales((list) => list.filter((x) => x.id !== s.id));
+        showToast('Apartado eliminado (se sincroniza solo)');
+        return;
+      }
+      const supabase = createClient();
+      const { error } = await supabase.from('sales').delete().eq('id', s.id);
+      if (error) throw error;
+      setSales((list) => list.filter((x) => x.id !== s.id));
+      showToast('Apartado eliminado');
+    } catch (err) {
+      showToast('Error: ' + err.message, false);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="flex flex-col w-full px-3.5 py-3.5 gap-2.5">
@@ -356,11 +496,95 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
                     >
                       {processing ? '…' : 'Fiado'}
                     </button>
+                    <button
+                      onClick={() => openEditSale(s)}
+                      disabled={processing || busy}
+                      aria-label={`Editar apartado de ${s.client_name || 'cliente'}`}
+                      title="Editar apartado"
+                      className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-outline text-on-surface active:opacity-70 disabled:opacity-50 transition-colors"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => deleteSale(s)}
+                      disabled={processing || busy}
+                      aria-label={`Eliminar apartado de ${s.client_name || 'cliente'}`}
+                      title="Eliminar apartado"
+                      className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-outline text-error active:opacity-70 disabled:opacity-50 transition-colors"
+                    >
+                      Eliminar
+                    </button>
                   </div>
                 )}
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Modal editar apartado */}
+      {editSale && (
+        <div className="fixed inset-0 z-50 bg-inverse-surface/50 backdrop-blur-[2px] flex items-end sm:items-center justify-center" onClick={() => setEditSale(null)}>
+          <div className="bg-surface w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <b className="text-[16px] text-on-surface">Editar apartado</b>
+              <button onClick={() => setEditSale(null)} className="w-8 h-8 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            </div>
+            <span className="text-[11px] text-on-surface-variant font-semibold uppercase tracking-[0.06em]">
+              Solo apartados pendientes
+            </span>
+            <form className="mt-3 space-y-2" onSubmit={saveEditSale}>
+              <input
+                required
+                value={editForm.client}
+                onChange={(e) => setEditForm((f) => ({ ...f, client: e.target.value }))}
+                placeholder="@usuario o Doña Lupita"
+                className={fieldCls}
+              />
+              <div className="grid grid-cols-[1.5fr_1fr] gap-2">
+                <input
+                  value={editForm.desc}
+                  onChange={(e) => setEditForm((f) => ({ ...f, desc: e.target.value }))}
+                  placeholder="#43 Vestido liso"
+                  className={fieldCls}
+                />
+                <input
+                  required
+                  inputMode="decimal"
+                  value={editForm.price}
+                  onChange={(e) => setEditForm((f) => ({ ...f, price: e.target.value.replace(/[^0-9.]/g, '') }))}
+                  placeholder="C$ 150"
+                  className="bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] font-semibold text-on-surface outline-none focus:border-primary"
+                />
+              </div>
+              <div className="grid grid-cols-6 gap-1.5 mt-1">
+                {[100, 120, 150, 180, 250, 300].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setEditForm((f) => ({ ...f, price: String(p) }))}
+                    className={`py-2 rounded-[9px] text-[12.5px] font-semibold border transition-colors ${
+                      String(p) === editForm.price
+                        ? 'bg-inverse-surface border-inverse-surface text-inverse-on-surface'
+                        : 'bg-surface-container-lowest border-outline text-on-surface'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button type="submit" disabled={busy} className="flex-1 py-3 rounded-xl bg-primary text-on-primary text-[13.5px] font-semibold active:bg-primary-deep transition-colors disabled:opacity-60">
+                  {busy ? 'Guardando…' : 'Guardar cambios'}
+                </button>
+                <button type="button" onClick={() => setEditSale(null)} className="px-5 rounded-xl bg-surface-container-low border border-outline text-on-surface text-[13px] font-semibold">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

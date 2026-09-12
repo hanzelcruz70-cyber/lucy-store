@@ -3,8 +3,12 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
+import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
+
+const norm = (s) => (s || '').toLowerCase().normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 
 export default function VenderClient({ products: initialProducts, lots, clients }) {
   const [products, setProducts] = useState(initialProducts);
@@ -12,6 +16,7 @@ export default function VenderClient({ products: initialProducts, lots, clients 
   const [search, setSearch] = useState('');
   const [payMethod, setPayMethod] = useState('efectivo');
   const [fiadoClient, setFiadoClient] = useState('');
+  const [clientPickerOpen, setClientPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -33,6 +38,16 @@ export default function VenderClient({ products: initialProducts, lots, clients 
     const exact = clients.find((c) => c.name.toLowerCase() === q);
     if (exact) return { ...exact, debe: Number(exact.balance) > 0 };
     return null;
+  })();
+
+  // Sugerencias de cliente al fiar: filtradas por lo escrito, máximo 6 (la lista puede ser muy larga)
+  const clientMatches = (() => {
+    const q = norm(fiadoClient);
+    if (!q) return [];
+    return clients
+      .filter((c) => norm(c.name).includes(q))
+      .sort((a, b) => b.balance - a.balance)
+      .slice(0, 6);
   })();
 
   const filtered = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
@@ -73,10 +88,55 @@ export default function VenderClient({ products: initialProducts, lots, clients 
     }
     setBusy(true);
     try {
-      const supabase = createClient();
-      const ctx = await getMyContext();
       const itemsCount = cart.reduce((a, i) => a + i.qty, 0);
       const clientName = payMethod === 'fiado' ? fiadoClient.trim() : null;
+
+      if (isOffline()) {
+        // ===== MODO OFFLINE: guardar en la cola local =====
+        const localId = uuid();
+        enqueueOp({
+          type: 'sale',
+          payload: {
+            localId,
+            total,
+            itemsCount,
+            channel: 'mostrador',
+            paymentMethod: payMethod === 'fiado' ? 'fiado' : 'efectivo',
+            clientName,
+            notes: cart.map((i) => `${i.qty}x ${i.name}`).join(', ').slice(0, 200),
+            method: 'efectivo',
+            paymentLocalId: uuid(),
+            items: cart.map((i) => ({
+              productId: i.productId,
+              soldCount: (products.find((p) => p.id === i.productId)?.sold_count || 0) + i.qty,
+              lotId: i.lotId,
+              piecesLeft: i.lotId && lotById[i.lotId] ? lotById[i.lotId].pieces_left - i.qty : null,
+            })),
+          },
+        });
+        // Actualizar stock local (misma lógica que en línea)
+        await Promise.all(
+          cart.map(async (item) => {
+            setProducts((list) =>
+              list.map((p) => (p.id === item.productId ? { ...p, sold_count: p.sold_count + item.qty } : p))
+            );
+            if (item.lotId && lotById[item.lotId]) {
+              lotById[item.lotId].pieces_left -= item.qty;
+            }
+          })
+        );
+        setCart([]);
+        setFiadoClient('');
+        showToast(
+          payMethod === 'fiado'
+            ? `Fiado de ${money(total)} guardado (se sincroniza solo)`
+            : `Venta de ${money(total)} guardada (se sincroniza sola)`
+        );
+        return;
+      }
+
+      const supabase = createClient();
+      const ctx = await getMyContext();
 
       const { data: sale, error: errSale } = await supabase
         .from('sales')
@@ -299,21 +359,40 @@ export default function VenderClient({ products: initialProducts, lots, clients 
           </div>
 
           {payMethod === 'fiado' && (
-            <div className="mt-2">
+            <div className="mt-2 relative">
               <input
                 value={fiadoClient}
-                onChange={(e) => setFiadoClient(e.target.value)}
-                placeholder="Nombre del cliente"
-                list="clientes-existentes"
+                onChange={(e) => {
+                  setFiadoClient(e.target.value);
+                  setClientPickerOpen(true);
+                }}
+                onFocus={() => setClientPickerOpen(true)}
+                onBlur={() => setTimeout(() => setClientPickerOpen(false), 150)}
+                placeholder="Buscar o escribir nombre del cliente"
+                autoComplete="off"
                 className="w-full bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] text-on-surface placeholder:text-on-surface-variant outline-none focus:border-primary"
               />
-              <datalist id="clientes-existentes">
-                {clients.map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.balance > 0 ? `Debe C$${c.balance}` : 'Al día'}
-                  </option>
-                ))}
-              </datalist>
+              {clientPickerOpen && clientMatches.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-surface border border-outline rounded-[10px] shadow-lg max-h-48 overflow-y-auto">
+                  {clientMatches.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setFiadoClient(c.name);
+                        setClientPickerOpen(false);
+                      }}
+                      className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left active:bg-surface-container-low"
+                    >
+                      <span className="text-[13px] font-semibold text-on-surface truncate">{c.name}</span>
+                      <span className={`text-[10.5px] font-bold px-2 py-[2px] rounded-full whitespace-nowrap ${Number(c.balance) > 0 ? 'bg-primary-fixed text-primary' : 'bg-surface-container-low border border-outline text-on-surface-variant'}`}>
+                        {Number(c.balance) > 0 ? `Debe ${money(c.balance)}` : 'Al día'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
               {fiadoSugerencia && (
                 <p className={`text-[11px] font-semibold mt-1 ${fiadoSugerencia.debe ? 'text-primary' : 'text-on-surface-variant'}`}>
                   {fiadoSugerencia.debe
