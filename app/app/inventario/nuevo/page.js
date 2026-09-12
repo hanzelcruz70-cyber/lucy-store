@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
+import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 
 export default function NuevoProductoPage() {
   const router = useRouter();
@@ -31,8 +33,29 @@ export default function NuevoProductoPage() {
         throw new Error('Completa nombre, cantidad y precio de venta');
       }
 
+      if (isOffline()) {
+        // ===== MODO OFFLINE: producto local =====
+        enqueueOp({
+          type: 'product_new',
+          payload: {
+            lotLocalId: uuid(),
+            productLocalId: uuid(),
+            name: form.name.trim(),
+            pieces,
+            cost,
+            price,
+          },
+        });
+        router.push('/app/inventario');
+        return;
+      }
+
       // 1) Lote interno (controla las piezas y el costo; la dueña solo ve "el producto")
-      const { count: lotCount } = await supabase.from('lots').select('id', { count: 'exact', head: true });
+      // Conteos en paralelo (antes: 2 llamadas extra secuenciales)
+      const [{ count: lotCount }, { count: prodCount }] = await Promise.all([
+        supabase.from('lots').select('id', { count: 'exact', head: true }),
+        supabase.from('products').select('id', { count: 'exact', head: true }),
+      ]);
       const { data: lot, error: errLot } = await supabase
         .from('lots')
         .insert({
@@ -50,7 +73,6 @@ export default function NuevoProductoPage() {
       if (errLot) throw errLot;
 
       // 2) Producto vinculado (sale directo en Vender con su stock)
-      const { count: prodCount } = await supabase.from('products').select('id', { count: 'exact', head: true });
       const { error: errProd } = await supabase.from('products').insert({
         code: 'P-' + String((prodCount || 0) + 1).padStart(3, '0'),
         name: form.name.trim(),
@@ -135,9 +157,9 @@ export default function NuevoProductoPage() {
             </svg>
             <span>{busy ? 'Guardando...' : 'Dar entrada a un producto'}</span>
           </button>
-          <a href="/app/inventario" prefetch className="w-full py-2.5 bg-surface-container-low border border-outline text-on-surface rounded-xl text-[13px] font-semibold text-center block">
+          <Link href="/app/inventario" prefetch className="w-full py-2.5 bg-surface-container-low border border-outline text-on-surface rounded-xl text-[13px] font-semibold text-center block">
             Cancelar
-          </a>
+          </Link>
         </form>
       </div>
     </div>

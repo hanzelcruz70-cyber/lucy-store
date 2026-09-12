@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
+import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -51,12 +52,14 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
   const [items, setItems] = useState({ withDebt, current, debtByClient });
+  const [recoveredNow, setRecoveredNow] = useState(recovered);
 
   const [sheet, setSheet] = useState(null);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('efectivo');
   const [fiadoAmount, setFiadoAmount] = useState('');
   const [sheetMode, setSheetMode] = useState('info');
+  const [editForm, setEditForm] = useState({ name: '', phone: '', tiktok: '' });
 
   const [newOpen, setNewOpen] = useState(false);
   const [newForm, setNewForm] = useState({ name: '', phone: '', tiktok: '' });
@@ -80,6 +83,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
     setFiadoAmount('');
     setMethod('efectivo');
     setSheetMode('info');
+    setEditForm({ name: c.name || '', phone: c.phone || '', tiktok: c.tiktok || '' });
     setSheet({ client: c, balance: balanceOf(c) });
   };
 
@@ -94,6 +98,23 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
       const ctx = await getMyContext();
       const name = newForm.name.trim();
       if (!name) throw new Error('El nombre es obligatorio');
+
+      if (isOffline()) {
+        // ===== MODO OFFLINE: cliente nuevo local =====
+        enqueueOp({ type: 'client_new', payload: { name, phone: newForm.phone.trim(), tiktok: newForm.tiktok.trim() } });
+        setItems((it) => ({
+          ...it,
+          current: [
+            { id: uuid(), name, phone: newForm.phone.trim() || null, tiktok: newForm.tiktok.trim() || null, is_live_client: false },
+            ...it.current,
+          ],
+        }));
+        setNewForm({ name: '', phone: '', tiktok: '' });
+        setNewOpen(false);
+        setTab('todos');
+        showToast(`Cliente "${name}" guardado (se sincroniza solo)`);
+        return;
+      }
 
       // Advertir si ya existe un cliente con el mismo nombre (evita duplicados)
       const { data: existing } = await supabase
@@ -137,6 +158,58 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
     }
   };
 
+  // ---------- EDITAR ----------
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    if (!sheet || busy) return;
+    const name = editForm.name.trim();
+    if (!name) {
+      showToast('El nombre es obligatorio', false);
+      return;
+    }
+    setBusy(true);
+    try {
+      const c = sheet.client;
+      if (isOffline()) {
+        // ===== MODO OFFLINE: edición local =====
+        enqueueOp({
+          type: 'client_edit',
+          payload: { clientId: c.id, name, phone: editForm.phone.trim(), tiktok: editForm.tiktok.trim() },
+        });
+        applyClientEdit(c.id, { name, phone: editForm.phone.trim() || null, tiktok: editForm.tiktok.trim() || null });
+        setSheetMode('info');
+        showToast('Cambios guardados (se sincronizan solos)');
+        return;
+      }
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          name,
+          phone: editForm.phone.trim() || null,
+          tiktok: editForm.tiktok.trim() || null,
+        })
+        .eq('id', c.id);
+      if (error) throw error;
+      applyClientEdit(c.id, { name, phone: editForm.phone.trim() || null, tiktok: editForm.tiktok.trim() || null });
+      setSheetMode('info');
+      showToast('Cliente actualizado');
+    } catch (err) {
+      showToast('Error: ' + err.message, false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const applyClientEdit = (clientId, patch) => {
+    setItems((it) => ({
+      withDebt: it.withDebt.map((c) => (c.id === clientId ? { ...c, ...patch } : c)),
+      current: it.current.map((c) => (c.id === clientId ? { ...c, ...patch } : c)),
+      debtByClient: it.debtByClient,
+    }));
+    setSheet((s) => (s && s.client.id === clientId ? { ...s, client: { ...s.client, ...patch } } : s));
+  };
+
   // ---------- ABONAR ----------
   const confirmAbono = async (e) => {
     e.preventDefault();
@@ -155,12 +228,46 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
     }
     setBusy(true);
     try {
-      const supabase = createClient();
-      const ctx = await getMyContext();
       const c = sheet.client;
 
       // Si el abono excede la deuda, registrar solo hasta el saldo (el resto es vuelto)
       const montoReal = Math.min(amt, sheet.balance);
+
+      if (isOffline()) {
+        // ===== MODO OFFLINE: abono local =====
+        enqueueOp({
+          type: 'abono',
+          payload: {
+            localId: uuid(),
+            clientId: c.id,
+            amount: montoReal,
+            method,
+          },
+        });
+        const newBalance = Math.max(0, sheet.balance - montoReal);
+        setRecoveredNow((r) => r + montoReal);
+        setItems((it) => {
+          const newDebtByClient = { ...it.debtByClient };
+          if (newBalance <= 0) delete newDebtByClient[c.id];
+          else newDebtByClient[c.id] = newBalance;
+          const moved = it.withDebt.find((x) => x.id === c.id);
+          return {
+            withDebt: newBalance <= 0 ? it.withDebt.filter((x) => x.id !== c.id) : it.withDebt,
+            current: newBalance <= 0 && moved ? [moved, ...it.current] : it.current,
+            debtByClient: newDebtByClient,
+          };
+        });
+        setSheet(null);
+        const msg =
+          amt > sheet.balance
+            ? `Abono de ${money(montoReal)} guardado (vuelto ${money(amt - montoReal)}). Se sincroniza solo.`
+            : `Abono de ${money(montoReal)} guardado. Se sincroniza solo.`;
+        showToast(msg);
+        return;
+      }
+
+      const supabase = createClient();
+      const ctx = await getMyContext();
 
       // Leer las deudas pendientes primero para vincular el pago a la más antigua
       // (sin debt_id el abono no aparece en el historial del cliente)
@@ -212,6 +319,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         throw new Error('El saldo quedó en ' + balData.balance + ' en lugar de ' + newBalance);
       }
 
+      setRecoveredNow((r) => r + montoReal);
       setItems((it) => {
         const newDebtByClient = { ...it.debtByClient };
         if (newBalance <= 0) delete newDebtByClient[c.id];
@@ -245,9 +353,31 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
     if (!amt || amt <= 0) return;
     setBusy(true);
     try {
+      const c = sheet.client;
+
+      if (isOffline()) {
+        // ===== MODO OFFLINE: fiado directo local =====
+        enqueueOp({
+          type: 'fiado_directo',
+          payload: { localId: uuid(), clientId: c.id, amount: amt },
+        });
+        const newBalance = (sheet.balance || 0) + amt;
+        setItems((it) => {
+          const newDebtByClient = { ...it.debtByClient, [c.id]: newBalance };
+          const stillCurrent = it.current.some((x) => x.id === c.id);
+          return {
+            withDebt: it.withDebt.some((x) => x.id === c.id) ? it.withDebt : [c, ...it.withDebt],
+            current: stillCurrent ? it.current.filter((x) => x.id !== c.id) : it.current,
+            debtByClient: newDebtByClient,
+          };
+        });
+        setSheet(null);
+        showToast(`Fiado de ${money(amt)} guardado (se sincroniza solo)`);
+        return;
+      }
+
       const supabase = createClient();
       const ctx = await getMyContext();
-      const c = sheet.client;
 
       const { error: errDebt } = await supabase.from('debts').insert({
         client_id: c.id,
@@ -287,9 +417,10 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
   };
 
   // ---------- ELIMINAR ----------
-  const eliminarCliente = async () => {
-    if (!sheet || busy) return;
-    const c = sheet.client;
+  const eliminarCliente = async (clientArg) => {
+    if (busy) return;
+    const c = clientArg || sheet?.client;
+    if (!c) return;
     const ok = confirm(`¿Eliminar a "${c.name}"?\n\nSe borrarán también sus ${money(balanceOf(c))} de deuda y su historial.`);
     if (!ok) return;
     setBusy(true);
@@ -346,7 +477,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         </div>
         <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3.5">
           <Label>Recuperado</Label>
-          <div className="text-[24px] font-bold text-primary mt-1.5 leading-tight">{money(recovered)}</div>
+          <div className="text-[24px] font-bold text-primary mt-1.5 leading-tight">{money(recoveredNow)}</div>
           <div className="text-[12px] text-on-surface-variant mt-0.5">en abonos</div>
         </div>
       </div>
@@ -420,39 +551,67 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
             const balance = balanceOf(c);
             const isDebtor = balance > 0;
             return (
-              <button
-                key={c.id}
-                onClick={() => openSheet(c)}
-                className="w-full flex items-center gap-2.5 py-2.5 border-b border-surface-container last:border-0 text-left active:opacity-70 transition-opacity"
-              >
-                <Avatar name={c.name} />
-                <div className="flex-1 min-w-0">
-                  <b className="block text-[13.5px] font-semibold text-on-surface truncate">
-                    {c.name}
-                    {c.is_live_client && (
-                      <span className="ml-1.5 inline-block bg-primary-fixed text-primary text-[10px] font-semibold px-1.5 py-[1px] rounded-md align-middle">
-                        TikTok
-                      </span>
-                    )}
-                  </b>
-                  <span className="block text-[11.5px] text-on-surface-variant truncate">
-                    {c.phone || c.tiktok || 'Sin contacto'}
-                  </span>
-                </div>
-                {isDebtor ? (
-                  <div className="text-right">
-                    <span className="block text-[10px] text-on-surface-variant uppercase tracking-wide">Debe</span>
-                    <span className="block text-[14px] font-bold text-primary">{money(balance)}</span>
+              <div key={c.id} className="flex items-center gap-2.5 py-2.5 border-b border-surface-container last:border-0">
+                <button
+                  onClick={() => openSheet(c)}
+                  className="flex flex-1 items-center gap-2.5 min-w-0 text-left active:opacity-70 transition-opacity"
+                >
+                  <Avatar name={c.name} />
+                  <div className="flex-1 min-w-0">
+                    <b className="block text-[13.5px] font-semibold text-on-surface truncate">
+                      {c.name}
+                      {c.is_live_client && (
+                        <span className="ml-1.5 inline-block bg-primary-fixed text-primary text-[10px] font-semibold px-1.5 py-[1px] rounded-md align-middle">
+                          TikTok
+                        </span>
+                      )}
+                    </b>
+                    <span className="block text-[11.5px] text-on-surface-variant truncate">
+                      {c.phone || c.tiktok || 'Sin contacto'}
+                    </span>
                   </div>
-                ) : (
-                  <Badge line>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 12l5 5L20 7" />
-                    </svg>
-                    Al corriente
-                  </Badge>
-                )}
-              </button>
+                  {isDebtor ? (
+                    <div className="text-right">
+                      <span className="block text-[10px] text-on-surface-variant uppercase tracking-wide">Debe</span>
+                      <span className="block text-[14px] font-bold text-primary">{money(balance)}</span>
+                    </div>
+                  ) : (
+                    <Badge line>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 12l5 5L20 7" />
+                      </svg>
+                      Al corriente
+                    </Badge>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditForm({ name: c.name || '', phone: c.phone || '', tiktok: c.tiktok || '' });
+                    setSheet({ client: c, balance: balanceOf(c) });
+                    setSheetMode('edit');
+                  }}
+                  disabled={busy}
+                  title={`Editar ${c.name}`}
+                  aria-label={`Editar ${c.name}`}
+                  className="w-8 h-8 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity disabled:opacity-50 flex-shrink-0"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => eliminarCliente(c)}
+                  disabled={busy}
+                  title={`Eliminar ${c.name}`}
+                  aria-label={`Eliminar ${c.name}`}
+                  className="w-8 h-8 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity disabled:opacity-50 flex-shrink-0"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13M10 11v6M14 11v6" />
+                  </svg>
+                </button>
+              </div>
             );
           })}
         </div>
@@ -592,15 +751,15 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                 <div className="space-y-1.5">
                   <button
                     onClick={() => setSheetMode('fiado')}
-                    className="w-full py-3 rounded-xl bg-surface-container-lowest border border-outline text-on-surface text-[13.5px] font-semibold flex items-center justify-center gap-2 active:bg-surface-container transition-colors"
+                    className="w-full py-3 rounded-xl bg-surface-container-low border border-outline text-on-surface text-[13.5px] font-semibold flex items-center justify-center gap-2 active:bg-surface-container transition-colors"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                       <path d="M12 3v18M3 12h18" />
                     </svg>
                     Dar nuevo fiado
                   </button>
                   <button
-                    onClick={eliminarCliente}
+                    onClick={() => eliminarCliente(sheet.client)}
                     disabled={busy}
                     className="w-full py-2.5 rounded-xl bg-surface-container-low border border-outline text-error text-[12.5px] font-semibold active:opacity-70 transition-opacity disabled:opacity-50"
                   >
@@ -608,6 +767,48 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                   </button>
                 </div>
               </div>
+            )}
+
+            {/* MODO EDITAR */}
+            {sheetMode === 'edit' && (
+              <form className="mt-3 space-y-2.5" onSubmit={saveEdit}>
+                <div>
+                  <Label className="mb-1.5">Nombre</Label>
+                  <input
+                    required
+                    value={editForm.name}
+                    onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                    className={inputCls}
+                    placeholder="Nombre del cliente"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1.5">Teléfono</Label>
+                  <input
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                    className={inputCls}
+                    placeholder="Teléfono (opcional)"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1.5">TikTok</Label>
+                  <input
+                    value={editForm.tiktok}
+                    onChange={(e) => setEditForm((f) => ({ ...f, tiktok: e.target.value }))}
+                    className={inputCls}
+                    placeholder="@usuaria de TikTok (opcional)"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button type="submit" disabled={busy} className="flex-1 py-3 rounded-xl bg-primary text-on-primary text-[13.5px] font-semibold active:bg-primary-deep transition-colors disabled:opacity-60">
+                    {busy ? 'Guardando…' : 'Guardar cambios'}
+                  </button>
+                  <button type="button" onClick={() => setSheetMode('info')} className="px-5 rounded-xl bg-surface-container-low border border-outline text-on-surface text-[13px] font-semibold">
+                    Volver
+                  </button>
+                </div>
+              </form>
             )}
 
             {/* MODO FIADO */}
