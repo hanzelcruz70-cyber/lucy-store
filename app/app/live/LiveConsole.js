@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
@@ -28,6 +29,7 @@ const Badge = ({ children, dark = false, line = false }) => (
 );
 
 export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
+  const router = useRouter();
   const [sales, setSales] = useState(initialSales);
   const [debtSaleIds, setDebtSaleIds] = useState(new Set(initialDebtSaleIds || []));
   const [client, setClient] = useState('');
@@ -133,6 +135,21 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
       }
       const supabase = createClient();
       const ctx = await getMyContext();
+
+      // IDEMPOTENTE: si un intento anterior ya registró el pago (la red falló
+      // justo después del insert), no se duplica — se verifica antes de tocar.
+      const { data: existingPay } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('sale_id', sale.id)
+        .limit(1);
+      if (existingPay && existingPay.length > 0) {
+        await supabase.from('sales').update({ payment_method: 'efectivo' }).eq('id', sale.id);
+        setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: 'efectivo' } : x)));
+        showToast('Cobrado y registrado en caja');
+        return;
+      }
+
       const { error: errUpd } = await supabase
         .from('sales')
         .update({ payment_method: 'efectivo' })
@@ -148,8 +165,13 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
       if (errPay) throw errPay;
       setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: 'efectivo' } : x)));
       showToast('Cobrado y registrado en caja');
+      router.refresh();
     } catch (err) {
-      showToast('Error: ' + err.message, false);
+      const msg =
+        err.message === 'Failed to fetch'
+          ? 'Se cayó la conexión. Toca Cobrar de nuevo — no se duplica.'
+          : 'Error: ' + err.message;
+      showToast(msg, false);
     } finally {
       setProcessingId(null);
     }
@@ -372,19 +394,24 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
           Apartado ultrarrápido
         </b>
         <form className="mt-3 space-y-2" onSubmit={submitHold}>
-          <input
-            value={client}
-            onChange={(e) => setClient(e.target.value)}
-            required
-            placeholder="@usuario o Doña Lupita"
-            className={fieldCls}
-          />
+          <div>
+            <label className="block text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase mb-1.5">
+              Cliente del Live
+            </label>
+            <input
+              value={client}
+              onChange={(e) => setClient(e.target.value)}
+              required
+              placeholder="@usuario o Doña Lupita"
+              className="w-full bg-surface-container-lowest border border-outline rounded-[12px] px-3.5 py-3.5 text-[15px] font-semibold text-on-surface placeholder:font-normal placeholder:text-on-surface-variant outline-none focus:border-primary transition-colors"
+            />
+          </div>
           <div className="grid grid-cols-[1.5fr_1fr] gap-2">
             <input
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               placeholder="#43 Vestido liso"
-              className={fieldCls}
+              className="bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] text-on-surface-variant outline-none focus:border-primary transition-colors"
             />
             <input
               value={price}
@@ -481,38 +508,53 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
                   </div>
                 </div>
                 {!paid && !inDebt && (
-                  <div className="flex flex-col gap-1 ml-1">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => markPaid(s)}
                       disabled={processing}
-                      className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-primary text-on-primary active:bg-primary-deep disabled:opacity-50 transition-colors"
+                      title="Cobrar en efectivo"
+                      aria-label={`Cobrar apartado de ${s.client_name || 'cliente'}`}
+                      className="w-9 h-9 rounded-[10px] bg-primary text-on-primary flex items-center justify-center active:bg-primary-deep disabled:opacity-50 transition-colors"
                     >
-                      {processing ? '…' : 'Cobrar'}
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="6" width="18" height="12" rx="2" />
+                        <circle cx="12" cy="12" r="2.5" />
+                      </svg>
                     </button>
                     <button
                       onClick={() => markFiado(s)}
                       disabled={processing}
-                      className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-inverse-surface text-inverse-on-surface active:opacity-80 disabled:opacity-50 transition-colors"
+                      title="Poner en fiado"
+                      aria-label={`Fiar apartado de ${s.client_name || 'cliente'}`}
+                      className="w-9 h-9 rounded-[10px] bg-inverse-surface text-inverse-on-surface flex items-center justify-center active:opacity-80 disabled:opacity-50 transition-opacity"
                     >
-                      {processing ? '…' : 'Fiado'}
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 5c2.5-1 5.5-1 8 1 2.5-2 5.5-2 8-1v14c-2.5-1-5.5-1-8 1-2.5-2-5.5-2-8-1z" />
+                        <path d="M12 6v14" />
+                      </svg>
                     </button>
                     <button
                       onClick={() => openEditSale(s)}
                       disabled={processing || busy}
                       aria-label={`Editar apartado de ${s.client_name || 'cliente'}`}
                       title="Editar apartado"
-                      className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-outline text-on-surface active:opacity-70 disabled:opacity-50 transition-colors"
+                      className="w-9 h-9 rounded-[10px] bg-surface-container-low border border-outline text-on-surface flex items-center justify-center active:opacity-70 disabled:opacity-50 transition-opacity"
                     >
-                      Editar
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+                      </svg>
                     </button>
                     <button
                       onClick={() => deleteSale(s)}
                       disabled={processing || busy}
                       aria-label={`Eliminar apartado de ${s.client_name || 'cliente'}`}
                       title="Eliminar apartado"
-                      className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-surface-container-low border border-outline text-error active:opacity-70 disabled:opacity-50 transition-colors"
+                      className="w-9 h-9 rounded-[10px] bg-surface-container-low border border-outline text-error flex items-center justify-center active:opacity-70 disabled:opacity-50 transition-opacity"
                     >
-                      Eliminar
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13M10 11v6M14 11v6" />
+                      </svg>
                     </button>
                   </div>
                 )}
@@ -589,7 +631,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
       )}
 
       {toast && (
-        <div className="fixed top-16 inset-x-4 z-50 flex justify-center pointer-events-none">
+        <div className="fixed top-20 inset-x-4 z-[60] flex justify-center pointer-events-none drop-shadow-[0_6px_16px_rgba(0,0,0,0.18)]">
           <div className={`px-4 py-2.5 rounded-full flex items-center gap-2 text-[13px] font-semibold ${toast.ok ? 'bg-primary text-on-primary' : 'bg-inverse-surface text-inverse-on-surface'}`}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               {toast.ok ? <path d="M4 12l5 5L20 7" /> : <path d="M6 6l12 12M18 6L6 18" />}

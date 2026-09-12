@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
@@ -10,6 +11,7 @@ const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFr
 const DENOMS = [1000, 500, 200, 100, 50, 20, 10, 5, 1];
 
 export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gastos, abonosEfectivo = 0, fondoInicial = 0, cutDone }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [counts, setCounts] = useState({});
   const [busy, setBusy] = useState(false);
@@ -76,6 +78,8 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
       setDone(true);
       setOpen(false);
       showToast('Cierre de caja guardado');
+      // Refresca el server component: balance, movimientos e historial al instante
+      router.refresh();
     } catch (err) {
       showToast('Error: ' + err.message, false);
     } finally {
@@ -218,7 +222,7 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
       )}
 
       {toast && (
-        <div className="fixed top-16 inset-x-4 z-50 flex justify-center pointer-events-none">
+        <div className="fixed top-20 inset-x-4 z-[60] flex justify-center pointer-events-none drop-shadow-[0_6px_16px_rgba(0,0,0,0.18)]">
           <div className={`px-4 py-2.5 rounded-full flex items-center gap-2 text-[13px] font-semibold ${toast.ok ? 'bg-primary text-on-primary' : 'bg-inverse-surface text-inverse-on-surface'}`}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               {toast.ok ? <path d="M4 12l5 5L20 7" /> : <path d="M6 6l12 12M18 6L6 18" />}

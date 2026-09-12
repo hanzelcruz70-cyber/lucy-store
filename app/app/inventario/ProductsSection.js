@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { isOffline, enqueueOp } from '@/lib/offline-queue';
 
@@ -10,6 +11,7 @@ const norm = (s) => (s || '').toLowerCase().normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 
 export default function ProductsSection({ initialProducts, lots }) {
+  const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
@@ -78,6 +80,8 @@ export default function ProductsSection({ initialProducts, lots }) {
       setProducts((list) => list.map((p) => (p.id === editOpen.id ? { ...p, name, sale_price: price } : p)));
       setEditOpen(null);
       showToast('Producto actualizado');
+      // Refresca el server component: resumen financiero y stock al instante
+      router.refresh();
     } catch (err) {
       showToast('Error: ' + err.message, false);
     } finally {
@@ -100,6 +104,8 @@ export default function ProductsSection({ initialProducts, lots }) {
       if (error) throw error;
       setProducts((list) => list.filter((x) => x.id !== p.id));
       showToast('Producto eliminado');
+      // Refresca el server component: resumen financiero y stock al instante
+      router.refresh();
     } catch (err) {
       showToast('Error: ' + err.message, false);
     } finally {
@@ -335,7 +341,7 @@ export default function ProductsSection({ initialProducts, lots }) {
       )}
 
       {toast && (
-        <div className="fixed top-16 inset-x-4 z-50 flex justify-center pointer-events-none">
+        <div className="fixed top-20 inset-x-4 z-[60] flex justify-center pointer-events-none drop-shadow-[0_6px_16px_rgba(0,0,0,0.18)]">
           <div className={`px-4 py-2.5 rounded-full flex items-center gap-2 text-[13px] font-semibold ${toast.ok ? 'bg-primary text-on-primary' : 'bg-inverse-surface text-inverse-on-surface'}`}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               {toast.ok ? <path d="M4 12l5 5L20 7" /> : <path d="M6 6l12 12M18 6L6 18" />}
