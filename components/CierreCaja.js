@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
+import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -31,10 +32,35 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
     setCounts((c) => ({ ...c, [d]: v }));
   };
 
+  const bumpCount = (d, delta) => {
+    setCounts((c) => {
+      const cur = parseInt(c[d]) || 0;
+      const next = Math.max(0, Math.min(999, cur + delta));
+      return { ...c, [d]: next === 0 ? '' : String(next) };
+    });
+  };
+
   const doCierre = async () => {
     if (done || busy) return;
     setBusy(true);
     try {
+      if (isOffline()) {
+        // ===== MODO OFFLINE: corte local (se sube al volver la conexión) =====
+        enqueueOp({
+          type: 'cash_cut',
+          payload: {
+            localId: uuid(),
+            salesTotal: contadoTotal,
+            collectedTotal: Number(contadoEfectivo),
+            expensesTotal: Number(gastos),
+            notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(contadoTransferencia)}. Abonos en efectivo: ${money(abonosEfectivo)}`,
+          },
+        });
+        setDone(true);
+        setOpen(false);
+        showToast('Corte guardado (se sincroniza solo)');
+        return;
+      }
       const supabase = createClient();
       const ctx = await getMyContext();
       const { error } = await supabase.from('cash_cuts').insert({
@@ -115,24 +141,48 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
             <p className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-[0.06em] mt-4 mb-1.5">
               Cuenta tus billetes y monedas
             </p>
+            <p className="text-[11px] text-on-surface-variant -mt-1 mb-1.5">
+              Toca + para sumar un billete o escríbelo a mano.
+            </p>
             <div className="space-y-1">
-              {DENOMS.map((d) => (
-                <div key={d} className="flex items-center gap-2 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-1.5">
-                  <span className="text-[13px] font-bold text-on-surface w-14">{money(d)}</span>
-                  <span className="text-on-surface-variant text-[12px]">×</span>
-                  <input
-                    value={counts[d] || ''}
-                    onChange={setCount(d)}
-                    inputMode="numeric"
-                    placeholder="0"
-                    className="w-16 bg-surface border border-outline rounded-lg px-2 py-1 text-[13px] font-semibold text-on-surface text-center outline-none focus:border-primary"
-                  />
-                  <span className="text-on-surface-variant text-[12px]">=</span>
-                  <span className="text-[13px] font-bold text-primary ml-auto">
-                    {money(d * (parseInt(counts[d]) || 0))}
-                  </span>
-                </div>
-              ))}
+              {DENOMS.map((d) => {
+                const qty = parseInt(counts[d]) || 0;
+                return (
+                  <div key={d} className="flex items-center gap-2 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-1.5">
+                    <span className="text-[13px] font-bold text-on-surface w-14">{money(d)}</span>
+                    <span className="text-on-surface-variant text-[12px]">×</span>
+                    <button
+                      type="button"
+                      onClick={() => bumpCount(d, -1)}
+                      disabled={qty <= 0}
+                      aria-label={`Quitar un billete de ${money(d)}`}
+                      className="w-7 h-7 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center text-[15px] leading-none active:opacity-70 transition-opacity disabled:opacity-40"
+                    >
+                      −
+                    </button>
+                    <input
+                      value={counts[d] || ''}
+                      onChange={setCount(d)}
+                      inputMode="numeric"
+                      placeholder="0"
+                      aria-label={`Cantidad de billetes de ${money(d)}`}
+                      className="w-16 bg-surface border border-outline rounded-lg px-2 py-1 text-[13px] font-semibold text-on-surface text-center outline-none focus:border-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => bumpCount(d, 1)}
+                      aria-label={`Agregar un billete de ${money(d)}`}
+                      className="w-7 h-7 rounded-full bg-primary-fixed text-primary flex items-center justify-center text-[15px] font-bold leading-none active:opacity-70 transition-opacity"
+                    >
+                      +
+                    </button>
+                    <span className="text-on-surface-variant text-[12px]">=</span>
+                    <span className="text-[13px] font-bold text-primary ml-auto">
+                      {money(d * qty)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Verificación */}
