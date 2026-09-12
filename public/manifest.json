@@ -2,6 +2,7 @@
   "name": "Mi Prenda · Punto de Venta para Tiendas de Ropa",
   "short_name": "Mi Prenda",
   "description": "Caja, fiados, inventario y Lives de TikTok para tiendas de ropa americana. Instalable y offline.",
+  "id": "/?source=pwa",
   "start_url": "/app/inicio",
   "scope": "/",
   "display": "standalone",

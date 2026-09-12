@@ -1,10 +1,11 @@
-/* Mi Prenda Service Worker v8 — datos frescos, estáticos rápidos, sin fuente de iconos */
-const CACHE = 'miprenda-v8';
+/* Mi Prenda Service Worker v9 — datos frescos, estáticos rápidos, sin fuente de iconos */
+const CACHE = 'miprenda-v9';
 const PRECACHE = [
   '/offline.html',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/og-image.jpg',
 ];
 
 self.addEventListener('install', (event) => {

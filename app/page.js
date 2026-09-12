@@ -181,11 +181,12 @@ const M = ({ name, size = 20, cls = '' }) => {
   );
 };
 
-const WHATSAPP_URL = 'https://wa.me/';
+const WHATSAPP_URL =
+  'https://wa.me/50557865534?text=' + encodeURIComponent('Hola, quiero una cuenta de Mi Prenda para mi tienda');
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-surface-canvas font-body-md text-body-md text-on-surface antialiased">
+    <div id="top" className="min-h-screen bg-surface-canvas font-body-md text-body-md text-on-surface antialiased">
       {/* ============ HEADER FIJO ============ */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface-canvas/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
         <div className="h-20 max-w-6xl mx-auto px-4 sm:px-8 flex items-center justify-between">
@@ -196,7 +197,7 @@ export default function Home() {
             <span className="font-headline-sm text-headline-sm text-on-surface tracking-tight font-extrabold">Mi Prenda</span>
           </div>
           <nav className="hidden lg:flex items-center gap-5">
-            <span className="font-label-md text-label-md bg-mint-surface text-primary font-bold rounded-lg px-2.5 py-1.5">Inicio</span>
+            <a href="#top" className="font-label-md text-label-md bg-mint-surface text-primary font-bold rounded-lg px-2.5 py-1.5">Inicio</a>
             <a href="#funciones" className="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors px-2.5 py-1.5">Funciones</a>
             <a href="#beneficios" className="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors px-2.5 py-1.5">Beneficios</a>
             <a href="#como-empezar" className="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors px-2.5 py-1.5">Cómo empezar</a>

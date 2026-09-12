@@ -31,13 +31,13 @@ export const metadata = {
     description:
       'Caja, fiados, inventario y Lives de TikTok en una sola app. Funciona sin internet e instalable en tu celular.',
     locale: 'es_NI',
-    images: [{ url: '/icons/icon-512.png', width: 512, height: 512, alt: 'Mi Prenda — logo de tienda' }],
+    images: [{ url: '/icons/og-image.jpg', width: 1200, height: 630, alt: 'Mi Prenda — punto de venta para tiendas de ropa americana' }],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Mi Prenda · Punto de Venta para Tiendas de Ropa',
     description: 'Caja, fiados, inventario y Lives de TikTok en una sola app. Instalable y offline.',
-    images: ['/icons/icon-512.png'],
+    images: ['/icons/og-image.jpg'],
   },
   robots: {
     index: true,
