@@ -78,6 +78,8 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
   const [abono, setAbono] = useState(null); // cliente al que se abona
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('efectivo');
+  const [sheetMode, setSheetMode] = useState('info'); // info | fiado
+  const [fiadoAmount, setFiadoAmount] = useState('');
 
   const showToast = (m, ok = true) => {
     setToast({ m, ok });
@@ -87,6 +89,8 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
   const openAbono = (c) => {
     setAmount('');
     setMethod('efectivo');
+    setFiadoAmount('');
+    setSheetMode('info');
     setAbono(c);
   };
 
@@ -294,6 +298,102 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
   };
 
   const remainingCalc = abono ? Math.max(0, abono.balance - (parseFloat(amount) || 0)) : 0;
+
+  // ---------- FIADO DIRECTO (mismo flujo que la hoja de cliente) ----------
+  const confirmFiado = async (e) => {
+    e.preventDefault();
+    if (!abono || busy) return;
+    const amt = parseFloat(fiadoAmount);
+    if (!amt || amt <= 0) {
+      showToast('Escribe el monto del fiado', false);
+      return;
+    }
+    setBusy(true);
+    try {
+      const newBalance = (abono.balance || 0) + amt;
+
+      if (isOffline()) {
+        enqueueOp({
+          type: 'fiado_directo',
+          payload: { localId: uuid(), clientId: abono.id, amount: amt },
+        });
+        setDebtList((list) => list.map((c) => (c.id === abono.id ? { ...c, balance: newBalance } : c)));
+        setMovsByClient((movs) => {
+          const list = [...(movs[abono.id] || [])];
+          list.unshift({
+            id: 'd-off-' + Date.now(),
+            type: 'FIADO',
+            amount: amt,
+            description: 'Fiado directo',
+            date: new Date().toISOString(),
+          });
+          return { ...movs, [abono.id]: list };
+        });
+        setAbono(null);
+        showToast(`Fiado de ${money(amt)} guardado (se sincroniza solo)`);
+        return;
+      }
+
+      const supabase = createClient();
+      const ctx = await getMyContext();
+
+      const { error: errDebt } = await supabase.from('debts').insert({
+        client_id: abono.id,
+        original_amount: amt,
+        remaining: amt,
+        description: 'Fiado directo',
+        status: 'pendiente',
+        store_id: ctx.storeId,
+        user_id: ctx.userId,
+      });
+      if (errDebt) throw errDebt;
+
+      const { error: errBal } = await supabase
+        .from('clients')
+        .update({ balance: newBalance })
+        .eq('id', abono.id);
+      if (errBal) throw errBal;
+
+      setDebtList((list) => list.map((c) => (c.id === abono.id ? { ...c, balance: newBalance } : c)));
+      setMovsByClient((movs) => {
+        const list = [...(movs[abono.id] || [])];
+        list.unshift({
+          id: 'd-live-' + Date.now(),
+          type: 'FIADO',
+          amount: amt,
+          description: 'Fiado directo',
+          date: new Date().toISOString(),
+        });
+        return { ...movs, [abono.id]: list };
+      });
+      setAbono(null);
+      showToast(`Fiado de ${money(amt)} registrado a ${abono.name}`);
+    } catch (err) {
+      showToast('Error: ' + err.message, false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ---------- ELIMINAR CLIENTE (mismo flujo que la hoja de cliente) ----------
+  const eliminarCliente = async () => {
+    if (!abono || busy) return;
+    const ok = confirm(`¿Eliminar a "${abono.name}"?\n\nSe borrarán también sus ${money(abono.balance)} de deuda y su historial.`);
+    if (!ok) return;
+    setBusy(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('clients').delete().eq('id', abono.id);
+      if (error) throw error;
+      setDebtList((list) => list.filter((c) => c.id !== abono.id));
+      setAbono(null);
+      showToast(`Cliente "${abono.name}" eliminado`);
+    } catch (err) {
+      showToast('Error al eliminar: ' + err.message, false);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // Línea de tiempo de movimientos con folio único
   const movimientos = [
@@ -518,6 +618,8 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
               <div className="text-[24px] font-bold text-primary leading-tight mt-1">{money(abono.balance)}</div>
             </div>
 
+            {/* MODO INFO: abono + acciones + movimientos */}
+            {sheetMode === 'info' && (
             <form className="mt-3 space-y-3" onSubmit={confirmAbono}>
               <div>
                 <Label className="mb-1.5">Anotar abono</Label>
@@ -575,6 +677,31 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
                 </div>
               </div>
 
+              {/* Acciones — entre el método y los movimientos, visibles sin scroll */}
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFiadoAmount('');
+                    setSheetMode('fiado');
+                  }}
+                  className="w-full py-3 rounded-xl bg-surface-container-low border border-outline text-on-surface text-[13.5px] font-semibold flex items-center justify-center gap-2 active:bg-surface-container transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <path d="M12 3v18M3 12h18" />
+                  </svg>
+                  Dar nuevo fiado
+                </button>
+                <button
+                  type="button"
+                  onClick={eliminarCliente}
+                  disabled={busy}
+                  className="w-full py-2.5 rounded-xl bg-surface-container-low border border-outline text-error text-[12.5px] font-semibold active:opacity-70 transition-opacity disabled:opacity-50"
+                >
+                  Eliminar cliente
+                </button>
+              </div>
+
               <div className="bg-surface-container-low border border-outline rounded-[10px] px-3.5 py-2.5 flex justify-between items-center">
                 <span className="text-[12.5px] text-on-surface-variant">Nuevo saldo</span>
                 <b className={`text-[15px] ${remainingCalc === 0 && (parseFloat(amount) || 0) > 0 ? 'text-primary' : 'text-on-surface'}`}>
@@ -612,6 +739,36 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
                 </div>
               </div>
             </form>
+            )}
+
+            {/* MODO FIADO: registrar nuevo fiado al cliente */}
+            {abono && sheetMode === 'fiado' && (
+              <form className="mt-3 space-y-3" onSubmit={confirmFiado}>
+                <div>
+                  <Label className="mb-1.5">Monto del fiado</Label>
+                  <input
+                    autoFocus
+                    value={fiadoAmount}
+                    onChange={(e) => setFiadoAmount(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="C$ 0.00"
+                    className="w-full bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] text-on-surface outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="bg-surface-container-low border border-outline rounded-[10px] px-3.5 py-2.5 flex justify-between items-center">
+                  <span className="text-[12.5px] text-on-surface-variant">Saldo tras el fiado</span>
+                  <b className="text-[14px] text-primary">{money((abono.balance || 0) + (parseFloat(fiadoAmount) || 0))}</b>
+                </div>
+                <div className="flex gap-2">
+                  <button type="submit" disabled={busy} className="flex-1 py-3 rounded-xl bg-primary text-on-primary text-[13.5px] font-semibold active:bg-primary-deep transition-colors disabled:opacity-60">
+                    {busy ? 'Registrando…' : 'Registrar fiado'}
+                  </button>
+                  <button type="button" onClick={() => setSheetMode('info')} className="px-5 rounded-xl bg-surface-container-low border border-outline text-on-surface text-[13px] font-semibold">
+                    Volver
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
