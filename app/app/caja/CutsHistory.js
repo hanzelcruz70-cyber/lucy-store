@@ -82,19 +82,19 @@ export default function CutsHistory({ cuts }) {
                 </div>
                 <div className="flex items-center gap-3 mt-1 text-[11.5px] text-on-surface-variant flex-wrap">
                   <span>
-                    Contado <b className="text-on-surface">{money(c.sales_total)}</b>
+                    Contado <b className="inline-flex items-center leading-none text-on-surface">{money(c.sales_total)}</b>
                   </span>
                   <span>
-                    Gastos <b className="text-on-surface">{money(c.expenses_total)}</b>
+                    Gastos <b className="inline-flex items-center leading-none text-on-surface">{money(c.expenses_total)}</b>
                   </span>
                   {abonos > 0 && (
                     <span>
-                      Abonos <b className="text-on-surface">{money(abonos)}</b>
+                      Abonos <b className="inline-flex items-center leading-none text-on-surface">{money(abonos)}</b>
                     </span>
                   )}
                   {fisico !== null && fisico > 0 && (
                     <span>
-                      Físico <b className="text-primary">{money(fisico)}</b>
+                      Físico <b className="inline-flex items-center leading-none text-primary">{money(fisico)}</b>
                     </span>
                   )}
                 </div>

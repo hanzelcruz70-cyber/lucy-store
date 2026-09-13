@@ -9,7 +9,8 @@
     padding: 0;
   }
   body {
-    overscroll-behavior: none;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: auto;
     -webkit-tap-highlight-color: transparent;
   }
   .pb-safe {
@@ -45,12 +46,16 @@
   scrollbar-width: none;
 }
 
-/* Cajitas con scroll lateral (movimientos / clientes del dashboard) */
+/* Cajitas con scroll lateral (movimientos / clientes del dashboard).
+   SIN overscroll-behavior: contain — el contain se comía la rueda/dedo
+   al llegar al límite interno y la página quedaba "congelada" (el usuario
+   no podía subir/bajar aunque siguiera haciendo scroll sobre la cajita).
+   Con "auto" el scroll se derrama naturalmente a la página. */
 .scroll-box {
   -ms-overflow-style: auto;
   scrollbar-width: thin;
   scrollbar-color: #F4CBE2 transparent;
-  overscroll-behavior: contain;
+  overscroll-behavior: auto;
 }
 .scroll-box::-webkit-scrollbar {
   display: block;
