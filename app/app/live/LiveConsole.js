@@ -29,7 +29,7 @@ const Badge = ({ children, dark = false, line = false }) => (
   </span>
 );
 
-export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
+export default function LiveConsole({ initialSales, initialDebtSaleIds, historial = [] }) {
   const router = useRouter();
   const [sales, setSales] = useState(initialSales);
   const [debtSaleIds, setDebtSaleIds] = useState(new Set(initialDebtSaleIds || []));
@@ -291,11 +291,11 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
 
   return (
     <div className="flex flex-col w-full px-3.5 py-3.5 gap-2.5">
-      {/* Contadores en bloque soft */}
+      {/* Contadores de HOY en bloque soft */}
       <div className="bg-primary-fixed border border-primary-fixed-dim rounded-[14px] p-3.5">
         <Label className="text-primary-deep">
-          <span className="w-[7px] h-[7px] rounded-full bg-primary flex-none" /> Live en curso ·{' '}
-          <span className="normal-case tracking-normal font-medium">auto-sincronizado</span>
+          <span className="w-[7px] h-[7px] rounded-full bg-primary flex-none" /> Live de hoy ·{' '}
+          <span className="normal-case tracking-normal font-medium">se reinicia cada día</span>
         </Label>
         <div className="grid grid-cols-2 gap-2.5 mt-3">
           <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3">
@@ -488,6 +488,36 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
             );
           })}
         </div>
+      )}
+
+      {/* Historial de lives de días anteriores */}
+      {historial.length > 0 && (
+        <section className="space-y-2.5">
+          <div className="flex justify-between items-center px-0.5">
+            <b className="text-[14px] text-on-surface">Lives de días anteriores</b>
+            <Badge>prendas · monto</Badge>
+          </div>
+          <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
+            {historial.map((h) => {
+              const fecha = new Date(h.fecha + 'T12:00:00');
+              return (
+                <div key={h.fecha} className="flex items-center justify-between py-2.5 border-b border-surface-container last:border-0">
+                  <b className="text-[13px] font-semibold text-on-surface capitalize">
+                    {fecha.toLocaleDateString('es-NI', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  </b>
+                  <div className="flex items-center gap-3 text-[12.5px]">
+                    <span className="text-on-surface-variant">
+                      <b className="inline-flex items-center leading-none text-on-surface">{h.prendas}</b> prendas
+                    </span>
+                    <span className="text-on-surface-variant">
+                      <b className="inline-flex items-center leading-none text-primary">{money(h.monto)}</b>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* Modal editar apartado */}

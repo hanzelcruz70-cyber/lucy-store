@@ -48,13 +48,13 @@ const estadoCliente = (movs, balance) => {
   return { label: 'Debe', kind: 'warn' };
 };
 
-export default function ClientsList({ withDebt, current, debtByClient, totalDebt, recovered, movsByClient }) {
+export default function ClientsList({ withDebt, current, debtByClient, totalDebt, fiadoHoy = 0, recuperadoHoy = 0, historial = [], movsByClient }) {
   const [tab, setTab] = useState('todos');
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
   const [items, setItems] = useState({ withDebt, current, debtByClient });
-  const [recoveredNow, setRecoveredNow] = useState(recovered);
+  const [recoveredNow, setRecoveredNow] = useState(recuperadoHoy);
 
   const [sheet, setSheet] = useState(null);
   const [amount, setAmount] = useState('');
@@ -422,21 +422,27 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
 
   return (
     <div className="flex flex-col w-full px-3.5 py-3.5 gap-2.5">
-      {/* Métricas */}
+      {/* Métricas del día (se reinician cada mañana) */}
       <div className="grid grid-cols-2 gap-2.5">
         <div className="bg-surface-container-low border border-outline rounded-[14px] p-3.5">
-          <Label>Fiado en calle</Label>
-          <div className="text-[24px] font-bold text-on-surface mt-1.5 leading-tight">{money(totalDebtNow)}</div>
+          <Label>Fiado hoy</Label>
+          <div className="inline-flex items-center leading-none text-[24px] font-bold text-on-surface mt-1.5">{money(fiadoHoy)}</div>
           <div className="text-[12px] text-on-surface-variant mt-0.5 flex items-center gap-1">
             <span className="w-[7px] h-[7px] rounded-full bg-primary inline-block" />
-            {items.withDebt.length} clientes con deuda
+            {items.withDebt.length} deben en total
           </div>
         </div>
         <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3.5">
-          <Label>Recuperado</Label>
-          <div className="text-[24px] font-bold text-primary mt-1.5 leading-tight">{money(recoveredNow)}</div>
-          <div className="text-[12px] text-on-surface-variant mt-0.5">en abonos</div>
+          <Label>Recuperado hoy</Label>
+          <div className="inline-flex items-center leading-none text-[24px] font-bold text-primary mt-1.5">{money(recoveredNow)}</div>
+          <div className="text-[12px] text-on-surface-variant mt-0.5">en abonos de hoy</div>
         </div>
+      </div>
+
+      {/* Saldo histórico de la calle */}
+      <div className="bg-surface-container-lowest border border-outline rounded-[10px] px-3.5 py-2.5 flex justify-between items-center">
+        <span className="text-[12.5px] text-on-surface-variant">Fiado en calle (histórico)</span>
+        <b className="inline-flex items-center leading-none text-[14px] text-on-surface">{money(totalDebtNow)}</b>
       </div>
 
       {/* Búsqueda */}
@@ -572,6 +578,38 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
             );
           })}
         </div>
+      )}
+
+      {/* Historial de días anteriores (fiado y recuperado por día) */}
+      {historial.length > 0 && (
+        <section className="space-y-2.5">
+          <div className="flex justify-between items-center px-0.5">
+            <b className="text-[14px] text-on-surface">Días anteriores</b>
+            <span className="inline-flex text-[10.5px] font-semibold px-2 py-[3px] rounded-full bg-primary-fixed text-primary">
+              fiado · recuperado
+            </span>
+          </div>
+          <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
+            {historial.map((h) => {
+              const fecha = new Date(h.fecha + 'T12:00:00');
+              return (
+                <div key={h.fecha} className="flex items-center justify-between py-2.5 border-b border-surface-container last:border-0">
+                  <b className="text-[13px] font-semibold text-on-surface capitalize">
+                    {fecha.toLocaleDateString('es-NI', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  </b>
+                  <div className="flex items-center gap-3 text-[12.5px]">
+                    <span className="text-on-surface-variant">
+                      Fiado <b className="inline-flex items-center leading-none text-on-surface">{money(h.fiado)}</b>
+                    </span>
+                    <span className="text-on-surface-variant">
+                      Recuperado <b className="inline-flex items-center leading-none text-primary">{money(h.recuperado)}</b>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* ===== HOJA CLIENTE ===== */}

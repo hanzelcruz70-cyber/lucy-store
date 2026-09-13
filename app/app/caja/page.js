@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase-server';
 import { startOfTodayNic } from '@/lib/day';
 import CierreCaja from '@/components/CierreCaja';
+import CajaInicial from '@/components/CajaInicial';
 import ExportButton from './ExportButton';
 import CutsHistory from './CutsHistory';
 
@@ -14,8 +15,12 @@ async function getData() {
   // "Hoy" en Nicaragua (UTC-6), no medianoche UTC del servidor
   const start = startOfTodayNic();
   const cutsSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  // Día de negocio local (YYYY-MM-DD) para el fondo de caja
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Managua', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
 
-  const [sales, expenses, cuts, abonosHoy, cutsHistory, profile] = await Promise.all([
+  const [sales, expenses, cuts, abonosHoy, cutsHistory, profile, opening] = await Promise.all([
     supabase
       .from('sales')
       .select('id, total, items_count, channel, payment_method, client_name, notes, created_at')
@@ -51,6 +56,12 @@ async function getData() {
       .from('profiles')
       .select('stores(name)')
       .maybeSingle(),
+    // Fondo de caja con el que se abrió el día
+    supabase
+      .from('cash_openings')
+      .select('amount')
+      .eq('day', today)
+      .maybeSingle(),
   ]);
 
   const todaySales = sales.data || [];
@@ -74,12 +85,14 @@ async function getData() {
   const expTotal = todayExpenses.reduce((a, e) => a + Number(e.amount), 0);
   const pieces = todaySales.reduce((a, s) => a + s.items_count, 0);
   const net = collected - expTotal;
+  // Fondo de caja del día (0 si aún no se registra)
+  const fondoInicial = Number(opening.data?.amount || 0);
   // Abonos en efectivo recibidos hoy (cobros de deudas, no cobros de ventas)
   const abonosEfectivo = todayPayments
     .filter((p) => !p.sale_id && p.method === 'efectivo')
     .reduce((a, p) => a + Number(p.amount), 0);
 
-  return { todaySales, todayExpenses, todayPayments, cutDone, cutsHistory: cutsHistory.data || [], storeName: profile.data?.stores?.name || 'Mi Prenda', total, collected, efectivoSolo, transf, credit, expTotal, pieces, net, abonosEfectivo };
+  return { todaySales, todayExpenses, todayPayments, cutDone, cutsHistory: cutsHistory.data || [], storeName: profile.data?.stores?.name || 'Mi Prenda', total, collected, efectivoSolo, transf, credit, expTotal, pieces, net, abonosEfectivo, fondoInicial };
 }
 
 export default async function CajaPage() {
@@ -90,13 +103,16 @@ export default async function CajaPage() {
       {/* Export (descarga el reporte Excel con formato Mi Prenda) */}
       <ExportButton sales={d.todaySales} expenses={d.todayExpenses} storeName={d.storeName} />
 
+      {/* Caja inicial del día (fondo con el que se abre) */}
+      <CajaInicial initial={d.fondoInicial} editable={!d.cutDone} />
+
       {/* Cierre de caja */}
       <CierreCaja
         contadoEfectivo={d.efectivoSolo}
         contadoTransferencia={d.transf}
         gastos={d.expTotal}
         abonosEfectivo={d.abonosEfectivo}
-        fondoInicial={0}
+        fondoInicial={d.fondoInicial}
         cutDone={d.cutDone}
       />
 

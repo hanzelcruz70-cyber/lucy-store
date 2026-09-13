@@ -64,7 +64,8 @@ lucy-store/
 │   ├── migration2-products.sql   # Migración 2: products
 │   ├── migration5-fix-triggers.sql # Migración 5: triggers correctos (3,4 obsoletos)
 │   ├── migration6-expenses.sql   # Migración 6: categorías de gastos ampliadas + policy UPDATE
-│   └── migration7-audit.sql      # Migración 7: RPCs transaccionales + UNIQUE clientes + cash_cuts numérico
+│   ├── migration7-audit.sql      # Migración 7: RPCs transaccionales + UNIQUE clientes + cash_cuts numérico
+│   └── migration8-cash-opening.sql # Migración 8: caja inicial del día (cash_openings + opening_total en cash_cuts)
 ├── .github/workflows/ci.yml      # CI: build + secrets + deps en cada push
 ├── CONSTRAINTS.md                # CONTRATO DE CALIDAD (leer antes de codificar)
 ├── GUIA-USUARIO.pdf              # Guía del dueño de tienda (se genera con scripts/generar-guia-pdf.cjs)
@@ -166,8 +167,8 @@ vercel --prod
 Variables en Dashboard: las 5 de `.env.local`. CI de GitHub corre build+audits en cada push.
 
 ### Migraciones Supabase (en orden)
-1. `schema.sql` → 2. `migration2-products.sql` → 3. `migration5-fix-triggers.sql` → 4. `migration6-expenses.sql` → 5. `migration7-audit.sql`
-**Detener servidor local antes (deadlock).** La migración 7 es idempotente (re-ejecutable) y fusiona clientes duplicados automáticamente.
+1. `schema.sql` → 2. `migration2-products.sql` → 3. `migration5-fix-triggers.sql` → 4. `migration6-expenses.sql` → 5. `migration7-subscription.sql` → 6. `migration7-audit.sql` → 7. `migration8-cash-opening.sql`
+**Detener servidor local antes (deadlock).** Las migraciones 7-audit y 8 son idempotentes (re-ejecutables); la 7-audit fusiona clientes duplicados automáticamente.
 
 ### Guía de usuario (PDF)
 ```bash

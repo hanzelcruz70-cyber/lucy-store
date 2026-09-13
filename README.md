@@ -36,8 +36,8 @@ lucy-store/
 ### 1) Supabase
 1. Crea cuenta en [supabase.com](https://supabase.com) → **New project**.
 2. En **SQL Editor** pega TODO el contenido de `supabase/schema.sql` → **Run**.
-   Luego `migration2-products.sql`, `migration5-fix-triggers.sql`, `migration6-expenses.sql`
-   y `migration7-audit.sql` (RPCs transaccionales de dinero).
+   Luego `migration2-products.sql`, `migration5-fix-triggers.sql`, `migration6-expenses.sql`,
+   `migration7-subscription.sql`, `migration7-audit.sql` y `migration8-cash-opening.sql`.
 3. En **Settings → API** copia:
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`

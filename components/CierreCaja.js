@@ -62,6 +62,7 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
             transferTotal: Number(contadoTransferencia),
             fisicoTotal: contadoFisico,
             discrepancyAmount: diferencia,
+            openingTotal: Number(fondoInicial),
             notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(contadoTransferencia)}. Abonos en efectivo: ${money(abonosEfectivo)}`,
           },
         });
@@ -79,6 +80,7 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
         transfer_total: Number(contadoTransferencia),
         fisico_total: contadoFisico,
         discrepancy_amount: diferencia,
+        opening_total: Number(fondoInicial),
         credit_total: 0,
         expenses_total: gastos,
         notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(contadoTransferencia)}. Abonos en efectivo: ${money(abonosEfectivo)}`,
@@ -127,6 +129,12 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
 
             {/* Resumen esperado */}
             <div className="bg-surface-container-low border border-outline rounded-[14px] p-3.5 mt-3 space-y-1">
+              {Number(fondoInicial) > 0 && (
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-on-surface-variant">Caja inicial del día</span>
+                  <b className="text-on-surface">{money(fondoInicial)}</b>
+                </div>
+              )}
               <div className="flex justify-between text-[13px]">
                 <span className="text-on-surface-variant">Ventas al contado hoy</span>
                 <b className="text-on-surface">{money(contadoTotal)}</b>
