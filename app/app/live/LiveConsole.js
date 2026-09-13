@@ -33,6 +33,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
   const router = useRouter();
   const [sales, setSales] = useState(initialSales);
   const [debtSaleIds, setDebtSaleIds] = useState(new Set(initialDebtSaleIds || []));
+  const [histRange, setHistRange] = useState(7);
   const [client, setClient] = useState('');
   const [desc, setDesc] = useState('');
   const [price, setPrice] = useState('');
@@ -490,38 +491,69 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
         </div>
       )}
 
-      {/* Historial de lives de días anteriores */}
+      {/* Historial de lives de días anteriores (filtro 7/15/30, máx 5 filas visibles) */}
       {historial.length > 0 && (
         <section className="space-y-2.5">
           <div className="flex justify-between items-center px-0.5">
             <b className="text-[14px] text-on-surface">Lives de días anteriores</b>
             <Badge>prendas · monto</Badge>
           </div>
-          <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
-            <div
-              className="overflow-y-auto scroll-box -mr-1 pr-1"
-              style={{ maxHeight: 5 * 60 }}
-            >
-            {historial.map((h) => {
-              const fecha = new Date(h.fecha + 'T12:00:00');
+          <div className="flex gap-1.5">
+            {[7, 15, 30].map((d) => (
+              <button
+                key={d}
+                onClick={() => setHistRange(d)}
+                className={`flex-1 py-2 rounded-[10px] text-[12.5px] font-semibold border transition-colors ${
+                  histRange === d ? 'bg-primary border-primary text-on-primary' : 'bg-surface-container-lowest border-outline text-on-surface'
+                }`}
+              >
+                {d} días
+              </button>
+            ))}
+          </div>
+          {(() => {
+            const desde = Date.now() - histRange * 24 * 60 * 60 * 1000;
+            const visibles = historial.filter((h) => new Date(h.fecha + 'T12:00:00').getTime() >= desde);
+            if (visibles.length === 0) {
               return (
-                <div key={h.fecha} className="flex items-center justify-between py-2.5 border-b border-surface-container last:border-0">
-                  <b className="text-[13px] font-semibold text-on-surface capitalize">
-                    {fecha.toLocaleDateString('es-NI', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  </b>
-                  <div className="flex items-center gap-3 text-[12.5px]">
-                    <span className="text-on-surface-variant">
-                      <b className="inline-flex items-center leading-none text-on-surface">{h.prendas}</b> prendas
-                    </span>
-                    <span className="text-on-surface-variant">
-                      <b className="inline-flex items-center leading-none text-primary">{money(h.monto)}</b>
-                    </span>
-                  </div>
+                <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-6 text-center">
+                  <p className="text-[13px] text-on-surface-variant">Sin lives en los últimos {histRange} días.</p>
                 </div>
               );
-            })}
-            </div>
-          </div>
+            }
+            return (
+              <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
+                <div
+                  className="overflow-y-auto scroll-box -mr-1 pr-1"
+                  style={{ maxHeight: 5 * 60 }}
+                >
+                  {visibles.map((h) => {
+                    const fecha = new Date(h.fecha + 'T12:00:00');
+                    return (
+                      <div key={h.fecha} className="flex items-center justify-between py-2.5 border-b border-surface-container last:border-0">
+                        <b className="text-[13px] font-semibold text-on-surface capitalize">
+                          {fecha.toLocaleDateString('es-NI', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        </b>
+                        <div className="flex items-center gap-3 text-[12.5px]">
+                          <span className="text-on-surface-variant">
+                            <b className="inline-flex items-center leading-none text-on-surface">{h.prendas}</b> prendas
+                          </span>
+                          <span className="text-on-surface-variant">
+                            <b className="inline-flex items-center leading-none text-primary">{money(h.monto)}</b>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {visibles.length > 5 && (
+                  <p className="text-center text-[10.5px] text-on-surface-variant uppercase tracking-wide py-1.5 border-t border-surface-container">
+                    {visibles.length} días · desplázate para ver más
+                  </p>
+                )}
+              </div>
+            );
+          })()}
         </section>
       )}
 

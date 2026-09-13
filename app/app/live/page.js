@@ -8,7 +8,7 @@ export default async function LivePage() {
   const supabase = createClient();
   // "Hoy" en Nicaragua (UTC-6), no medianoche UTC del servidor
   const start = startOfTodayNic();
-  const since = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000); // últimos 8 días
+  const since = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000); // últimos 31 días (filtro máx 30)
 
   const [{ data: sales }, { data: debts }, { data: historico }] = await Promise.all([
     supabase
@@ -44,7 +44,7 @@ export default async function LivePage() {
   });
   const historial = Object.entries(byDay)
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-    .slice(0, 7)
+    .slice(0, 30)
     .map(([fecha, v]) => ({ fecha, prendas: v.prendas, monto: v.monto }));
 
   return (

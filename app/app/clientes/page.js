@@ -74,7 +74,7 @@ export default async function ClientesPage() {
     .filter((p) => p.debt_id && p.created_at >= startISO)
     .reduce((a, p) => a + Number(p.amount), 0);
 
-  // ===== Historial por día (últimos 7 días, sin hoy) =====
+  // ===== Historial por día (hasta 30 días, sin hoy — filtrable en la UI) =====
   const byDay = {};
   debtList.forEach((d) => {
     if (d.status !== 'pendiente' && Number(d.remaining) === Number(d.original_amount)) return;
@@ -94,7 +94,7 @@ export default async function ClientesPage() {
   const historial = Object.entries(byDay)
     .filter(([key]) => key !== todayKey)
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-    .slice(0, 7)
+    .slice(0, 30)
     .map(([fecha, v]) => ({ fecha, fiado: v.fiado, recuperado: v.recuperado }));
 
   const withDebt = clientList.filter((c) => debtByClient[c.id] > 0);
