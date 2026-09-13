@@ -660,9 +660,29 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
               </div>
             </div>
 
-            {/* MODO INFO: abono directo + movimientos */}
+            {/* MODO INFO: acciones rápidas + abono directo + movimientos */}
             {sheetMode === 'info' && (
               <div className="mt-3 space-y-3">
+                {/* Acciones — arriba, visibles sin scroll */}
+                <div className="space-y-1.5">
+                  <button
+                    onClick={() => setSheetMode('fiado')}
+                    className="w-full py-3 rounded-xl bg-surface-container-low border border-outline text-on-surface text-[13.5px] font-semibold flex items-center justify-center gap-2 active:bg-surface-container transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <path d="M12 3v18M3 12h18" />
+                    </svg>
+                    Dar nuevo fiado
+                  </button>
+                  <button
+                    onClick={() => eliminarCliente(sheet.client)}
+                    disabled={busy}
+                    className="w-full py-2.5 rounded-xl bg-surface-container-low border border-outline text-error text-[12.5px] font-semibold active:opacity-70 transition-opacity disabled:opacity-50"
+                  >
+                    Eliminar cliente
+                  </button>
+                </div>
+
                 {sheet.balance > 0 ? (
                   <div>
                     <Label className="mb-1.5">Anotar abono</Label>
@@ -755,26 +775,6 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                         </div>
                       ))}
                   </div>
-                </div>
-
-                {/* Acciones */}
-                <div className="space-y-1.5">
-                  <button
-                    onClick={() => setSheetMode('fiado')}
-                    className="w-full py-3 rounded-xl bg-surface-container-low border border-outline text-on-surface text-[13.5px] font-semibold flex items-center justify-center gap-2 active:bg-surface-container transition-colors"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                      <path d="M12 3v18M3 12h18" />
-                    </svg>
-                    Dar nuevo fiado
-                  </button>
-                  <button
-                    onClick={() => eliminarCliente(sheet.client)}
-                    disabled={busy}
-                    className="w-full py-2.5 rounded-xl bg-surface-container-low border border-outline text-error text-[12.5px] font-semibold active:opacity-70 transition-opacity disabled:opacity-50"
-                  >
-                    Eliminar cliente
-                  </button>
                 </div>
               </div>
             )}
