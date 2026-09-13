@@ -1,5 +1,5 @@
 /* Genera GUIA-USUARIO.pdf sin dependencias externas (PDF a mano, WinAnsi/Helvetica) */
-/* v1.2 - Guia completa con contabilidad, ventas, live, gastos e inicio + fix de numeracion de objetos PDF */
+/* v1.3 - Credito (nueva terminologia), transferencia en mostrador, caja inicial del dia, metricas diarias + historiales, cierre con abonos, limpieza 30 dias */
 const fs = require('fs');
 const path = require('path');
 
@@ -131,7 +131,7 @@ function EX(t){ G.push(['ex', t]); }
 
 /* ---- 1 ---- */
 H1('1. Qué es Mi Prenda');
-P('Mi Prenda es el sistema de punto de venta de tu tienda de ropa. Registra ventas al contado y al fiado, lives de TikTok, inventario de productos, gastos del negocio y la cobranza de tus clientes. Todo en córdobas (C$), desde computadora o celular, y se instala en el teléfono como una app más.');
+P('Mi Prenda es el sistema de punto de venta de tu tienda de ropa. Registra ventas al contado, por transferencia y al crédito, lives de TikTok, inventario de productos, gastos del negocio y la cobranza de tus clientes. Todo en córdobas (C$), desde computadora o celular, y se instala en el teléfono como una app más.');
 TIP('Regla de oro: anota cada venta, abono y gasto EN EL MOMENTO en que ocurre. La app hace todas las cuentas por ti, pero solo con lo que le dices.');
 
 /* ---- 2 ---- */
@@ -165,7 +165,7 @@ TIP('Entrega las contraseñas por mensaje privado, nunca en grupos. Si un client
 H1('5. Navegación');
 B('Celular: toca el botón de menú (arriba a la izquierda) para abrir el menú lateral. Ciérralo con la X o tocando fuera.');
 B('Computadora: el menú queda fijo a la izquierda de la pantalla.');
-B('Secciones: Inicio (resumen del día), Vender (mostrador), Live TikTok (apartados en vivo), Caja (balance y cierre), Inventario (productos), Clientes (fiados y cobros) y Más (gastos, estadísticas y reporte).');
+B('Secciones: Inicio (resumen del día), Vender (mostrador), Live TikTok (apartados en vivo), Caja (balance y cierre), Inventario (productos), Clientes (créditos y cobros) y Más (gastos, estadísticas y reporte).');
 B('La barra superior muestra el nombre de tu tienda y tu usuario.');
 B('El botón de salida cierra la sesión y regresa al login. Tus datos quedan guardados en la nube.');
 
@@ -175,13 +175,13 @@ P('Esta es la sección más importante de la guía: explica cómo la app cuenta 
 
 S('6.1 Los tres tipos de dinero');
 B('COBRADO: dinero que ya entró. Son las ventas pagadas al momento (efectivo o transferencia) y los abonos que te pagan.');
-B('FIADO (por cobrar): mercancía entregada a cuenta. NO es dinero en tu caja: lo será cuando el cliente abone.');
+B('CRÉDITO (por cobrar): mercancía entregada a cuenta. NO es dinero en tu caja: lo será cuando el cliente abone.');
 B('GASTO: dinero que salió del negocio (bolsas, renta, proveedor).');
-B('La caja neta del día = cobrado menos gastos. El fiado no entra ni sale: es una promesa de pago.');
+B('La caja neta del día = cobrado menos gastos. El crédito no entra ni sale: es una promesa de pago.');
 
 S('6.2 Los cuatro números de la Caja del día (Inicio)');
-B('Contado: ventas de HOY cobradas al momento, en efectivo o transferencia. Venta fiada no incluye.');
-B('Fiado: ventas de HOY que quedaron a cuenta de un cliente.');
+B('Contado: ventas de HOY cobradas al momento, en efectivo o transferencia. Venta a crédito no incluye.');
+B('Crédito: ventas de HOY que quedaron a cuenta de un cliente.');
 B('Abonos: TODO pago registrado hoy. Ojo: además de los abonos de deudas, este contador suma los cobros de ventas al contado hechas en Vender y Live, porque también se registran como pagos.');
 B('Gastos: suma de los gastos anotados hoy.');
 B('Prendas: piezas vendidas hoy (arriba del bloque).');
@@ -190,37 +190,40 @@ S('6.3 Ejemplo completo de un día');
 P('Día de ejemplo en la tienda, con su folio de Inicio:');
 EX('#001 10:15am - Venta en mostrador: 2 Blusas, C$250 en efectivo.');
 EX('#002 11:30am - Live: Vestido #43 apartado para @maria, C$150. A las 12:00pm María lo paga por transferencia.');
-EX('#003 1:00pm - Live: Vestido #44 apartado para Doña Lupita, C$120. Se marca como Fiado.');
+EX('#003 1:00pm - Live: Vestido #44 apartado para Doña Lupita, C$120. Se pasa a Crédito.');
 EX('#004 3:00pm - Doña Lupita abona C$100 en efectivo.');
 EX('#005 5:00pm - Gasto: bolsas para empaque, C$50, categoría operativo.');
 P('Con eso, la Caja del día muestra:');
 EX('Contado: C$400 (250 de la venta en efectivo + 150 del cobro por transferencia).');
-EX('Fiado: C$120 (el vestido #44 que quedó a cuenta).');
+EX('Crédito: C$120 (el vestido #44 que quedó a cuenta).');
 EX('Abonos: C$500 (el abono de C$100 de Lupita + el cobro de C$250 + el cobro de C$150).');
 EX('Gastos: C$50. Prendas: 4 (2 blusas + 2 vestidos).');
-EX('Ventas totales del día: C$520 (400 contado + 120 fiado). Margen neto: C$350 (400 cobrado - 50 de gastos).');
+EX('Ventas totales del día: C$520 (400 contado + 120 a crédito). Margen neto: C$350 (400 cobrado - 50 de gastos).');
 
 S('6.4 Cómo se pagan las deudas (una por una, de la más vieja a la más nueva)');
-P('Cada fiado es una deuda aparte. Cuando el cliente abona, el dinero se descuenta en orden: primero la deuda más antigua, luego la siguiente.');
-EX('Ejemplo: Doña Lupita debe un fiado del lunes de C$120 y otro del martes de C$80 (deuda total C$200). Abona C$150: se salda el fiado del lunes completo (C$120) y del martes quedan C$30. Deuda total: C$30.');
+P('Cada crédito es una deuda aparte. Cuando el cliente abona, el dinero se descuenta en orden: primero la deuda más antigua, luego la siguiente.');
+EX('Ejemplo: Doña Lupita debe un crédito del lunes de C$120 y otro del martes de C$80 (deuda total C$200). Abona C$150: se salda el del lunes completo (C$120) y del martes quedan C$30. Deuda total: C$30.');
 EX('Si abona más de lo que debe, el saldo simplemente queda en C$0; no hay cambio.');
 TIP('Un abono NUNCA borra el historial: la deuda queda marcada como saldada y el abono queda en los movimientos del cliente.');
 
-S('6.5 Fiado en calle y Recuperado (Clientes)');
-B('Fiado en calle: total que te deben todos tus clientes ahora mismo (solo deudas pendientes).');
-B('Recuperado: total que te han pagado de fiados en la historia (lo prestado menos lo que falta).');
-EX('En el ejemplo: Fiado en calle C$20 (los C$120 de Lupita menos su abono de C$100). Recuperado: C$100.');
+S('6.5 Crédito hoy, Recuperado hoy y el historial (Clientes)');
+B('Crédito hoy: cuánto entregaste a cuenta SOLO en el día de hoy. Se reinicia cada mañana: mañana empieza en C$0.');
+B('Recuperado hoy: cuánto te abonaron tus clientes SOLO hoy. También se reinicia cada mañana.');
+B('Crédito en calle (histórico): el total que te deben TODOS tus clientes ahora mismo, de cualquier fecha. Ese número NO se reinicia: baja cuando te pagan y sube cuando das crédito.');
+  B('Debajo, en "Días anteriores", el crédito y lo recuperado de cada uno de los últimos 7 días, para comparar cómo vas cobrando.');
+EX('Ejemplo: hoy diste C$120 a crédito y te abonaron C$100. Crédito hoy: C$120. Recuperado hoy: C$100. Crédito en calle: el saldo pendiente real de todos tus clientes.');
 
 S('6.6 El efectivo esperado en el cajón (cierre de caja)');
 P('Al hacer el cierre, la app calcula cuánto efectivo DEBERÍA haber en el cajón:');
-EX('Efectivo esperado = ventas de hoy cobradas en EFECTIVO - gastos del día.');
-EX('En el ejemplo: C$250 - C$50 = C$200 esperados.');
-B('IMPORTANTE: los abonos que te paguen en efectivo también quedan en el cajón, pero hoy el cálculo del esperado no los suma. En el ejemplo, el abono de Lupita (C$100 en efectivo) hará que el físico sea C$300: esperados C$200 + abono C$100.');
-B('Por eso, si recibiste abonos en efectivo, es NORMAL que el conteo físico sobrepase lo esperado exactamente por ese monto. Verifícalo y cierra con la diferencia anotada.');
-B('Las transferencias tampoco están en el cajón (están en el banco): el esperado solo usa efectivo.');
+EX('Efectivo esperado = caja inicial + ventas de hoy cobradas en EFECTIVO + abonos en efectivo - gastos del día.');
+EX('En el ejemplo, con caja inicial de C$200: 200 + 250 + 100 - 50 = C$500 esperados.');
+B('La CAJA INICIAL es el dinero con el que abriste el día (sección 12.1): se suma porque también está en el cajón.');
+B('Los ABONOS en efectivo se suman: ese dinero sí está en el cajón. Los créditos NUNCA se cuentan en el esperado: ese dinero todavía no existe en tu caja.');
+B('Las transferencias NO se esperan en el cajón (están en el banco): la app las muestra aparte para que las revises contra tu estado de cuenta.');
 
 S('6.7 Qué guarda el corte de caja');
-B('Cada noche, el corte guarda: ventas al contado del día (efectivo + transferencia), cuánto de eso fue en efectivo, los gastos, y en las notas el conteo físico, la diferencia y las transferencias.');
+B('Cada noche, el corte guarda: ventas al contado (efectivo + transferencia), abonos recibidos, caja inicial, gastos, y el conteo físico con su diferencia.');
+B('El historial de cortes queda en Caja con filtro de 7, 15 y 30 días, mostrando contado, gastos, abonos y físico de cada día.');
 B('Es tu respaldo: si alguien pregunta cómo cerró la caja, ahí está todo.');
 
 S('6.8 La contabilidad del inventario');
@@ -232,11 +235,11 @@ EX('Ejemplo de producto ingresado: 100 prendas, costo total C$6,000, venta C$150
 /* ---- 7 ---- */
 H1('7. Inicio: el apartado del día');
 P('Es la primera pantalla al entrar y tu tablero de mando: de un vistazo sabes cómo va el día.');
-B('Caja del día: los cuatro números de la sección 6.2 (Contado, Fiado, Abonos, Gastos) más el total de prendas.');
+B('Caja del día: los cuatro números (Contado, Crédito, Abonos, Gastos) más el total de prendas. Solo cuentan los movimientos de HOY: cada mañana empieza en cero, sin borrar nada del historial.');
 B('Movimientos de hoy: la línea de tiempo completa del día. Cada movimiento tiene su folio único (#001, #002...) en orden cronológico, para buscarlo después.');
-B('Cada movimiento muestra su tipo con icono: venta o fiado (flecha de entrada), abono (flecha con check) o gasto (flecha de salida), su hora y su canal (mostrador o Live).');
+B('Cada movimiento muestra su tipo con icono: venta o crédito (flecha de entrada), abono (flecha con check) o gasto (flecha de salida), su hora y su canal (mostrador o Live).');
 B('El buscador de arriba filtra por folio, cliente o concepto. Ejemplo: escribe #003 o "Lupita".');
-B('Con más de 5 movimientos la lista se hace desplazable: sigue bajando para verlos todos.');
+B('Las listas largas (movimientos, clientes, cortes) tienen barra de desplazamiento propia y muestran hasta 5 filas visibles: baja dentro de la cajita para ver el resto sin que la página crezca al infinito.');
 B('Clientes que deben: los clientes con saldo pendiente y cuánto debes cobrarles. Toca uno para abrir su ventana de abono.');
 B('Si nadie debe nada: "Nadie te debe nada. ¡Cobranza perfecta!"');
 
@@ -253,22 +256,23 @@ P('Para vender en el mostrador. Se venden los productos que hayas ingresado en I
 B('Paso 1: busca el producto por nombre en el buscador. Cada tarjeta muestra el producto, su precio y cuántas quedan.');
 B('Paso 2: toca una tarjeta para agregar 1 pieza al carrito. Tócala otra vez para sumar otra.');
 B('Paso 3: en "Venta en curso" (el panel que aparece abajo) ajusta con los botones menos y más, o presiona "Vaciar" para empezar de nuevo.');
-B('Paso 4: deja marcado "Al contado" y presiona el botón rosa "Cobrar C$XXX" con el total.');
-B('Qué hace la app sola: la venta queda con folio en los movimientos, el pago entra a la caja del día, las piezas se descuentan del stock del producto y el contador de vendidos sube para las estadísticas.');
+B('Paso 4: elige el método: "Al contado" (efectivo), "Transferencia" (le depositaron o le pasaron por SINPE) o "Crédito" (sección 9).');
+B('Para contado o transferencia presiona el botón rosa "Cobrar C$XXX" con el total.');
+B('Qué hace la app sola: la venta queda con folio en los movimientos, el pago entra a la caja del día (si fue transferencia, la caja la separa del efectivo: no se espera en el cajón), las piezas se descuentan del stock y el contador de vendidos sube.');
 TIP('El descuento de piezas solo ocurre si el producto fue ingresado con cantidad (sección 13).');
 
 /* ---- 9 ---- */
-H1('9. Vender: venta a fiado');
+H1('9. Vender: venta a crédito');
 B('Paso 1: arma el carrito igual que en la venta al contado.');
-B('Paso 2: marca "Fiado". Aparece un campo: escribe el nombre del cliente. Si no existe se crea solo; si ya existe, la deuda se suma a su cuenta.');
-B('Paso 3: presiona "Fiar C$XXX". Verás "Fiado de C$X registrado".');
-B('Resultado: la deuda queda pendiente, el cliente aparece en "Clientes que deben" (Inicio) y en la sección Clientes con su estado, y las piezas se descuentan de la paca igual que al contado.');
-TIP('El fiado no aparece como dinero en caja hasta que el cliente abone. Ese mismo día verás el fiado en la cifra "Fiado" de Inicio.');
+B('Paso 2: marca "Crédito". Aparece un campo: escribe el nombre del cliente. Si no existe se crea solo; si ya existe, la deuda se suma a su cuenta. La app te sugiere clientes existentes mientras escribes.');
+B('Paso 3: presiona "Dar crédito C$XXX". Verás "Crédito de C$X registrado".');
+B('Resultado: la deuda queda pendiente, el cliente aparece en "Clientes que deben" (Inicio) y en la sección Clientes con su estado, y las piezas se descuentan del stock igual que al contado.');
+TIP('El crédito no aparece como dinero en caja hasta que el cliente abone. Ese mismo día lo ves en la cifra "Crédito" de Inicio.');
 
 /* ---- 10 ---- */
 H1('10. Live TikTok: apartados al vuelo');
 P('Para vender durante un live: anotas cada prenda apartada en segundos, sin detenerte.');
-B('Contadores de arriba (se actualizan solos): "Apartadas hoy" (piezas del live de hoy) y "Monto en live" (dinero total del live de hoy, sin importar si ya cobraste o fiaste).');
+B('Contadores de HOY (se reinician cada mañana): "Apartadas hoy" (piezas del live de hoy) y "Monto en live" (dinero total de hoy, cobrado o a crédito).');
 B('Paso 1: en "Apartado ultrarrápido" escribe el @usuario o nombre (ej. Doña Lupita), la prenda (ej. #43 Vestido liso) y el precio. Botones de precios rápidos: 100, 120, 150, 180, 250 y 300.');
 B('Paso 2: presiona "Apartar prenda al vuelo". Aparece en "Apartados en curso" con el estado PENDIENTE y los contadores suben.');
 B('Paso 3: al momento o al final del live, resuelve cada pendiente con sus dos botones:');
@@ -277,24 +281,25 @@ S('10.1 El botón "Cobrar" (el cliente ya pagó)');
 B('Marca la venta como Cobrado y registra el pago: el dinero entra a la caja del día (efectivo).');
 B('En el ejemplo de la sección 6.3: el vestido de @maria de C$150 se apartó pendiente y al presionar Cobrar quedó Cobrado.');
 
-S('10.2 El botón "Fiado" (se lo lleva a cuenta)');
+S('10.2 El botón de crédito (se lo lleva a cuenta)');
 B('Busca el cliente por el nombre; si no existe lo crea solo y queda marcado con la etiqueta TikTok.');
 B('Registra la deuda a su nombre (con la prenda como descripción) y actualiza su saldo.');
-B('La venta pasa a estado FIADO y el cliente aparece en Clientes y en "Clientes que deben".');
-B('Una misma venta no se puede fiar dos veces: la app avisa "Esta venta ya está en cuenta".');
+  B('La venta pasa a estado CRÉDITO y el cliente aparece en Clientes y en "Clientes que deben".');
+B('Una misma venta no se puede pasar a crédito dos veces: la app avisa "Esta venta ya está en crédito".');
 
 S('10.3 Los tres estados de un apartado');
 B('PENDIENTE (etiqueta clara): aún no resuelto. Es el único con botones.');
 B('COBRADO (etiqueta con check): pagado al instante.');
-B('FIADO (etiqueta oscura): pasó a la cuenta del cliente.');
+B('CRÉDITO (etiqueta oscura): pasó a la cuenta del cliente.');
 TIP('Antes de terminar el live, resuelve TODOS los pendientes: los que quedan sin resolver siguen apareciendo en la lista hasta que los marques.');
+B('Debajo de la lista está "Lives de días anteriores": prendas y monto de cada live de los últimos 7 días. Los apartados de hace más de 30 días se limpian solos para que la lista nunca se llene de cosas viejas (los créditos pendientes nunca se borran).');
 
 /* ---- 11 ---- */
 H1('11. Caja: el balance en vivo');
 P('El estado del dinero del día, para revisarlo antes del cierre.');
 B('Ventas totales de hoy y prendas vendidas (etiqueta del encabezado).');
 B('Cobrado: efectivo más transferencias cobrados hoy. En el ejemplo: C$400.');
-B('Fiado: lo vendido a crédito hoy, marcado "Por cobrar". En el ejemplo: C$120.');
+B('Crédito: lo vendido a crédito hoy, marcado "Por cobrar". En el ejemplo: C$120.');
 B('Margen neto en caja: cobrado menos gastos (C$350 en el ejemplo), con la barra que muestra qué porcentaje de lo vendido ya está cobrado (77% en el ejemplo).');
 B('Movimientos del corte: todas las ventas y gastos del día en lista, con su detalle (cliente o concepto, canal, método).');
 B('Arriba está el botón "Realizar cierre de caja", que se explica en la siguiente sección.');
@@ -302,7 +307,7 @@ B('Arriba está el botón "Realizar cierre de caja", que se explica en la siguie
 /* ---- 12 ---- */
 H1('12. Cierre de caja con conteo de billetes');
 P('Se hace UNA vez al día, al terminar la jornada. Es el arqueo: comparar lo que dice el sistema contra el dinero físico.');
-B('Paso 1: presiona "Realizar cierre de caja". La app muestra lo esperado: ventas al contado, cuánto fue por transferencia, gastos y el EFECTIVO ESPERADO en el cajón (sección 6.6).');
+B('Paso 1: presiona "Realizar cierre de caja". La app muestra lo esperado: caja inicial, ventas al contado, transferencias, abonos en efectivo, gastos y el EFECTIVO ESPERADO en el cajón (sección 6.6).');
 B('Paso 2: cuenta tus billetes y monedas por denominación (C$1000, 500, 200, 100, 50, 20, 10, 5 y 1) y anota cuántos de cada uno. Cada fila suma sola y ves el total físico.');
 B('Paso 3: revisa la verificación: "¡Cuadra perfecto!" si coincide, o "Sobra" o "Falta" con la diferencia exacta.');
 B('Paso 4: presiona "Cerrar caja del día". El corte queda guardado con todo el detalle.');
@@ -310,6 +315,13 @@ B('Si hay diferencia puedes cerrar igual: la diferencia queda anotada en el cort
 B('Hecho el cierre, el botón cambia a "Corte ya realizado hoy" y se bloquea hasta el día siguiente.');
 EX('Ejemplo: esperados C$200. Cuentas 1 billete de C$200 y 2 de C$100: físico C$400... espera: la diferencia de C$200 corresponde a los abonos en efectivo del día (sección 6.6). Revisa, entiende la diferencia y cierra con ella anotada.');
 TIP('Cuenta el dinero en un momento tranquilo y dos veces: los errores de conteo son la causa más común de diferencias.');
+
+S('12.1 La caja inicial del día');
+P('Arriba del cierre, en Caja, está la CAJA INICIAL: el dinero con el que abriste el día (el fondo de caja). Es el dinero que dejaste en el cajón la noche anterior para tener cambio.');
+B('Escríbelo por la mañana y presiona Guardar. Queda guardado para todo el día y la app lo suma al efectivo esperado del cierre.');
+B('Si te equivocas, puedes corregirlo mientras NO hayas hecho el corte del día; después del cierre queda fijo.');
+B('Si no lo registras, el esperado del cierre saldrá más bajo exactamente por ese monto y pensarás que falta dinero.');
+TIP('Ejemplo: dejaste C$500 de fondo anoche. Hoy el cajón debería tener 500 + ventas en efectivo + abonos en efectivo - gastos.');
 
 /* ---- 13 ---- */
 H1('13. Inventario: ingresar un producto');
@@ -328,27 +340,27 @@ B('Eliminar un producto: botón de basura. Pide confirmación y el producto desa
 
 /* ---- 15 ---- */
 H1('15. Clientes: la lista');
-B('Arriba: "Fiado en calle" (total por cobrar y cuántos clientes deben) y "Recuperado" (abonos recibidos en total). Ver sección 6.5.');
+B('Arriba: "Crédito hoy" y "Recuperado hoy" (métricas del día, se reinician cada mañana) y la línea "Crédito en calle (histórico)" con el saldo real pendiente de todos. Ver sección 6.5.');
 B('"Agregar cliente": nombre (obligatorio), teléfono y usuario de TikTok (opcionales).');
 B('Filtros: Todos, Con deuda y Al corriente, cada uno con su conteo.');
 B('Buscador: por nombre, apodo o celular.');
-B('Los clientes del live se crean solos al fiarles y quedan con la etiqueta TikTok.');
-S('15.1 El estado de cada cliente (según su último fiado)');
+B('Los clientes del live se crean solos al darles crédito y quedan con la etiqueta TikTok.');
+S('15.1 El estado de cada cliente (según su último crédito)');
 B('Al corriente: sin deuda.');
-B('Debe: su fiado más reciente tiene menos de 3 días.');
-B('Pendiente: 3 días o más desde su último fiado.');
+B('Debe: su crédito más reciente tiene menos de 3 días.');
+B('Pendiente: 3 días o más desde su último crédito.');
 B('Moroso: 7 días o más.');
-B('30-60 días y 60+ días: cuando el último fiado tiene un mes o más. Prioriza cobrar a estos primero.');
+B('30-60 días y 60+ días: cuando el último crédito tiene un mes o más. Prioriza cobrar a estos primero.');
 
 /* ---- 16 ---- */
 H1('16. Clientes: la hoja de cliente');
 B('Toca cualquier cliente para abrir su hoja: estado, saldo pendiente, abono rápido, movimientos y acciones.');
 B('Anotar abono: igual que en Inicio (monto, +C$100, +C$200, "Todo", método, ABONAR). El saldo baja al instante.');
-B('Movimientos: cada FIADO suma a su deuda y cada ABONO la resta, con su fecha. Es el historial completo y en orden.');
-B('"Dar nuevo fiado": registra un monto directo a su cuenta, para cuando el cliente se lleva mercancía sin pasar por Vender o el Live. Muestra el saldo que quedará.');
-EX('Ejemplo: Lupita debe C$20 y le das un fiado directo de C$80: queda debiendo C$100.');
+B('Movimientos: cada CRÉDITO suma a su deuda y cada ABONO la resta, con su fecha. Es el historial completo y en orden.');
+  B('"Dar nuevo crédito": registra un monto directo a su cuenta, para cuando el cliente se lleva mercancía sin pasar por Vender o el Live. Muestra el saldo que quedará.');
+EX('Ejemplo: Lupita debe C$20 y le das un crédito directo de C$80: queda debiendo C$100.');
 B('"Eliminar cliente": borra también su deuda y su historial. Pide confirmación; no se puede deshacer.');
-TIP('El fiado directo no aparece en las cifras de ventas del día (no es una venta): se refleja en la hoja del cliente y en "Fiado en calle".');
+  TIP('El crédito directo no aparece en las cifras de ventas del día (no es una venta): se refleja en la hoja del cliente y en el "Crédito hoy".');
 
 /* ---- 17 ---- */
 H1('17. Más: los gastos');
@@ -367,7 +379,7 @@ B('Si aún no hay ventas con productos, verás un aviso.');
 
 /* ---- 19 ---- */
 H1('19. Exportar el reporte');
-B('En Más, botón "Exportar reporte": descarga un archivo que se abre en Excel, con el resumen (ventas al contado, fiado, gastos y caja neta), el detalle de cada venta (fecha, cliente, canal, método, productos, total) y el detalle de gastos.');
+B('En Caja, botón "Exportar reporte .XLSX": descarga un archivo Excel con el resumen (ventas al contado, al crédito, gastos y caja neta), el detalle de cada venta (fecha, cliente, canal, método, productos, total) y el detalle de gastos.');
 B('El archivo se llama "reporte-miprenda" más la fecha. Se puede compartir por WhatsApp o correo.');
 B('El mismo aviso aparece arriba en Caja, pero la descarga se hace desde Más.');
 TIP('Expórtalo justo después del cierre para que coincida con el corte del día.');
@@ -389,21 +401,22 @@ S('21.2 Del día a día');
 B('Los números no se ven actualizados - recarga la página.');
 B('"Corte ya realizado hoy" - ya cerraste caja hoy; el botón se desbloquea mañana.');
 B('Un botón no responde - espera dos segundos (está guardando) y reintenta; si sigue, recarga.');
-B('"Esta venta ya está en cuenta" - esa venta del live ya está fiada; revisa la lista de apartados.');
+B('"Esta venta ya está en crédito" - esa venta del live ya pasó a crédito; revisa la lista de apartados.');
 S('21.3 Por qué puede no cuadrar mi caja');
-B('Recibiste abonos en EFECTIVO: el esperado no los suma (sección 6.6). La diferencia debe ser exactamente ese monto.');
+B('No registraste la CAJA INICIAL del día: anótala arriba en Caja y el esperado se ajusta al instante.');
 B('Un gasto salió de tu bolsillo y no lo registraste: anótalo en Más, Gastos.');
 B('Pagaste algo con dinero de la caja sin anotarlo como gasto.');
+B('Recibiste abonos en efectivo y NO aparecen: los abonos en efectivo SÍ se suman al esperado; si falta ese monto, revisa si el abono quedó registrado con método Efectivo y no Transferencia.');
 B('Contaste mal los billetes: vuelve a contar, sobre todo las monedas.');
 B('Una transferencia la contaste como efectivo físico: las transferencias están en el banco, no en el cajón.');
 B('Una venta fiada la diste por cobrada: revisa la lista de Clientes que deben.');
 
 /* ---- 22 ---- */
 H1('22. Rutina recomendada del día');
-B('Apertura: entra a tu cuenta y revisa Inicio. Los saldos pendientes de ayer siguen ahí.');
+B('Apertura: entra, registra la CAJA INICIAL del día (Caja) y revisa Inicio: las métricas arrancan en cero, los saldos pendientes de tus clientes siguen ahí.');
 B('Durante el día: vende en Vender (mostrador) o aparta en el Live. Anota los gastos cuando ocurran.');
-B('Cuando un fiado paga: toca su tarjeta (Inicio o Clientes) y registra el abono al instante.');
-B('Fin del día: revisa Caja, cuenta el dinero físico, haz el cierre de caja y exporta el reporte.');
+B('Cuando un cliente con crédito paga: toca su tarjeta (Inicio o Clientes) y registra el abono al instante.');
+B('Fin del día: revisa Caja, cuenta el dinero físico, haz el cierre de caja y exporta el reporte Excel.');
 TIP('Diez minutos de cierre al día te ahorran horas de cuentas a fin de mes.');
 
 /* ============ RENDER ============ */
@@ -413,15 +426,15 @@ page.push(PINK + ' rg 0 ' + (H - 250) + ' ' + W + ' 250 re f');
 page.push(op('Mi Prenda', 44, 2, '1 1 1', M, H - 115));
 page.push(op('Guía de usuario', 21, 2, '1 1 1', M, H - 152));
 page.push(op('Sistema de venta para tiendas de ropa', 11, 1, PINK_SOFT, M, H - 178));
-page.push(op('Versión 1.2 - Septiembre 2026 - Nicaragua - Moneda: córdobas (C$)', 9.5, 1, PINK_SOFT, M, H - 198));
+page.push(op('Versión 1.3 - Septiembre 2026 - Nicaragua - Moneda: córdobas (C$)', 9.5, 1, PINK_SOFT, M, H - 198));
 y = H - 285;
-para('Bienvenido a Mi Prenda. Esta guía explica, paso a paso y sin tecnicismos, cómo usar la aplicación completa: iniciar sesión, ingresar productos, vender al contado y al fiado, hacer lives de TikTok, cobrar a clientes, registrar gastos y cerrar la caja con conteo de billetes.', 11, INK);
+para('Bienvenido a Mi Prenda. Esta guía explica, paso a paso y sin tecnicismos, cómo usar la aplicación completa: iniciar sesión, ingresar productos, vender al contado, por transferencia o al crédito, hacer lives de TikTok, cobrar a clientes, registrar gastos y cerrar la caja con conteo de billetes.', 11, INK);
 gap(6);
 para('Incluye una sección dedicada a cómo funciona la contabilidad: qué significa cada número, cómo se calcula y un ejemplo completo de un día de tienda que se usa en todo el documento.', 11, SUB);
 gap(4);
 para('Importante: la contraseña de tu cuenta te la entrega el administrador del sistema. Nunca la compartas.', 10.5, PINK);
 y -= 16;
-para('Contenido: 1 Qué es - 2 Cuenta y roles - 3 Iniciar sesión - 4 Panel admin - 5 Navegación - 6 Contabilidad - 7 Inicio - 8 Vender contado - 9 Vender fiado - 10 Live TikTok - 11 Caja - 12 Cierre de caja - 13 Ingresar producto - 15 Lista de clientes - 16 Hoja de cliente - 17 Gastos - 18 Estadísticas - 19 Reporte - 20 Instalar en celular - 21 Problemas comunes - 22 Rutina del día', 9.5, SUB);
+para('Contenido: 1 Qué es - 2 Cuenta y roles - 3 Iniciar sesión - 4 Panel admin - 5 Navegación - 6 Contabilidad - 7 Inicio - 8 Vender (contado y transferencia) - 9 Vender a crédito - 10 Live TikTok - 11 Caja - 12 Cierre de caja (con caja inicial) - 13 Ingresar producto - 15 Lista de clientes - 16 Hoja de cliente - 17 Gastos - 18 Estadísticas - 19 Reporte - 20 Instalar en celular - 21 Problemas comunes - 22 Rutina del día', 9.5, SUB);
 endPage();
 
 for (const [t, s] of G) {
@@ -478,4 +491,4 @@ out += 'trailer\n<< /Size ' + (objs.length + 1) + ' /Root 1 0 R >>\nstartxref\n'
 const pdfBuf = Buffer.from(out, 'latin1');
 const outPath = path.join(__dirname, '..', 'GUIA-USUARIO.pdf');
 fs.writeFileSync(outPath, pdfBuf);
-console.log('Guia v1.2 generada: ' + outPath + ' (' + pdfBuf.length + ' bytes, ' + nPages + ' paginas)');
+console.log('Guia v1.3 generada: ' + outPath + ' (' + pdfBuf.length + ' bytes, ' + nPages + ' paginas)');

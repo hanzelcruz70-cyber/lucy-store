@@ -5,7 +5,9 @@
 
 ## Qué es
 
-Mi Prenda es un **Punto de Venta (POS) multitenant en modo PWA** para tiendas de ropa (paca/americana) que venden por mostrador y por **Lives de TikTok**, con gestión de **fiados (créditos)**, inventario de productos con stock, gastos y estadísticas. Moneda: **Córdobas (C$)** — Nicaragua.
+Mi Prenda es un **Punto de Venta (POS) multitenant en modo PWA** para tiendas de ropa (paca/americana) que venden por mostrador y por **Lives de TikTok**, con gestión de **créditos (fiados)**, inventario de productos con stock, gastos y estadísticas. Moneda: **Córdobas (C$)** — Nicaragua.
+
+**TERMINOLOGÍA (2026-09-13):** en la UI, PDF, Excel y marketing la palabra es **"crédito"** — NO "fiado". Los valores internos de BD (`payment_method='fiado'`, tipos de cola `live_fiado`, `fiado_directo`) y los nombres de función RPC/JS NO se renombraron (romperían RLS/sync/migraciones históricas). Regla: texto visible = "crédito"; código/BD = "fiado".
 
 **Marca/Nombre:** Mi Prenda (antes Mi Prenda, renombrado 2026-09-11) — app multitenant: cada tienda es un cliente; nunca nombrar con el nombre de UNA tienda (Lucy Store fue el primero, el nombre del repo es histórico)
 
@@ -134,7 +136,10 @@ Toda escritura cliente-side revisa `isOffline()` (lib/offline-queue.js). Sin con
 ## Reglas de UI
 
 - **Paleta rosa**: primary `#E040A0`, texto `#19010C`, secundario `#952964`, superficies `#F7F4F5/#F7E9EC/#F6CCD9`
-- **Moneda:** SIEMPRE `C$` + `toLocaleString('es-NI')` — función `money()` al inicio de cada componente
+- **Moneda:** SIEMPRE `C$` + `toLocaleString('es-NI')` — función `money()` al inicio de cada componente. Montos destacados usan `inline-flex items-center leading-none` (C$ alineado con los dígitos)
+- **Listas largas (>5 filas):** contenedor con `overflow-y-auto scroll-box` + `maxHeight` de 5 filas — la página no crece infinitamente (Clientes, CutsHistory, historiales de Live/Clientes; Inventario ya lo tenía)
+- **Diálogos:** NUNCA `window.confirm/alert` (congelan Android/PWA). Usar `appConfirm()/appAlert()` de `components/ConfirmDialog.js`
+- **Scroll:** `overscroll-behavior: auto` en `.scroll-box` (el scroll se derrama; con `contain` la página quedaba congelada)
 - Tipografías: Plus Jakarta Sans + Space Grotesk; iconos SVG inline de línea
 - Responsive: sidebar ≥768px; nav inferior + drawer móvil
 - Buscadores: normalización sin acentos (`norm()`), tolerante a espacios
@@ -167,8 +172,8 @@ vercel --prod
 Variables en Dashboard: las 5 de `.env.local`. CI de GitHub corre build+audits en cada push.
 
 ### Migraciones Supabase (en orden)
-1. `schema.sql` → 2. `migration2-products.sql` → 3. `migration5-fix-triggers.sql` → 4. `migration6-expenses.sql` → 5. `migration7-subscription.sql` → 6. `migration7-audit.sql` → 7. `migration8-cash-opening.sql`
-**Detener servidor local antes (deadlock).** Las migraciones 7-audit y 8 son idempotentes (re-ejecutables); la 7-audit fusiona clientes duplicados automáticamente.
+1. `schema.sql` → 2. `migration2-products.sql` → 3. `migration5-fix-triggers.sql` → 4. `migration6-expenses.sql` → 5. `migration7-subscription.sql` → 6. `migration7-audit.sql` → 7. `migration8-cash-opening.sql` → 8. `migration9-cleanup.sql`
+**Detener servidor local antes (deadlock).** Las migraciones 7-audit, 8 y 9 son idempotentes (re-ejecutables); la 7-audit fusiona clientes duplicados automáticamente. La 9 programa limpieza diaria (pg_cron) de datos >30 días: apartados de Live, deudas SALDADAS y abonos viejos — los créditos PENDIENTES jamás se borran.
 
 ### Guía de usuario (PDF)
 ```bash

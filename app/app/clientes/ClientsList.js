@@ -128,7 +128,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         const ok = await appConfirm(
           `Ya existe un cliente llamado "${existing[0].name}".\n\n` +
             `¿Seguro que quieres crear OTRO con el mismo nombre?\n` +
-            `Tener duplicados confunde los fiados y los abonos.`,
+            `Tener duplicados confunde los créditos y los abonos.`,
           { title: 'Cliente duplicado', confirmText: 'Crear igual' }
         );
         if (!ok) {
@@ -335,7 +335,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
           };
         });
         setSheet(null);
-        showToast(`Fiado de ${money(amt)} guardado (se sincroniza solo)`);
+        showToast(`Crédito de ${money(amt)} guardado (se sincroniza solo)`);
         return;
       }
 
@@ -347,9 +347,9 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         channel: 'mostrador',
         paymentMethod: 'fiado',
         clientName: c.name,
-        notes: 'Fiado directo',
+        notes: 'Crédito directo',
       });
-      if (errRpc) throw new Error('No se registró el fiado: ' + errRpc.message);
+      if (errRpc) throw new Error('No se registró el crédito: ' + errRpc.message);
       const newBalance = Number(
         (fiadoRes && fiadoRes.balance !== undefined ? fiadoRes.balance : (sheet.balance || 0) + amt)
       );
@@ -365,7 +365,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
       });
 
       setSheet(null);
-      showToast(`Fiado de ${money(amt)} registrado a ${c.name}`);
+      showToast(`Crédito de ${money(amt)} registrado a ${c.name}`);
     } catch (err) {
       showToast('Error: ' + err.message, false);
     } finally {
@@ -425,7 +425,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
       {/* Métricas del día (se reinician cada mañana) */}
       <div className="grid grid-cols-2 gap-2.5">
         <div className="bg-surface-container-low border border-outline rounded-[14px] p-3.5">
-          <Label>Fiado hoy</Label>
+          <Label>Crédito hoy</Label>
           <div className="inline-flex items-center leading-none text-[24px] font-bold text-on-surface mt-1.5">{money(fiadoHoy)}</div>
           <div className="text-[12px] text-on-surface-variant mt-0.5 flex items-center gap-1">
             <span className="w-[7px] h-[7px] rounded-full bg-primary inline-block" />
@@ -441,7 +441,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
 
       {/* Saldo histórico de la calle */}
       <div className="bg-surface-container-lowest border border-outline rounded-[10px] px-3.5 py-2.5 flex justify-between items-center">
-        <span className="text-[12.5px] text-on-surface-variant">Fiado en calle (histórico)</span>
+        <span className="text-[12.5px] text-on-surface-variant">Crédito en calle (histórico)</span>
         <b className="inline-flex items-center leading-none text-[14px] text-on-surface">{money(totalDebtNow)}</b>
       </div>
 
@@ -504,12 +504,16 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
       {visible.length === 0 && (
         <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-6 text-center">
           <p className="text-[13px] text-on-surface-variant">
-            {tab === 'debt' ? 'Nadie debe nada. ¡Cobranza perfecta!' : 'Sin clientes todavía.'}
+            {tab === 'debt' ? 'Nadie te debe nada. ¡Cobranza perfecta!' : 'Sin clientes todavía.'}
           </p>
         </div>
       )}
       {visible.length > 0 && (
         <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
+          <div
+            className="overflow-y-auto scroll-box -mr-1 pr-1"
+            style={{ maxHeight: 5 * 64 }}
+          >
           {visible.map((c) => {
             const balance = balanceOf(c);
             const isDebtor = balance > 0;
@@ -577,19 +581,29 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
               </div>
             );
           })}
+          </div>
+          {visible.length > 5 && (
+            <p className="text-center text-[10.5px] text-on-surface-variant uppercase tracking-wide py-1.5 border-t border-surface-container">
+              {visible.length} clientes · desplázate para ver más
+            </p>
+          )}
         </div>
       )}
 
-      {/* Historial de días anteriores (fiado y recuperado por día) */}
+      {/* Historial de días anteriores (crédito y recuperado por día) */}
       {historial.length > 0 && (
         <section className="space-y-2.5">
           <div className="flex justify-between items-center px-0.5">
             <b className="text-[14px] text-on-surface">Días anteriores</b>
             <span className="inline-flex text-[10.5px] font-semibold px-2 py-[3px] rounded-full bg-primary-fixed text-primary">
-              fiado · recuperado
+              crédito · recuperado
             </span>
           </div>
           <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
+            <div
+              className="overflow-y-auto scroll-box -mr-1 pr-1"
+              style={{ maxHeight: 5 * 60 }}
+            >
             {historial.map((h) => {
               const fecha = new Date(h.fecha + 'T12:00:00');
               return (
@@ -599,7 +613,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                   </b>
                   <div className="flex items-center gap-3 text-[12.5px]">
                     <span className="text-on-surface-variant">
-                      Fiado <b className="inline-flex items-center leading-none text-on-surface">{money(h.fiado)}</b>
+                      Crédito <b className="inline-flex items-center leading-none text-on-surface">{money(h.fiado)}</b>
                     </span>
                     <span className="text-on-surface-variant">
                       Recuperado <b className="inline-flex items-center leading-none text-primary">{money(h.recuperado)}</b>
@@ -608,6 +622,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                 </div>
               );
             })}
+            </div>
           </div>
         </section>
       )}
@@ -720,7 +735,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                       <path d="M12 3v18M3 12h18" />
                     </svg>
-                    Dar nuevo fiado
+                    Dar nuevo crédito
                   </button>
                   <button
                     onClick={() => eliminarCliente(sheet.client)}
@@ -810,7 +825,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
             {sheetMode === 'fiado' && (
               <form className="mt-3 space-y-3" onSubmit={confirmFiado}>
                 <div>
-                  <Label className="mb-1.5">Monto del fiado</Label>
+                  <Label className="mb-1.5">Monto del crédito</Label>
                   <input
                     value={fiadoAmount}
                     onChange={(e) => setFiadoAmount(e.target.value)}
@@ -820,12 +835,12 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                   />
                 </div>
                 <div className="bg-surface-container-low border border-outline rounded-[10px] px-3.5 py-2.5 flex justify-between items-center">
-                  <span className="text-[12.5px] text-on-surface-variant">Saldo tras el fiado</span>
+                  <span className="text-[12.5px] text-on-surface-variant">Saldo tras el crédito</span>
                   <b className="text-[14px] text-primary">{money((sheet.balance || 0) + (parseFloat(fiadoAmount) || 0))}</b>
                 </div>
                 <div className="flex gap-2">
                   <button type="submit" disabled={busy} className="flex-1 py-3 rounded-xl bg-primary text-on-primary text-[13.5px] font-semibold active:bg-primary-deep transition-colors disabled:opacity-60">
-                    {busy ? 'Registrando…' : 'Registrar fiado'}
+                    {busy ? 'Registrando…' : 'Registrar crédito'}
                   </button>
                   <button type="button" onClick={() => setSheetMode('info')} className="px-5 rounded-xl bg-surface-container-low border border-outline text-on-surface text-[13px] font-semibold">
                     Volver

@@ -267,7 +267,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
     if (!abono || busy) return;
     const amt = parseFloat(fiadoAmount);
     if (!amt || amt <= 0) {
-      showToast('Escribe el monto del fiado', false);
+      showToast('Escribe el monto del crédito', false);
       return;
     }
     setBusy(true);
@@ -285,13 +285,13 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
             id: 'd-off-' + Date.now(),
             type: 'FIADO',
             amount: amt,
-            description: 'Fiado directo',
+            description: null,
             date: new Date().toISOString(),
           });
           return { ...movs, [abono.id]: list };
         });
         setAbono(null);
-        showToast(`Fiado de ${money(amt)} guardado (se sincroniza solo)`);
+        showToast(`Crédito de ${money(amt)} guardado (se sincroniza solo)`);
         return;
       }
 
@@ -304,9 +304,9 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
         channel: 'mostrador',
         paymentMethod: 'fiado',
         clientName: abono.name,
-        notes: 'Fiado directo',
+        notes: 'Crédito directo',
       });
-      if (errRpc) throw new Error('No se registró el fiado: ' + errRpc.message);
+      if (errRpc) throw new Error('No se registró el crédito: ' + errRpc.message);
       const newBalance = Number(
         (fiadoRes && fiadoRes.balance !== undefined ? fiadoRes.balance : (abono.balance || 0) + amt)
       );
@@ -318,13 +318,13 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
           id: 'd-live-' + Date.now(),
           type: 'FIADO',
           amount: amt,
-          description: 'Fiado directo',
+          description: null,
           date: new Date().toISOString(),
         });
         return { ...movs, [abono.id]: list };
       });
       setAbono(null);
-      showToast(`Fiado de ${money(amt)} registrado a ${abono.name}`);
+      showToast(`Crédito de ${money(amt)} registrado a ${abono.name}`);
     } catch (err) {
       showToast('Error: ' + err.message, false);
     } finally {
@@ -360,7 +360,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
       tipo: s.payment_method === 'fiado' ? 'fiado' : 'venta',
       titulo: `${s.client_name || 'Venta mostrador'}${s.notes ? ' · ' + s.notes : ''}`,
       sub: `${new Date(s.created_at).toLocaleTimeString('es-NI', { hour: 'numeric', minute: '2-digit' })} · ${
-        s.payment_method === 'fiado' ? 'Fiado' : 'Contado'
+        s.payment_method === 'fiado' ? 'Crédito' : 'Contado'
       }${s.channel === 'tiktok_live' ? ' · Live' : ''}`,
       monto: Number(s.total),
       signo: '+',
@@ -427,7 +427,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
             <div className="inline-flex items-center leading-none text-[20px] font-bold text-primary mt-1">{money(contado)}</div>
           </div>
           <div className="bg-surface-container-low border border-outline rounded-[10px] p-2.5">
-            <Label>Fiado</Label>
+            <Label>Crédito</Label>
             <div className="inline-flex items-center leading-none text-[20px] font-bold text-on-surface mt-1">{money(fiado)}</div>
           </div>
           <div className="bg-surface-container-low border border-outline rounded-[10px] p-2.5">
@@ -647,7 +647,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                     <path d="M12 3v18M3 12h18" />
                   </svg>
-                  Dar nuevo fiado
+                  Dar nuevo crédito
                 </button>
                 <button
                   type="button"
@@ -698,11 +698,11 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
             </form>
             )}
 
-            {/* MODO FIADO: registrar nuevo fiado al cliente */}
+            {/* MODO CREDITO: registrar nuevo crédito al cliente */}
             {abono && sheetMode === 'fiado' && (
               <form className="mt-3 space-y-3" onSubmit={confirmFiado}>
                 <div>
-                  <Label className="mb-1.5">Monto del fiado</Label>
+                  <Label className="mb-1.5">Monto del crédito</Label>
                   <input
                     autoFocus
                     value={fiadoAmount}
@@ -713,12 +713,12 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
                   />
                 </div>
                 <div className="bg-surface-container-low border border-outline rounded-[10px] px-3.5 py-2.5 flex justify-between items-center">
-                  <span className="text-[12.5px] text-on-surface-variant">Saldo tras el fiado</span>
+                  <span className="text-[12.5px] text-on-surface-variant">Saldo tras el crédito</span>
                   <b className="inline-flex items-center leading-none text-[14px] text-primary">{money((abono.balance || 0) + (parseFloat(fiadoAmount) || 0))}</b>
                 </div>
                 <div className="flex gap-2">
                   <button type="submit" disabled={busy} className="flex-1 py-3 rounded-xl bg-primary text-on-primary text-[13.5px] font-semibold active:bg-primary-deep transition-colors disabled:opacity-60">
-                    {busy ? 'Registrando…' : 'Registrar fiado'}
+                    {busy ? 'Registrando…' : 'Registrar crédito'}
                   </button>
                   <button type="button" onClick={() => setSheetMode('info')} className="px-5 rounded-xl bg-surface-container-low border border-outline text-on-surface text-[13px] font-semibold">
                     Volver

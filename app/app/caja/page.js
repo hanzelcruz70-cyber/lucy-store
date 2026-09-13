@@ -143,14 +143,13 @@ export default async function CajaPage() {
           </div>
           <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3">
             <div className="flex justify-between items-center">
-              <span className="text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase">Fiado</span>
+              <span className="text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase">Crédito</span>
               <span className="inline-flex text-[10.5px] font-semibold px-2 py-[3px] rounded-full bg-surface-container-lowest border border-primary-fixed-dim text-primary">
                 Por cobrar
               </span>
             </div>
             <div className="inline-flex items-center leading-none text-[20px] font-bold text-on-surface mt-1">{money(d.credit)}</div>
-            <div className="text-[12px] text-on-surface-variant mt-0.5">Ventas a crédito hoy</div>
-          </div>
+            <div className="text-[12px] text-on-surface-variant mt-0.5">Ventas a crédito hoy</div>          </div>
         </div>
 
         <div className="flex justify-between text-[13px] mt-3">
@@ -182,7 +181,7 @@ export default async function CajaPage() {
                 Venta · {s.client_name || 'Mostrador'}
               </b>
               <span className="block text-[11.5px] text-on-surface-variant truncate">
-                {s.notes || s.items_count + ' prendas'} · {s.payment_method === 'fiado' ? 'fiado' : 'contado'}
+                {s.notes || s.items_count + ' prendas'} · {s.payment_method === 'fiado' ? 'crédito' : 'contado'}
                 {s.channel === 'tiktok_live' ? ' · Live' : ''}
               </span>
             </div>

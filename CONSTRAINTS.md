@@ -46,8 +46,8 @@ number and no command in this column is an aspiration, not a constraint.
 ## QA gate (antes de cada deploy)
 
 1. `npm run build` verde
-2. Flujo probado como usuario real (login → venta → fiado → abono → cierre)
-3. Números verificados manualmente (contado/fiado/abonos cuadran)
+2. Flujo probado como usuario real (login → venta → crédito → abono → cierre)
+3. Números verificados manualmente (contado/crédito/abonos cuadran)
 4. `gitleaks detect --redact` sin hallazgos
 
 ## Prácticas del pack agent-skills adoptadas

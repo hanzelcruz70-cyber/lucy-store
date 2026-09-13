@@ -206,7 +206,7 @@ export default function LoginPage() {
             Mi Prenda
           </h1>
             <p className="text-[13px] text-on-surface-variant mt-1">
-              Caja, fiados, inventario y Lives. Todo en tu bolsillo.
+              Caja, créditos, inventario y Lives. Todo en tu bolsillo.
             </p>
           </div>
         </div>

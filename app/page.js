@@ -236,7 +236,7 @@ export default function Home() {
                   y en tu bolsillo
                 </h1>
                 <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                  Mi Prenda es el punto de venta para tiendas de americana: caja, fiados, inventario y Lives de TikTok
+                  Mi Prenda es el punto de venta para tiendas de americana: caja, créditos, inventario y Lives de TikTok
                   en una sola app. Sin libretas, sin Excel, sin cuentas a mano al final del día.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
@@ -341,7 +341,7 @@ export default function Home() {
                       </div>
                       <div className="flex items-start gap-3 p-3 rounded-xl bg-on-primary/10 backdrop-blur-sm">
                         <div className="w-6 h-6 rounded-full bg-secondary-fixed-dim text-on-secondary-fixed flex items-center justify-center shrink-0 mt-0.5 font-bold text-[13px]">✓</div>
-                        <p className="font-body-md text-body-md text-on-primary">Controla abonos de fiados en un toque, con balance y recordatorio automático.</p>
+                        <p className="font-body-md text-body-md text-on-primary">Controla abonos de créditos en un toque, con balance y recordatorio automático.</p>
                       </div>
                       <div className="flex items-start gap-3 p-3 rounded-xl bg-on-primary/10 backdrop-blur-sm">
                         <div className="w-6 h-6 rounded-full bg-secondary-fixed-dim text-on-secondary-fixed flex items-center justify-center shrink-0 mt-0.5 font-bold text-[13px]">✓</div>
@@ -490,7 +490,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Fiados bajo control */}
+                {/* Créditos bajo control */}
                 <div className="lg:col-span-7 bg-surface-card rounded-2xl p-8 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
                   <div>
                     <div className="flex items-center justify-between mb-4">
@@ -499,7 +499,7 @@ export default function Home() {
                       </div>
                       <span className="font-caption text-caption px-3 py-1 rounded-full bg-flash-amber/15 text-on-surface font-bold">Cero Cuentas Perdidas</span>
                     </div>
-                    <h3 className="font-headline-md text-headline-md text-on-surface font-extrabold mb-2">Fiados bajo control</h3>
+                    <h3 className="font-headline-md text-headline-md text-on-surface font-extrabold mb-2">Créditos bajo control</h3>
                     <p className="font-body-md text-body-md text-on-surface-variant mb-6">
                       Quién te debe, desde cuándo y su historial de abonos. Se acabó el incómodo "déjame anotarlo en
                       el cuaderno" y las confusiones al cobrar.
@@ -577,7 +577,7 @@ export default function Home() {
                 {[
                   { n: '1', icon: 'mark_chat_unread', title: 'Escríbenos', desc: 'Mándanos un WhatsApp con el nombre de tu tienda. Te creamos el acceso seguro y te enviamos tu enlace en minutos.', foot: 'Alta exprés en < 5 min' },
                   { n: '2', icon: 'post_add', title: 'Ingresa tus productos', desc: 'Coloca nombre, costo estimado y precio. O simplemente usa folios rápidos de prendas. Sale directo al punto de venta.', foot: 'Sin catálogos engorrosos' },
-                  { n: '3', icon: 'payments', title: 'Vende y cobra', desc: 'Cobra en mostrador, anota fiados o transmite en Live. Al cerrar, la app cuadra el día por ti automáticamente.', foot: 'Caja cuadrada en 2 minutos' },
+                  { n: '3', icon: 'payments', title: 'Vende y cobra', desc: 'Cobra en mostrador, anota créditos o transmite en Live. Al cerrar, la app cuadra el día por ti automáticamente.', foot: 'Caja cuadrada en 2 minutos' },
                 ].map((s) => (
                   <div key={s.n} className="bg-surface-card rounded-2xl p-8 shadow-sm relative flex flex-col justify-between">
                     <div>
@@ -680,7 +680,7 @@ export default function Home() {
                   <a href="#funciones" className="">Captura en Vivo TikTok &amp; IG</a>
                 </li>
                 <li className="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors">
-                  <a href="#funciones" className="">Libreta de Fiados &amp; Abonos</a>
+                  <a href="#funciones" className="">Libreta de Créditos &amp; Abonos</a>
                 </li>
               </ul>
             </div>
@@ -741,7 +741,7 @@ export default function Home() {
             operatingSystem: 'Web, Android, iOS',
             url: 'https://mi-prenda.vercel.app',
             description:
-              'Punto de venta para tiendas de ropa americana y bazares: caja con arqueo diario, fiados con abonos, inventario con ganancias por pieza y apartados en Lives de TikTok. Funciona sin internet e instalable en el celular.',
+              'Punto de venta para tiendas de ropa americana y bazares: caja con arqueo diario, créditos con abonos, inventario con ganancias por pieza y apartados en Lives de TikTok. Funciona sin internet e instalable en el celular.',
             inLanguage: 'es-NI',
             offers: {
               '@type': 'Offer',
@@ -751,7 +751,7 @@ export default function Home() {
             },
             featureList: [
               'Caja y corte diario con arqueo por denominaciones',
-              'Fiados y abonos con historial por cliente',
+              'Créditos y abonos con historial por cliente',
               'Inventario con costo y ganancia por pieza',
               'Apartados en Lives de TikTok',
               'Modo offline con sincronización automática',

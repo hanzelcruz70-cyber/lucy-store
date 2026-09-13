@@ -1,7 +1,7 @@
 # Mi Prenda · Punto de venta multitenant para tiendas de ropa
 
 PWA instalable en celular, con Next.js 15, Supabase (datos + auth + RLS) y despliegue en Vercel.
-Cada tienda (tenant) solo ve sus propios datos: caja, fiados, inventario y lives de TikTok.
+Cada tienda (tenant) solo ve sus propios datos: caja, créditos, inventario y lives de TikTok.
 
 > Repo público: el código es abierto, pero las llaves (Supabase, admin) viven solo en
 > `.env.local` (gitignored) y los datos de cada tienda están protegidos por RLS en Supabase.
@@ -36,8 +36,9 @@ lucy-store/
 ### 1) Supabase
 1. Crea cuenta en [supabase.com](https://supabase.com) → **New project**.
 2. En **SQL Editor** pega TODO el contenido de `supabase/schema.sql` → **Run**.
-   Luego `migration2-products.sql`, `migration5-fix-triggers.sql`, `migration6-expenses.sql`,
-   `migration7-subscription.sql`, `migration7-audit.sql` y `migration8-cash-opening.sql`.
+   Luego en orden: `migration2-products.sql`, `migration5-fix-triggers.sql`, `migration6-expenses.sql`,
+   `migration7-subscription.sql`, `migration7-audit.sql`, `migration8-cash-opening.sql`
+   y `migration9-cleanup.sql` (limpieza automática de datos >30 días).
 3. En **Settings → API** copia:
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`

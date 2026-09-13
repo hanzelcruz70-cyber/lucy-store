@@ -161,7 +161,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
   const markFiado = async (sale) => {
     if (processingId) return;
     if (debtSaleIds.has(sale.id)) {
-      showToast('Esta venta ya está en cuenta', false);
+      showToast('Esta venta ya está en crédito', false);
       return;
     }
     setProcessingId(sale.id);
@@ -179,7 +179,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
           },
         });
         setDebtSaleIds((ids) => new Set(ids).add(sale.id));
-        showToast(`Fiado de ${money(Number(sale.total))} guardado (se sincroniza solo)`);
+        showToast(`Crédito de ${money(Number(sale.total))} guardado (se sincroniza solo)`);
         return;
       }
       // RPC TRANSACCIONAL con anti doble-fiado (guardia por sale_id DENTRO
@@ -427,7 +427,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
                         Cobrado
                       </Badge>
                     ) : inDebt ? (
-                      <Badge dark>Fiado</Badge>
+                      <Badge dark>Crédito</Badge>
                     ) : (
                       <Badge>Pendiente</Badge>
                     )}
@@ -450,7 +450,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
                     <button
                       onClick={() => markFiado(s)}
                       disabled={processing}
-                      title="Poner en fiado"
+                      title="Pasar a crédito"
                       aria-label={`Fiar apartado de ${s.client_name || 'cliente'}`}
                       className="w-9 h-9 rounded-[10px] bg-inverse-surface text-inverse-on-surface flex items-center justify-center active:opacity-80 disabled:opacity-50 transition-opacity"
                     >
@@ -498,6 +498,10 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
             <Badge>prendas · monto</Badge>
           </div>
           <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
+            <div
+              className="overflow-y-auto scroll-box -mr-1 pr-1"
+              style={{ maxHeight: 5 * 60 }}
+            >
             {historial.map((h) => {
               const fecha = new Date(h.fecha + 'T12:00:00');
               return (
@@ -516,6 +520,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
                 </div>
               );
             })}
+            </div>
           </div>
         </section>
       )}

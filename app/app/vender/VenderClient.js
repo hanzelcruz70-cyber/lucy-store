@@ -82,7 +82,7 @@ export default function VenderClient({ products: initialProducts, lots, clients 
   const confirmSale = async () => {
     if (busy || cart.length === 0) return;
     if (payMethod === 'fiado' && !fiadoClient.trim()) {
-      showToast('Escribe el nombre del cliente para el fiado', false);
+      showToast('Escribe el nombre del cliente para el crédito', false);
       return;
     }
     setBusy(true);
@@ -126,7 +126,7 @@ export default function VenderClient({ products: initialProducts, lots, clients 
         setFiadoClient('');
         showToast(
           payMethod === 'fiado'
-            ? `Fiado de ${money(total)} guardado (se sincroniza solo)`
+            ? `Crédito de ${money(total)} guardado (se sincroniza solo)`
             : `Venta de ${money(total)} guardada (se sincroniza sola)`
         );
         return;
@@ -175,7 +175,7 @@ export default function VenderClient({ products: initialProducts, lots, clients 
       setFiadoClient('');
       showToast(
         payMethod === 'fiado'
-          ? `Fiado de ${money(total)} registrado`
+          ? `Crédito de ${money(total)} registrado`
           : `Venta de ${money(total)} registrada`
       );
     } catch (err) {
@@ -300,7 +300,7 @@ export default function VenderClient({ products: initialProducts, lots, clients 
                 payMethod === 'fiado' ? 'bg-primary border-primary text-on-primary' : 'bg-surface-container-lowest border-outline text-on-surface'
               }`}
             >
-              Fiado
+              Crédito
             </button>
           </div>
 
@@ -354,7 +354,7 @@ export default function VenderClient({ products: initialProducts, lots, clients 
             disabled={busy}
             className="w-full h-13 py-3 mt-2.5 rounded-xl bg-primary text-on-primary text-[14px] font-semibold flex items-center justify-center gap-2 active:bg-primary-deep transition-colors disabled:opacity-60"
           >
-            {busy ? 'Registrando…' : payMethod === 'fiado' ? `Fiar ${money(total)}` : `Cobrar ${money(total)}`}
+            {busy ? 'Registrando…' : payMethod === 'fiado' ? `Dar crédito ${money(total)}` : `Cobrar ${money(total)}`}
           </button>
         </div>
       )}

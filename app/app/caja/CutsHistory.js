@@ -47,6 +47,10 @@ export default function CutsHistory({ cuts }) {
 
       {filtered.length > 0 && (
         <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
+          <div
+            className="overflow-y-auto scroll-box -mr-1 pr-1"
+            style={{ maxHeight: 5 * 68 }}
+          >
           {filtered.map((c) => {
             /* Columnas numéricas (migración 7); fallback a notes para cortes viejos */
             const parseFromNotes = (label) => {
@@ -101,6 +105,7 @@ export default function CutsHistory({ cuts }) {
               </div>
             );
           })}
+          </div>
         </div>
       )}
     </section>
