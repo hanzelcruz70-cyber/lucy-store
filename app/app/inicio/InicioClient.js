@@ -154,14 +154,18 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
         const offFolioNum =
           Math.max(
             0,
-            ...[...sales, ...payments, ...expenses].reduce(
-              (acc, m) => {
-                const n = parseInt(String(folioByMov[m.id] || '').replace('#', ''), 10);
-                acc.push(isNaN(n) ? 0 : n);
-                return acc;
-              },
-              [0]
-            )
+            ...payments.map((p) => {
+              const n = parseInt(String(p._folio || folioByMov[p.id] || '').replace('#', ''), 10);
+              return isNaN(n) ? 0 : n;
+            }),
+            ...sales.map((m) => {
+              const n = parseInt(String(folioByMov[m.id] || '').replace('#', ''), 10);
+              return isNaN(n) ? 0 : n;
+            }),
+            ...expenses.map((m) => {
+              const n = parseInt(String(folioByMov[m.id] || '').replace('#', ''), 10);
+              return isNaN(n) ? 0 : n;
+            })
           ) + 1;
         setPayments((list) => [
           { id: 'p-off-' + Date.now(), sale_id: null, debt_id: null, amount: montoReal, method, created_at: new Date().toISOString(), _clientName: abono.name, _folio: '#' + String(offFolioNum).padStart(3, '0') },
@@ -247,18 +251,24 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
           : list.map((c) => (c.id === abono.id ? updatedClient : c))
       );
 
-      // Insertar el abono EN VIVO en los movimientos de hoy (sin recargar la página)
+      // Insertar el abono EN VIVO en los movimientos de hoy (sin recargar la página).
+      // El folio se calcula sobre la lista EN VIVO (payments incluye los ya insertados
+      // en esta sesión), así que abonos consecutivos sin recargar no repiten número.
       const nextFolioNum =
         Math.max(
           0,
-          ...[...sales, ...payments, ...expenses].reduce(
-            (acc, m) => {
-              const n = parseInt(String(folioByMov[m.id] || '').replace('#', ''), 10);
-              acc.push(isNaN(n) ? 0 : n);
-              return acc;
-            },
-            [0]
-          )
+          ...payments.map((p) => {
+            const n = parseInt(String(p._folio || folioByMov[p.id] || '').replace('#', ''), 10);
+            return isNaN(n) ? 0 : n;
+          }),
+          ...sales.map((m) => {
+            const n = parseInt(String(folioByMov[m.id] || '').replace('#', ''), 10);
+            return isNaN(n) ? 0 : n;
+          }),
+          ...expenses.map((m) => {
+            const n = parseInt(String(folioByMov[m.id] || '').replace('#', ''), 10);
+            return isNaN(n) ? 0 : n;
+          })
         ) + 1;
       const livePaymentId = 'p-live-' + Date.now();
       const liveFolio = '#' + String(nextFolioNum).padStart(3, '0');
@@ -315,7 +325,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
       if (isOffline()) {
         enqueueOp({
           type: 'fiado_directo',
-          payload: { localId: uuid(), clientId: abono.id, amount: amt },
+          payload: { localId: uuid(), saleLocalId: uuid(), clientId: abono.id, clientName: abono.name, amount: amt },
         });
         setDebtList((list) => list.map((c) => (c.id === abono.id ? { ...c, balance: newBalance } : c)));
         setMovsByClient((movs) => {
@@ -337,12 +347,31 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
       const supabase = createClient();
       const ctx = await getMyContext();
 
+      // Registrar la venta fiada primero: genera folio y aparece en
+      // Movimientos del día (Inicio/Caja leen de sales, no de debts)
+      const { data: sale, error: errSale } = await supabase
+        .from('sales')
+        .insert({
+          total: amt,
+          items_count: 1,
+          channel: 'mostrador',
+          payment_method: 'fiado',
+          client_name: abono.name,
+          notes: 'Fiado directo',
+          store_id: ctx.storeId,
+          user_id: ctx.userId,
+        })
+        .select('id')
+        .single();
+      if (errSale) throw new Error('No se registró la venta: ' + errSale.message);
+
       const { error: errDebt } = await supabase.from('debts').insert({
         client_id: abono.id,
         original_amount: amt,
         remaining: amt,
         description: 'Fiado directo',
         status: 'pendiente',
+        sale_id: sale.id,
         store_id: ctx.storeId,
         user_id: ctx.userId,
       });
@@ -530,9 +559,9 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
             ))}
           </div>
         )}
-        {movimientos.length > 5 && (
+        {movsFiltrados.length > 5 && (
           <p className="text-center text-[10.5px] text-on-surface-variant uppercase tracking-wide">
-            {movsFiltrados.length > 5 ? 'Desplázate para ver más ↓' : ''}
+            Desplázate para ver más ↓
           </p>
         )}
       </div>

@@ -369,7 +369,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         // ===== MODO OFFLINE: fiado directo local =====
         enqueueOp({
           type: 'fiado_directo',
-          payload: { localId: uuid(), clientId: c.id, amount: amt },
+          payload: { localId: uuid(), saleLocalId: uuid(), clientId: c.id, clientName: c.name, amount: amt },
         });
         const newBalance = (sheet.balance || 0) + amt;
         setItems((it) => {
@@ -389,12 +389,31 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
       const supabase = createClient();
       const ctx = await getMyContext();
 
+      // Registrar la venta fiada primero: genera folio y aparece en
+      // Movimientos del día (Inicio/Caja leen de sales, no de debts)
+      const { data: sale, error: errSale } = await supabase
+        .from('sales')
+        .insert({
+          total: amt,
+          items_count: 1,
+          channel: 'mostrador',
+          payment_method: 'fiado',
+          client_name: c.name,
+          notes: 'Fiado directo',
+          store_id: ctx.storeId,
+          user_id: ctx.userId,
+        })
+        .select('id')
+        .single();
+      if (errSale) throw new Error('No se registró la venta: ' + errSale.message);
+
       const { error: errDebt } = await supabase.from('debts').insert({
         client_id: c.id,
         original_amount: amt,
         remaining: amt,
         description: 'Fiado directo',
         status: 'pendiente',
+        sale_id: sale.id,
         store_id: ctx.storeId,
         user_id: ctx.userId,
       });

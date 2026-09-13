@@ -155,9 +155,11 @@ export default function VenderClient({ products: initialProducts, lots, clients 
       if (errSale) throw new Error('No se registró la venta: ' + errSale.message);
 
       if (payMethod === 'fiado') {
+        // Traer name también: sin él la coincidencia exacta falla y se
+        // crea un cliente duplicado en cada fiado (bug de auditoría L1)
         const { data: found } = await supabase
           .from('clients')
-          .select('id, balance')
+          .select('id, name, balance')
           .ilike('name', clientName)
           .limit(5);
         const exact =

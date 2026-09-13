@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase-server';
+import { startOfTodayNic } from '@/lib/day';
 import CierreCaja from '@/components/CierreCaja';
 import ExportButton from './ExportButton';
 import CutsHistory from './CutsHistory';
@@ -10,8 +11,8 @@ const money = (n) =>
 
 async function getData() {
   const supabase = createClient();
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  // "Hoy" en Nicaragua (UTC-6), no medianoche UTC del servidor
+  const start = startOfTodayNic();
   const cutsSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const [sales, expenses, cuts, abonosHoy, cutsHistory, profile] = await Promise.all([
@@ -35,7 +36,7 @@ async function getData() {
     // Abonos de deudas recibidos hoy (excluye cobros de ventas, que ya están en efectivoSolo)
     supabase
       .from('payments')
-      .select('id, amount, method, sale_id')
+      .select('id, amount, method, sale_id, created_at')
       .gte('created_at', start.toISOString())
       .limit(100),
     // Historial de cortes (máximo 30 días)
@@ -78,7 +79,7 @@ async function getData() {
     .filter((p) => !p.sale_id && p.method === 'efectivo')
     .reduce((a, p) => a + Number(p.amount), 0);
 
-  return { todaySales, todayExpenses, cutDone, cutsHistory: cutsHistory.data || [], storeName: profile.data?.stores?.name || 'Mi Prenda', total, collected, efectivoSolo, transf, credit, expTotal, pieces, net, abonosEfectivo };
+  return { todaySales, todayExpenses, todayPayments, cutDone, cutsHistory: cutsHistory.data || [], storeName: profile.data?.stores?.name || 'Mi Prenda', total, collected, efectivoSolo, transf, credit, expTotal, pieces, net, abonosEfectivo };
 }
 
 export default async function CajaPage() {
@@ -147,15 +148,15 @@ export default async function CajaPage() {
         </div>
       </div>
 
-      {/* Movimientos del corte */}
+      {/* Movimientos del corte: ventas + abonos de deuda + gastos */}
       <div className="flex justify-between items-center px-0.5">
         <b className="text-[14px] text-on-surface">Movimientos del corte</b>
         <span className="inline-flex text-[10.5px] font-semibold px-2 py-[3px] rounded-full bg-primary-fixed text-primary">
-          {d.todaySales.length + d.todayExpenses.length} registros
+          {d.todaySales.length + d.todayExpenses.length + d.todayPayments.filter((p) => !p.sale_id).length} registros
         </span>
       </div>
       <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
-        {d.todaySales.length === 0 && d.todayExpenses.length === 0 && (
+        {d.todaySales.length === 0 && d.todayExpenses.length === 0 && d.todayPayments.filter((p) => !p.sale_id).length === 0 && (
           <p className="py-6 text-center text-[13px] text-on-surface-variant">Aún no hay movimientos hoy.</p>
         )}
         {d.todaySales.map((s) => (
@@ -172,6 +173,19 @@ export default async function CajaPage() {
             <span className="text-[14px] font-bold text-primary whitespace-nowrap">+{money(s.total)}</span>
           </div>
         ))}
+        {d.todayPayments
+          .filter((p) => !p.sale_id)
+          .map((p) => (
+            <div key={'abono-' + p.id} className="flex items-center gap-2.5 py-2.5 border-b border-surface-container last:border-0">
+              <div className="flex-1 min-w-0">
+                <b className="block text-[13.5px] font-semibold text-on-surface truncate">Abono recibido</b>
+                <span className="block text-[11.5px] text-on-surface-variant">
+                  {p.method === 'transferencia' ? 'Transferencia' : 'Efectivo'}
+                </span>
+              </div>
+              <span className="text-[14px] font-bold text-primary whitespace-nowrap">+{money(p.amount)}</span>
+            </div>
+          ))}
         {d.todayExpenses.map((ex) => (
           <div key={ex.id} className="flex items-center gap-2.5 py-2.5 border-b border-surface-container last:border-0">
             <div className="flex-1 min-w-0">

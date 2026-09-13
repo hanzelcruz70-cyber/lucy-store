@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/supabase-server';
+import { startOfTodayNic } from '@/lib/day';
 import InicioClient from './InicioClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function InicioPage() {
   const supabase = createClient();
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  // "Hoy" en Nicaragua (UTC-6), no medianoche UTC del servidor
+  const start = startOfTodayNic();
 
   const [sales, expenses, payments, debts, clients, allPayments] = await Promise.all([
     supabase

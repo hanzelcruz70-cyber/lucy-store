@@ -80,7 +80,7 @@ function mergeStats(sales, products) {
 export default function MasClient({ expenses: initialExpenses, sales, products }) {
   const [tab, setTab] = useState('gastos');
   const [expenses, setExpenses] = useState(initialExpenses);
-  const [form, setForm] = useState({ concept: '', amount: '', category: 'luz' });
+  const [form, setForm] = useState({ concept: '', amount: '', category: 'otro' });
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
   const [prodSearch, setProdSearch] = useState('');

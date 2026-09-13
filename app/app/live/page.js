@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/supabase-server';
+import { startOfTodayNic } from '@/lib/day';
 import LiveConsole from './LiveConsole';
 
 export const dynamic = 'force-dynamic';
 
 export default async function LivePage() {
   const supabase = createClient();
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  // "Hoy" en Nicaragua (UTC-6), no medianoche UTC del servidor
+  const start = startOfTodayNic();
 
   const [{ data: sales }, { data: debts }] = await Promise.all([
     supabase
