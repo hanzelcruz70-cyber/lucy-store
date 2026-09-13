@@ -21,13 +21,13 @@ async function getData() {
       .select('id, total, items_count, channel, payment_method, client_name, notes, created_at')
       .gte('created_at', start.toISOString())
       .order('created_at', { ascending: false })
-      .limit(30),
+      .limit(500),
     supabase
       .from('expenses')
       .select('id, concept, amount, category, created_at')
       .gte('created_at', start.toISOString())
       .order('created_at', { ascending: false })
-      .limit(20),
+      .limit(200),
     supabase
       .from('cash_cuts')
       .select('id, created_at')
@@ -38,14 +38,14 @@ async function getData() {
       .from('payments')
       .select('id, amount, method, sale_id, created_at')
       .gte('created_at', start.toISOString())
-      .limit(100),
+      .limit(500),
     // Historial de cortes (máximo 30 días)
     supabase
       .from('cash_cuts')
-      .select('id, sales_total, expenses_total, notes, created_at')
+      .select('id, sales_total, expenses_total, abonos_total, transfer_total, fisico_total, discrepancy_amount, notes, created_at')
       .gte('created_at', cutsSince.toISOString())
       .order('created_at', { ascending: false })
-      .limit(31),
+      .limit(60),
     // Nombre de la tienda para el encabezado del Excel
     supabase
       .from('profiles')

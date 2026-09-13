@@ -1,5 +1,5 @@
-/* Mi Prenda Service Worker v9 — datos frescos, estáticos rápidos, sin fuente de iconos */
-const CACHE = 'miprenda-v9';
+/* Mi Prenda Service Worker v10 — datos frescos, estáticos rápidos, sin fuente de iconos */
+const CACHE = 'miprenda-v10';
 const PRECACHE = [
   '/offline.html',
   '/manifest.json',

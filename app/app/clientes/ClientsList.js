@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
+import { rpcAplicarAbono, rpcRegistrarVenta } from '@/lib/rpc-helpers';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -247,8 +248,8 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         // Offline: descuento local desde el snapshot (el sincronizador recalcula
         // el balance desde las deudas reales al subir, así que no acumula drift)
         const newBalance = Math.max(0, sheet.balance - montoReal);
-        setRecoveredNow((r) => r + montoReal);
-        setItems((it) => {
+      setRecoveredNow((r) => r + aplicado);
+      setItems((it) => {
           const newDebtByClient = { ...it.debtByClient };
           if (newBalance <= 0) delete newDebtByClient[c.id];
           else newDebtByClient[c.id] = newBalance;
@@ -268,66 +269,17 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         return;
       }
 
-      const supabase = createClient();
-      const ctx = await getMyContext();
-
-      // Leer las deudas pendientes primero para vincular el pago a la más antigua
-      // (sin debt_id el abono no aparece en el historial del cliente)
-      const { data: clientDebts, error: errFetch } = await supabase
-        .from('debts')
-        .select('id, remaining')
-        .eq('client_id', c.id)
-        .eq('status', 'pendiente')
-        .order('created_at', { ascending: true });
-      if (errFetch) throw new Error('No se pudieron leer las deudas: ' + errFetch.message);
-
-      const { error: errPay } = await supabase.from('payments').insert({
+      // RPC TRANSACCIONAL: payment + descuento FIFO + recálculo de balance
+      // en UNA llamada con bloqueo de filas (FOR UPDATE).
+      const { data: abonoRes, error: errRpc } = await rpcAplicarAbono({
+        paymentId: uuid(),
+        clientId: c.id,
         amount: montoReal,
         method,
-        debt_id: (clientDebts || [])[0]?.id || null,
-        store_id: ctx.storeId,
-        user_id: ctx.userId,
       });
-      if (errPay) throw new Error('No se registró el pago: ' + errPay.message);
-
-      let remainingAmt = montoReal;
-
-      for (const d of clientDebts || []) {
-        if (remainingAmt <= 0) break;
-        const take = Math.min(remainingAmt, Number(d.remaining));
-        const newRemaining = Number(d.remaining) - take;
-        const { error: errUpd, data: updData } = await supabase
-          .from('debts')
-          .update({ remaining: newRemaining, status: newRemaining <= 0 ? 'saldada' : 'pendiente' })
-          .eq('id', d.id)
-          .select('remaining')
-          .single();
-        if (errUpd) throw new Error('No se pudo descontar la deuda: ' + errUpd.message);
-        if (Math.abs(Number(updData?.remaining) - newRemaining) > 0.01) {
-          throw new Error('La deuda no se descontó correctamente');
-        }
-        remainingAmt -= take;
-      }
-
-      // Saldo NUEVO desde la BD (suma de deudas pendientes), no desde el
-      // snapshot: dos abonos seguidos sin recargar calculan bien.
-      const { data: openDebts, error: errOpen } = await supabase
-        .from('debts')
-        .select('remaining')
-        .eq('client_id', c.id)
-        .eq('status', 'pendiente');
-      if (errOpen) throw new Error('No se pudo leer el saldo nuevo: ' + errOpen.message);
-      const newBalance = (openDebts || []).reduce((a, d) => a + Number(d.remaining), 0);
-      const { error: errBal, data: balData } = await supabase
-        .from('clients')
-        .update({ balance: newBalance })
-        .eq('id', c.id)
-        .select('balance')
-        .single();
-      if (errBal) throw new Error('No se actualizó el saldo: ' + errBal.message);
-      if (Math.abs(Number(balData?.balance) - newBalance) > 0.01) {
-        throw new Error('El saldo quedó en ' + balData.balance + ' en lugar de ' + newBalance);
-      }
+      if (errRpc) throw new Error('No se registró el abono: ' + errRpc.message);
+      const newBalance = Number((abonoRes && abonoRes.balance) || 0);
+      const aplicado = Number((abonoRes && abonoRes.applied) || montoReal);
 
       setRecoveredNow((r) => r + montoReal);
       setItems((it) => {
@@ -386,45 +338,20 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         return;
       }
 
-      const supabase = createClient();
-      const ctx = await getMyContext();
-
-      // Registrar la venta fiada primero: genera folio y aparece en
-      // Movimientos del día (Inicio/Caja leen de sales, no de debts)
-      const { data: sale, error: errSale } = await supabase
-        .from('sales')
-        .insert({
-          total: amt,
-          items_count: 1,
-          channel: 'mostrador',
-          payment_method: 'fiado',
-          client_name: c.name,
-          notes: 'Fiado directo',
-          store_id: ctx.storeId,
-          user_id: ctx.userId,
-        })
-        .select('id')
-        .single();
-      if (errSale) throw new Error('No se registró la venta: ' + errSale.message);
-
-      const { error: errDebt } = await supabase.from('debts').insert({
-        client_id: c.id,
-        original_amount: amt,
-        remaining: amt,
-        description: 'Fiado directo',
-        status: 'pendiente',
-        sale_id: sale.id,
-        store_id: ctx.storeId,
-        user_id: ctx.userId,
+      // RPC TRANSACCIONAL: venta + cliente + deuda + balance en una llamada
+      const { data: fiadoRes, error: errRpc } = await rpcRegistrarVenta({
+        saleId: uuid(),
+        total: amt,
+        itemsCount: 1,
+        channel: 'mostrador',
+        paymentMethod: 'fiado',
+        clientName: c.name,
+        notes: 'Fiado directo',
       });
-      if (errDebt) throw errDebt;
-
-      const newBalance = (sheet.balance || 0) + amt;
-      const { error: errBal } = await supabase
-        .from('clients')
-        .update({ balance: newBalance })
-        .eq('id', c.id);
-      if (errBal) throw errBal;
+      if (errRpc) throw new Error('No se registró el fiado: ' + errRpc.message);
+      const newBalance = Number(
+        (fiadoRes && fiadoRes.balance !== undefined ? fiadoRes.balance : (sheet.balance || 0) + amt)
+      );
 
       setItems((it) => {
         const newDebtByClient = { ...it.debtByClient, [c.id]: newBalance };

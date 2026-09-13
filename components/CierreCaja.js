@@ -48,13 +48,20 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
     try {
       if (isOffline()) {
         // ===== MODO OFFLINE: corte local (se sube al volver la conexión) =====
+        // createdAt conserva la FECHA REAL del corte (no la del sync futuro):
+        // un corte hecho a las 11PM se registra a las 11PM, no al día siguiente.
         enqueueOp({
           type: 'cash_cut',
           payload: {
             localId: uuid(),
+            createdAt: new Date().toISOString(),
             salesTotal: contadoTotal,
             collectedTotal: Number(contadoEfectivo),
             expensesTotal: Number(gastos),
+            abonosTotal: Number(abonosEfectivo),
+            transferTotal: Number(contadoTransferencia),
+            fisicoTotal: contadoFisico,
+            discrepancyAmount: diferencia,
             notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(contadoTransferencia)}. Abonos en efectivo: ${money(abonosEfectivo)}`,
           },
         });
@@ -67,7 +74,11 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
       const ctx = await getMyContext();
       const { error } = await supabase.from('cash_cuts').insert({
         sales_total: contadoTotal,
-        collected_total: contadoEfectivo,
+        collected_total: Number(contadoEfectivo) + Number(abonosEfectivo), // efectivo real en caja
+        abonos_total: Number(abonosEfectivo),
+        transfer_total: Number(contadoTransferencia),
+        fisico_total: contadoFisico,
+        discrepancy_amount: diferencia,
         credit_total: 0,
         expenses_total: gastos,
         notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(contadoTransferencia)}. Abonos en efectivo: ${money(abonosEfectivo)}`,

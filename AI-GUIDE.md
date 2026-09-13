@@ -55,14 +55,16 @@ lucy-store/
 │   ├── supabase-server.js        # Cliente Supabase server-side (cookies)
 │   ├── supabase-browser.js       # Cliente Supabase browser-side
 │   ├── get-store.js              # getMyContext(): caché memoria + localStorage
+│   ├── rpc-helpers.js            # Puente a los RPCs transaccionales de dinero
 │   ├── offline-queue.js           # Cola offline (outbox) en localStorage + eventos
-│   ├── offline-sync.js            # Sincronizador FIFO idempotente (auto al volver red)
+│   ├── offline-sync.js            # Sincronizador FIFO idempotente vía RPCs (auto al volver red)
 │   └── rate-limit.js             # Límite de tiendas/día
 ├── supabase/
 │   ├── schema.sql                # Migración 1: 9 tablas + RLS (EJECUTAR PRIMERO)
 │   ├── migration2-products.sql   # Migración 2: products
 │   ├── migration5-fix-triggers.sql # Migración 5: triggers correctos (3,4 obsoletos)
-│   └── migration6-expenses.sql   # Migración 6: categorías de gastos ampliadas + policy UPDATE
+│   ├── migration6-expenses.sql   # Migración 6: categorías de gastos ampliadas + policy UPDATE
+│   └── migration7-audit.sql      # Migración 7: RPCs transaccionales + UNIQUE clientes + cash_cuts numérico
 ├── .github/workflows/ci.yml      # CI: build + secrets + deps en cada push
 ├── CONSTRAINTS.md                # CONTRATO DE CALIDAD (leer antes de codificar)
 ├── GUIA-USUARIO.pdf              # Guía del dueño de tienda (se genera con scripts/generar-guia-pdf.cjs)
@@ -94,13 +96,22 @@ ADMIN_SECRET=...                             # token alterno para scripts
 | `clients` | Clientes | name, phone, tiktok, balance, is_live_client |
 | `debts` | Fiados | client_id, original_amount, remaining, status, sale_id |
 | `payments` | Abonos/pagos | debt_id?, sale_id?, amount, method |
-| `cash_cuts` | Cortes diarios | sales_total, collected_total, expenses_total, notes |
+| `cash_cuts` | Cortes diarios | sales_total, collected_total (efectivo ventas + abonos), abonos_total, transfer_total, fisico_total, discrepancy_amount, expenses_total, notes |
 
 **Claves de integridad de dinero (aprendidas de QA):**
 - Los `payments` con `sale_id` son cobros de venta (no abonos de deuda): NO cuentan como "Abonos" ni salen como "Abono recibido" en Inicio
 - Todo abono de deuda inserta `debt_id` (deuda más antigua del cliente, FIFO) — sin él el historial del cliente no lo encuentra
 - El efectivo esperado del cierre = ventas efectivo + abonos en efectivo − gastos
 - Sobrepago: se registra solo hasta el saldo; el excedente es vuelto (confirm() avisa antes)
+
+**Integridad transaccional (auditoría 2026-09-13, migración 7):**
+- TODA operación de dinero pasa por RPCs transaccionales (`supabase/migration7-audit.sql`) vía `lib/rpc-helpers.js`: `registrar_venta` (venta+payment o venta+cliente+deuda), `aplicar_abono` (FIFO con `FOR UPDATE`), `fiar_venta` (Live, anti doble-fiado), `cobrar_venta` (Live), `registrar_producto` (lote+producto, códigos por contador `store_counters`)
+- Stock: decrementos atómicos (`decrement_stock`, `increment_sold`) — NUNCA enviar `pieces_left` absoluto desde el cliente
+- `clients.balance` lo recalcula un TRIGGER en cada cambio de `debts`: el cliente ya no debe actualizar el balance a mano
+- Clientes: UNIQUE `(store_id, lower(trim(name)))` — el RPC encuentra al cliente exacto o lo crea; no puede haber duplicados
+- `cash_cuts` guarda columnas numéricas: `abonos_total`, `transfer_total`, `fisico_total`, `discrepancy_amount`; `collected_total` = efectivo ventas + abonos efectivo
+- Corte offline: `createdAt` en el payload conserva la fecha ORIGINAL (no la del sync)
+- Idempotencia de RPCs: ids pre-generados en cliente + guardias por `sale_id`/`payment_id` — un reintento jamás duplica dinero
 
 ## Flujos clave
 
@@ -155,8 +166,8 @@ vercel --prod
 Variables en Dashboard: las 5 de `.env.local`. CI de GitHub corre build+audits en cada push.
 
 ### Migraciones Supabase (en orden)
-1. `schema.sql` → 2. `migration2-products.sql` → 3. `migration5-fix-triggers.sql` → 4. `migration6-expenses.sql`
-**Detener servidor local antes (deadlock).**
+1. `schema.sql` → 2. `migration2-products.sql` → 3. `migration5-fix-triggers.sql` → 4. `migration6-expenses.sql` → 5. `migration7-audit.sql`
+**Detener servidor local antes (deadlock).** La migración 7 es idempotente (re-ejecutable) y fusiona clientes duplicados automáticamente.
 
 ### Guía de usuario (PDF)
 ```bash

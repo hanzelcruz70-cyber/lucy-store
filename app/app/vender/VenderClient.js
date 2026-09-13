@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase-browser';
-import { getMyContext } from '@/lib/get-store';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
+import { rpcRegistrarVenta, rpcDecrementStock, rpcIncrementSold } from '@/lib/rpc-helpers';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -101,16 +100,14 @@ export default function VenderClient({ products: initialProducts, lots, clients 
             total,
             itemsCount,
             channel: 'mostrador',
-            paymentMethod: payMethod === 'fiado' ? 'fiado' : 'efectivo',
+            paymentMethod: payMethod === 'fiado' ? 'fiado' : payMethod,
             clientName,
             notes: cart.map((i) => `${i.qty}x ${i.name}`).join(', ').slice(0, 200),
-            method: 'efectivo',
-            paymentLocalId: uuid(),
+            paymentLocalId: payMethod === 'fiado' ? null : uuid(),
             items: cart.map((i) => ({
               productId: i.productId,
-              soldCount: (products.find((p) => p.id === i.productId)?.sold_count || 0) + i.qty,
+              qty: i.qty,
               lotId: i.lotId,
-              piecesLeft: i.lotId && lotById[i.lotId] ? lotById[i.lotId].pieces_left - i.qty : null,
             })),
           },
         });
@@ -135,95 +132,34 @@ export default function VenderClient({ products: initialProducts, lots, clients 
         return;
       }
 
-      const supabase = createClient();
-      const ctx = await getMyContext();
+      const saleId = uuid();
+      const paymentId = payMethod === 'fiado' ? null : uuid();
 
-      const { data: sale, error: errSale } = await supabase
-        .from('sales')
-        .insert({
-          total,
-          items_count: itemsCount,
-          channel: 'mostrador',
-          payment_method: payMethod === 'fiado' ? 'fiado' : 'efectivo',
-          client_name: clientName,
-          notes: cart.map((i) => `${i.qty}x ${i.name}`).join(', ').slice(0, 200),
-          store_id: ctx.storeId,
-          user_id: ctx.userId,
-        })
-        .select('id')
-        .single();
-      if (errSale) throw new Error('No se registró la venta: ' + errSale.message);
+      // RPC TRANSACCIONAL: venta + payment o venta + cliente + deuda + balance.
+      // Si la red cae a mitad, no entra nada a medias (todo o nada) y el
+      // reintento con el mismo id no duplica dinero.
+      const { data, error: errRpc } = await rpcRegistrarVenta({
+        saleId,
+        total,
+        itemsCount,
+        channel: 'mostrador',
+        paymentMethod: payMethod,
+        clientName,
+        notes: cart.map((i) => `${i.qty}x ${i.name}`).join(', ').slice(0, 200),
+        paymentId,
+      });
+      if (errRpc) throw new Error('No se registró la venta: ' + errRpc.message);
 
-      if (payMethod === 'fiado') {
-        // Traer name también: sin él la coincidencia exacta falla y se
-        // crea un cliente duplicado en cada fiado (bug de auditoría L1)
-        const { data: found } = await supabase
-          .from('clients')
-          .select('id, name, balance')
-          .ilike('name', clientName)
-          .limit(5);
-        const exact =
-          (found || []).find((f) => (f.name || '').toLowerCase() === clientName.toLowerCase()) || null;
-
-        let clientId;
-        let prevBalance = 0;
-        if (exact) {
-          clientId = exact.id;
-          prevBalance = Number(exact.balance || 0);
-        } else {
-          const { data: newClient, error: errClient } = await supabase
-            .from('clients')
-            .insert({ name: clientName, balance: 0, store_id: ctx.storeId })
-            .select('id, balance')
-            .single();
-          if (errClient) throw new Error('No se creó el cliente: ' + errClient.message);
-          clientId = newClient.id;
-        }
-
-        const { error: errDebt } = await supabase.from('debts').insert({
-          client_id: clientId,
-          original_amount: total,
-          remaining: total,
-          description: cart.map((i) => `${i.qty}x ${i.name}`).join(', ').slice(0, 100),
-          status: 'pendiente',
-          sale_id: sale.id,
-          store_id: ctx.storeId,
-          user_id: ctx.userId,
-        });
-        if (errDebt) throw new Error('No se registró la deuda: ' + errDebt.message);
-
-        const { error: errBal } = await supabase
-          .from('clients')
-          .update({ balance: prevBalance + total })
-          .eq('id', clientId);
-        if (errBal) throw new Error('No se actualizó el saldo: ' + errBal.message);
-      } else {
-        const { error: errPay } = await supabase.from('payments').insert({
-          sale_id: sale.id,
-          amount: total,
-          method: 'efectivo',
-          store_id: ctx.storeId,
-          user_id: ctx.userId,
-        });
-        if (errPay) throw new Error('No se registró el pago: ' + errPay.message);
-      }
-
-      // Actualizar vendidos y stock de lotes EN PARALELO (antes era uno por uno)
+      // Stock y contadores: decrementos ATÓMICOS en la BD (nunca valores
+      // absolutos calculados en el cliente — evita que dos cajeros se pisen)
       await Promise.all(
         cart.map(async (item) => {
-          await supabase
-            .from('products')
-            .update({ sold_count: (products.find((p) => p.id === item.productId)?.sold_count || 0) + item.qty })
-            .eq('id', item.productId);
-          if (item.lotId && lotById[item.lotId]) {
-            const l = lotById[item.lotId];
-            if (l.pieces_left >= item.qty) {
-              await supabase
-                .from('lots')
-                .update({ pieces_left: l.pieces_left - item.qty })
-                .eq('id', item.lotId);
-              l.pieces_left -= item.qty;
-            }
+          const { error: errSold } = await rpcIncrementSold({ productId: item.productId, qty: item.qty });
+          if (errSold) throw new Error('No se actualizó vendidos: ' + errSold.message);
+          if (item.lotId) {
+            const { error: errLot } = await rpcDecrementStock({ lotId: item.lotId, qty: item.qty });
+            if (errLot) throw new Error('No se descontó el stock: ' + errLot.message);
+            lotById[item.lotId].pieces_left -= item.qty;
           }
         })
       );
@@ -341,7 +277,7 @@ export default function VenderClient({ products: initialProducts, lots, clients 
             <span className="text-[20px] font-bold text-on-surface">{money(total)}</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5 mt-2">
+          <div className="grid grid-cols-3 gap-1.5 mt-2">
             <button
               onClick={() => setPayMethod('efectivo')}
               className={`h-12 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-1.5 border transition-colors ${
@@ -349,6 +285,14 @@ export default function VenderClient({ products: initialProducts, lots, clients 
               }`}
             >
               Al contado
+            </button>
+            <button
+              onClick={() => setPayMethod('transferencia')}
+              className={`h-12 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-1.5 border transition-colors ${
+                payMethod === 'transferencia' ? 'bg-primary border-primary text-on-primary' : 'bg-surface-container-lowest border-outline text-on-surface'
+              }`}
+            >
+              Transferencia
             </button>
             <button
               onClick={() => setPayMethod('fiado')}

@@ -26,10 +26,10 @@ export default function OrphanLotActions({ lot }) {
     setBusy(true);
     setError('');
     try {
+      // Producto para un lote HUÉRFANO ya existente (el lote no se toca).
+      // El trigger de BD rellena code por contador y store_id.
       const supabase = createClient();
-      const { count: prodCount } = await supabase.from('products').select('id', { count: 'exact', head: true });
       const { error: errProd } = await supabase.from('products').insert({
-        code: 'P-' + String((prodCount || 0) + 1).padStart(3, '0'),
         name: lot.name,
         sale_price: precio,
         lot_id: lot.id,

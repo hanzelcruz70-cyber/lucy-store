@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
-import { getMyContext } from '@/lib/get-store';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
+import { rpcAplicarAbono, rpcRegistrarVenta } from '@/lib/rpc-helpers';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -181,68 +181,19 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
         return;
       }
 
-      const supabase = createClient();
-      const ctx = await getMyContext();
-
-      // Leer las deudas pendientes primero para vincular el pago a la más antigua
-      // (sin debt_id el abono no aparece en el historial del cliente)
-      const { data: clientDebts, error: errFetch } = await supabase
-        .from('debts')
-        .select('id, remaining')
-        .eq('client_id', abono.id)
-        .eq('status', 'pendiente')
-        .order('created_at', { ascending: true });
-      if (errFetch) throw new Error('No se pudieron leer las deudas: ' + errFetch.message);
-
-      const { error: errPay } = await supabase.from('payments').insert({
+      // RPC TRANSACCIONAL: payment + descuento FIFO + recálculo de balance
+      // en UNA llamada con bloqueo de filas (FOR UPDATE). Dos abonos
+      // simultáneos no pueden leer el mismo remaining.
+      const paymentId = uuid();
+      const { data: abonoRes, error: errRpc } = await rpcAplicarAbono({
+        paymentId,
+        clientId: abono.id,
         amount: montoReal,
         method,
-        debt_id: (clientDebts || [])[0]?.id || null,
-        store_id: ctx.storeId,
-        user_id: ctx.userId,
       });
-      if (errPay) throw new Error('No se registró el pago: ' + errPay.message);
-
-      let remaining = montoReal;
-
-      for (const d of clientDebts || []) {
-        if (remaining <= 0) break;
-        const take = Math.min(remaining, Number(d.remaining));
-        const newRemaining = Number(d.remaining) - take;
-        const { error: errUpd, data: updData } = await supabase
-          .from('debts')
-          .update({ remaining: newRemaining, status: newRemaining <= 0 ? 'saldada' : 'pendiente' })
-          .eq('id', d.id)
-          .select('remaining')
-          .single();
-        if (errUpd) throw new Error('No se pudo descontar la deuda: ' + errUpd.message);
-        if (Math.abs(Number(updData?.remaining) - newRemaining) > 0.01) {
-          throw new Error('La deuda no se descontó correctamente');
-        }
-        remaining -= take;
-      }
-
-      // Saldo NUEVO calculado desde la BD (suma de deudas pendientes), no desde
-      // el snapshot del cliente: si hay dos abonos seguidos sin recargar, el
-      // segundo recalcula bien y no revierte el primero.
-      const { data: openDebts, error: errOpen } = await supabase
-        .from('debts')
-        .select('remaining')
-        .eq('client_id', abono.id)
-        .eq('status', 'pendiente');
-      if (errOpen) throw new Error('No se pudo leer el saldo nuevo: ' + errOpen.message);
-      const newBalance = (openDebts || []).reduce((a, d) => a + Number(d.remaining), 0);
-
-      const { error: errBal, data: balData } = await supabase
-        .from('clients')
-        .update({ balance: newBalance })
-        .eq('id', abono.id)
-        .select('balance')
-        .single();
-      if (errBal) throw new Error('No se actualizó el saldo: ' + errBal.message);
-      if (Math.abs(Number(balData?.balance) - newBalance) > 0.01) {
-        throw new Error('El saldo quedó en ' + balData.balance + ' en lugar de ' + newBalance);
-      }
+      if (errRpc) throw new Error('No se registró el abono: ' + errRpc.message);
+      const newBalance = Number((abonoRes && abonoRes.balance) || 0);
+      const aplicado = Number((abonoRes && abonoRes.applied) || montoReal);
 
       const updatedClient = { ...abono, balance: newBalance };
       setDebtList((list) =>
@@ -273,10 +224,10 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
       const livePaymentId = 'p-live-' + Date.now();
       const liveFolio = '#' + String(nextFolioNum).padStart(3, '0');
       setPayments((list) => [
-        { id: livePaymentId, sale_id: null, debt_id: null, amount: montoReal, method, created_at: new Date().toISOString(), _clientName: abono.name, _folio: liveFolio },
+        { id: livePaymentId, sale_id: null, debt_id: null, amount: aplicado, method, created_at: new Date().toISOString(), _clientName: abono.name, _folio: liveFolio },
         ...list,
       ]);
-      setAbonosVivo((a) => a + montoReal);
+      setAbonosVivo((a) => a + aplicado);
 
       // Agregar el abono al historial del cliente EN VIVO (registro de cuánto abonó y cuándo)
       setMovsByClient((movs) => {
@@ -284,7 +235,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
         list.unshift({
           id: 'p-live-' + Date.now(),
           type: 'ABONO',
-          amount: montoReal,
+          amount: aplicado,
           description: null,
           date: new Date().toISOString(),
         });
@@ -320,13 +271,12 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
     }
     setBusy(true);
     try {
-      const newBalance = (abono.balance || 0) + amt;
-
       if (isOffline()) {
         enqueueOp({
           type: 'fiado_directo',
           payload: { localId: uuid(), saleLocalId: uuid(), clientId: abono.id, clientName: abono.name, amount: amt },
         });
+        const newBalance = (abono.balance || 0) + amt;
         setDebtList((list) => list.map((c) => (c.id === abono.id ? { ...c, balance: newBalance } : c)));
         setMovsByClient((movs) => {
           const list = [...(movs[abono.id] || [])];
@@ -344,44 +294,21 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
         return;
       }
 
-      const supabase = createClient();
-      const ctx = await getMyContext();
-
-      // Registrar la venta fiada primero: genera folio y aparece en
-      // Movimientos del día (Inicio/Caja leen de sales, no de debts)
-      const { data: sale, error: errSale } = await supabase
-        .from('sales')
-        .insert({
-          total: amt,
-          items_count: 1,
-          channel: 'mostrador',
-          payment_method: 'fiado',
-          client_name: abono.name,
-          notes: 'Fiado directo',
-          store_id: ctx.storeId,
-          user_id: ctx.userId,
-        })
-        .select('id')
-        .single();
-      if (errSale) throw new Error('No se registró la venta: ' + errSale.message);
-
-      const { error: errDebt } = await supabase.from('debts').insert({
-        client_id: abono.id,
-        original_amount: amt,
-        remaining: amt,
-        description: 'Fiado directo',
-        status: 'pendiente',
-        sale_id: sale.id,
-        store_id: ctx.storeId,
-        user_id: ctx.userId,
+      // RPC TRANSACCIONAL: venta + cliente + deuda + balance en una llamada.
+      // El reintento (mismo id) no duplica; el trigger recalcula el balance.
+      const { data: fiadoRes, error: errRpc } = await rpcRegistrarVenta({
+        saleId: uuid(),
+        total: amt,
+        itemsCount: 1,
+        channel: 'mostrador',
+        paymentMethod: 'fiado',
+        clientName: abono.name,
+        notes: 'Fiado directo',
       });
-      if (errDebt) throw errDebt;
-
-      const { error: errBal } = await supabase
-        .from('clients')
-        .update({ balance: newBalance })
-        .eq('id', abono.id);
-      if (errBal) throw errBal;
+      if (errRpc) throw new Error('No se registró el fiado: ' + errRpc.message);
+      const newBalance = Number(
+        (fiadoRes && fiadoRes.balance !== undefined ? fiadoRes.balance : (abono.balance || 0) + amt)
+      );
 
       setDebtList((list) => list.map((c) => (c.id === abono.id ? { ...c, balance: newBalance } : c)));
       setMovsByClient((movs) => {

@@ -48,10 +48,20 @@ export default function CutsHistory({ cuts }) {
       {filtered.length > 0 && (
         <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
           {filtered.map((c) => {
-            const fisicoMatch = (c.notes || '').match(/Contado físico: C\$(-?[\d.,]+)/);
-            const difMatch = (c.notes || '').match(/Diferencia: C\$(-?[\d.,]+)/);
-            const fisico = fisicoMatch ? parseInt(fisicoMatch[1].replace(/[.,]/g, ''), 10) : null;
-            const dif = difMatch ? parseInt(difMatch[1].replace(/[.,]/g, ''), 10) : null;
+            /* Columnas numéricas (migración 7); fallback a notes para cortes viejos */
+            const parseFromNotes = (label) => {
+              const m = (c.notes || '').match(new RegExp(label + ': C\\$(-?[\\d.,]+)'));
+              return m ? parseInt(m[1].replace(/[.,]/g, ''), 10) : null;
+            };
+            const dif =
+              c.discrepancy_amount !== undefined && c.discrepancy_amount !== null
+                ? Number(c.discrepancy_amount)
+                : parseFromNotes('Diferencia');
+            const fisico =
+              c.fisico_total !== undefined && Number(c.fisico_total) > 0
+                ? Number(c.fisico_total)
+                : parseFromNotes('Contado físico');
+            const abonos = Number(c.abonos_total || 0);
             const fecha = new Date(c.created_at);
             return (
               <div key={c.id} className="py-2.5 border-b border-surface-container last:border-0">
@@ -77,7 +87,12 @@ export default function CutsHistory({ cuts }) {
                   <span>
                     Gastos <b className="text-on-surface">{money(c.expenses_total)}</b>
                   </span>
-                  {fisico !== null && (
+                  {abonos > 0 && (
+                    <span>
+                      Abonos <b className="text-on-surface">{money(abonos)}</b>
+                    </span>
+                  )}
+                  {fisico !== null && fisico > 0 && (
                     <span>
                       Físico <b className="text-primary">{money(fisico)}</b>
                     </span>

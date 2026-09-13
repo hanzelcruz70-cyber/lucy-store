@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
-import { getMyContext } from '@/lib/get-store';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
+import { rpcFiarVenta, rpcCobrarVenta } from '@/lib/rpc-helpers';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -87,18 +87,19 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
         return;
       }
       const supabase = createClient();
-      const ctx = await getMyContext();
+      // Id pre-generado: la venta lleva SU id desde el cliente (idempotente
+      // en reintentos y consistente con la cola offline)
+      const localId = uuid();
       const { data, error } = await supabase
         .from('sales')
         .insert({
+          id: localId,
           total: amt,
           items_count: 1,
           channel: 'tiktok_live',
           payment_method: 'fiado',
           client_name: client.trim(),
           notes: desc.trim() || null,
-          store_id: ctx.storeId,
-          user_id: ctx.userId,
         })
         .select('id, total, items_count, channel, payment_method, client_name, notes, created_at')
         .single();
@@ -133,36 +134,15 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
         showToast('Cobrado (se sincroniza solo)');
         return;
       }
-      const supabase = createClient();
-      const ctx = await getMyContext();
-
-      // IDEMPOTENTE: si un intento anterior ya registró el pago (la red falló
-      // justo después del insert), no se duplica — se verifica antes de tocar.
-      const { data: existingPay } = await supabase
-        .from('payments')
-        .select('id')
-        .eq('sale_id', sale.id)
-        .limit(1);
-      if (existingPay && existingPay.length > 0) {
-        await supabase.from('sales').update({ payment_method: 'efectivo' }).eq('id', sale.id);
-        setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: 'efectivo' } : x)));
-        showToast('Cobrado y registrado en caja');
-        return;
-      }
-
-      const { error: errUpd } = await supabase
-        .from('sales')
-        .update({ payment_method: 'efectivo' })
-        .eq('id', sale.id);
-      if (errUpd) throw errUpd;
-      const { error: errPay } = await supabase.from('payments').insert({
-        sale_id: sale.id,
+      // RPC TRANSACCIONAL: update de venta + payment en UNA llamada.
+      // Idempotente por paymentId: un reintento no duplica el cobro.
+      const { error: errRpc } = await rpcCobrarVenta({
+        saleId: sale.id,
+        paymentId: uuid(),
         amount: Number(sale.total),
         method: 'efectivo',
-        store_id: ctx.storeId,
-        user_id: ctx.userId,
       });
-      if (errPay) throw errPay;
+      if (errRpc) throw errRpc;
       setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: 'efectivo' } : x)));
       showToast('Cobrado y registrado en caja');
       router.refresh();
@@ -201,72 +181,16 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
         showToast(`Fiado de ${money(Number(sale.total))} guardado (se sincroniza solo)`);
         return;
       }
-      const supabase = createClient();
-      const ctx = await getMyContext();
-
-      // Verificar PRIMERO si ya existe deuda ligada a esta venta (protección contra doble fiado
-      // incluso si la venta se fió desde otra sesión/dispositivo)
-      const { data: existingDebt } = await supabase
-        .from('debts')
-        .select('id')
-        .eq('sale_id', sale.id)
-        .limit(1);
-      if (existingDebt && existingDebt.length > 0) {
-        setDebtSaleIds((ids) => new Set(ids).add(sale.id));
-        showToast('Esta venta ya está en cuenta', false);
-        return;
-      }
-
-      const { data: found } = await supabase
-        .from('clients')
-        .select('id, name, balance')
-        .ilike('name', name)
-        .limit(5);
-      const exact =
-        (found || []).find((f) => (f.name || '').toLowerCase() === name.toLowerCase()) || null;
-
-      let clientId;
-      let prevBalance = 0;
-      if (exact) {
-        clientId = exact.id;
-        prevBalance = Number(exact.balance || 0);
-      } else {
-        const { data: newClient, error: errClient } = await supabase
-          .from('clients')
-          .insert({ name, is_live_client: true, store_id: ctx.storeId, balance: 0 })
-          .select('id, balance')
-          .single();
-        if (errClient) throw errClient;
-        clientId = newClient.id;
-      }
-
-      const amt = Number(sale.total);
-      const { error: errDebt } = await supabase.from('debts').insert({
-        client_id: clientId,
-        original_amount: amt,
-        remaining: amt,
-        description: sale.notes || 'Prenda de Live',
-        status: 'pendiente',
-        sale_id: sale.id,
-        store_id: ctx.storeId,
-        user_id: ctx.userId,
+      // RPC TRANSACCIONAL con anti doble-fiado (guardia por sale_id DENTRO
+      // de la transacción). Balance recalculado por trigger.
+      const { error: errRpc } = await rpcFiarVenta({
+        saleId: sale.id,
+        amount: Number(sale.total),
       });
-      if (errDebt) throw errDebt;
-
-      const newBalance = prevBalance + amt;
-      const { error: errBal, data: balData } = await supabase
-        .from('clients')
-        .update({ balance: newBalance })
-        .eq('id', clientId)
-        .select('balance')
-        .single();
-      if (errBal) throw new Error('No se pudo actualizar el saldo: ' + errBal.message);
-      if (Math.abs(Number(balData?.balance) - newBalance) > 0.01) {
-        throw new Error('El saldo no se actualizó correctamente');
-      }
+      if (errRpc) throw errRpc;
 
       setDebtSaleIds((ids) => new Set(ids).add(sale.id));
-      showToast(`Deuda de ${money(amt)} registrada a ${name}`);
+      showToast(`Deuda de ${money(Number(sale.total))} registrada a ${name}`);
     } catch (err) {
       showToast('Error: ' + err.message, false);
     } finally {
