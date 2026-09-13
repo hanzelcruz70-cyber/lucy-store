@@ -1,13 +1,11 @@
 import { createClient } from '@/lib/supabase-server';
 import { startOfTodayNic } from '@/lib/day';
 import CierreCaja from '@/components/CierreCaja';
+import Money from '@/components/Money';
 import ExportButton from './ExportButton';
 import CutsHistory from './CutsHistory';
 
 export const dynamic = 'force-dynamic';
-
-const money = (n) =>
-  'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
 async function getData() {
   const supabase = createClient();
@@ -112,7 +110,7 @@ export default async function CajaPage() {
           </span>
         </div>
         <span className="text-[12px] text-on-surface-variant block mt-2">Ventas totales hoy</span>
-        <div className="text-[26px] font-bold tracking-tight text-on-surface leading-tight">{money(d.total)}</div>
+        <div className="text-[26px] font-bold tracking-tight text-on-surface leading-tight"><Money value={d.total} /></div>
 
         <div className="grid grid-cols-2 gap-2.5 mt-3">
           <div className="bg-surface-container-low border border-outline rounded-[14px] p-3">
@@ -122,7 +120,7 @@ export default async function CajaPage() {
               </svg>
               Cobrado
             </div>
-            <div className="text-[20px] font-bold text-primary mt-1 leading-tight">{money(d.collected)}</div>
+            <div className="text-[20px] font-bold text-primary mt-1 leading-tight"><Money value={d.collected} /></div>
             <div className="text-[12px] text-on-surface-variant mt-0.5">Efectivo + transf.</div>
           </div>
           <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3">
@@ -132,7 +130,7 @@ export default async function CajaPage() {
                 Por cobrar
               </span>
             </div>
-            <div className="text-[20px] font-bold text-on-surface mt-1 leading-tight">{money(d.credit)}</div>
+            <div className="text-[20px] font-bold text-on-surface mt-1 leading-tight"><Money value={d.credit} /></div>
             <div className="text-[12px] text-on-surface-variant mt-0.5">Ventas a crédito hoy</div>
           </div>
         </div>
@@ -143,7 +141,7 @@ export default async function CajaPage() {
           </span>
           <b className={d.net >= 0 ? 'text-primary' : 'text-error'}>
             {d.net >= 0 ? '+' : ''}
-            {money(d.net)}
+            <Money value={d.net} />
           </b>
         </div>
       </div>
@@ -170,7 +168,7 @@ export default async function CajaPage() {
                 {s.channel === 'tiktok_live' ? ' · Live' : ''}
               </span>
             </div>
-            <span className="text-[14px] font-bold text-primary whitespace-nowrap">+{money(s.total)}</span>
+            <span className="text-[14px] font-bold text-primary whitespace-nowrap">+<Money value={s.total} /></span>
           </div>
         ))}
         {d.todayPayments
@@ -183,7 +181,7 @@ export default async function CajaPage() {
                   {p.method === 'transferencia' ? 'Transferencia' : 'Efectivo'}
                 </span>
               </div>
-              <span className="text-[14px] font-bold text-primary whitespace-nowrap">+{money(p.amount)}</span>
+              <span className="text-[14px] font-bold text-primary whitespace-nowrap">+<Money value={p.amount} /></span>
             </div>
           ))}
         {d.todayExpenses.map((ex) => (
@@ -192,7 +190,7 @@ export default async function CajaPage() {
               <b className="block text-[13.5px] font-semibold text-on-surface truncate">Gasto · {ex.concept}</b>
               <span className="block text-[11.5px] text-on-surface-variant capitalize">{ex.category}</span>
             </div>
-            <span className="text-[14px] font-bold text-on-surface whitespace-nowrap">−{money(ex.amount)}</span>
+            <span className="text-[14px] font-bold text-on-surface whitespace-nowrap">−<Money value={ex.amount} /></span>
           </div>
         ))}
       </div>

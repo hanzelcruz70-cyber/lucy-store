@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 import { rpcAplicarAbono, rpcRegistrarVenta } from '@/lib/rpc-helpers';
+import Money from '@/components/Money';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -423,19 +424,19 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3">
           <div className="bg-surface-container-low border border-outline rounded-[10px] p-2.5">
             <Label>Contado</Label>
-            <div className="text-[20px] font-bold text-primary mt-1 leading-tight">{money(contado)}</div>
+            <div className="text-[20px] font-bold text-primary mt-1 leading-tight"><Money value={contado} /></div>
           </div>
           <div className="bg-surface-container-low border border-outline rounded-[10px] p-2.5">
             <Label>Fiado</Label>
-            <div className="text-[20px] font-bold text-on-surface mt-1 leading-tight">{money(fiado)}</div>
+            <div className="text-[20px] font-bold text-on-surface mt-1 leading-tight"><Money value={fiado} /></div>
           </div>
           <div className="bg-surface-container-low border border-outline rounded-[10px] p-2.5">
             <Label>Abonos</Label>
-            <div className="text-[20px] font-bold text-primary mt-1 leading-tight">{money(abonosVivo)}</div>
+            <div className="text-[20px] font-bold text-primary mt-1 leading-tight"><Money value={abonosVivo} /></div>
           </div>
           <div className="bg-surface-container-low border border-outline rounded-[10px] p-2.5">
             <Label>Gastos</Label>
-            <div className="text-[20px] font-bold text-on-surface mt-1 leading-tight">−{money(gastos)}</div>
+            <div className="text-[20px] font-bold text-on-surface mt-1 leading-tight">−<Money value={gastos} /></div>
           </div>
         </div>
       </div>
@@ -479,8 +480,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
                 <span
                   className={`text-[14px] font-bold whitespace-nowrap ${m.tipo === 'gasto' ? 'text-on-surface' : 'text-primary'}`}
                 >
-                  {m.signo}
-                  {money(m.monto)}
+                  <Money value={m.monto} signo={m.signo} />
                 </span>
               </div>
             ))}
@@ -544,7 +544,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
                 </div>
                 <div className="text-right">
                   <span className="block text-[10px] text-on-surface-variant uppercase tracking-wide">Debe</span>
-                  <span className="block text-[14px] font-bold text-primary">{money(c.balance)}</span>
+                      <span className="block text-[14px] font-bold text-primary"><Money value={c.balance} /></span>
                 </div>
               </button>
             ))}
@@ -571,7 +571,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
 
             <div className="bg-surface-container-low border border-outline rounded-[14px] p-3.5 mt-3">
               <Label>Saldo pendiente</Label>
-              <div className="text-[24px] font-bold text-primary leading-tight mt-1">{money(abono.balance)}</div>
+              <div className="text-[24px] font-bold text-primary leading-tight mt-1"><Money value={abono.balance} /></div>
             </div>
 
             {/* MODO INFO: abono + acciones + movimientos */}
@@ -661,7 +661,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
               <div className="bg-surface-container-low border border-outline rounded-[10px] px-3.5 py-2.5 flex justify-between items-center">
                 <span className="text-[12.5px] text-on-surface-variant">Nuevo saldo</span>
                 <b className={`text-[15px] ${remainingCalc === 0 && (parseFloat(amount) || 0) > 0 ? 'text-primary' : 'text-on-surface'}`}>
-                  {money(remainingCalc)}
+                  <Money value={remainingCalc} />
                 </b>
               </div>
 
@@ -687,9 +687,9 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
                               new Date(m.date).toLocaleDateString('es-NI', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' })}
                           </span>
                         </span>
-                        <span className={`text-[13px] font-bold shrink-0 ${m.type === 'FIADO' ? 'text-primary' : 'text-primary-deep'}`}>
-                          {m.type === 'FIADO' ? '+' : '−'} {money(m.amount)}
-                        </span>
+                            <span className={`text-[13px] font-bold shrink-0 ${m.type === 'FIADO' ? 'text-primary' : 'text-primary-deep'}`}>
+                              {m.type === 'FIADO' ? '+' : '−'} <Money value={m.amount} />
+                            </span>
                       </div>
                     ))}
                 </div>
@@ -713,7 +713,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
                 </div>
                 <div className="bg-surface-container-low border border-outline rounded-[10px] px-3.5 py-2.5 flex justify-between items-center">
                   <span className="text-[12.5px] text-on-surface-variant">Saldo tras el fiado</span>
-                  <b className="text-[14px] text-primary">{money((abono.balance || 0) + (parseFloat(fiadoAmount) || 0))}</b>
+                  <b className="text-[14px] text-primary"><Money value={(abono.balance || 0) + (parseFloat(fiadoAmount) || 0)} /></b>
                 </div>
                 <div className="flex gap-2">
                   <button type="submit" disabled={busy} className="flex-1 py-3 rounded-xl bg-primary text-on-primary text-[13.5px] font-semibold active:bg-primary-deep transition-colors disabled:opacity-60">

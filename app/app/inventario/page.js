@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase-server';
 import Link from 'next/link';
+import Money from '@/components/Money';
 import ProductsSection from './ProductsSection';
 import OrphanLotActions from './OrphanLotActions';
 
@@ -127,20 +128,20 @@ export default async function InventarioPage() {
         <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3 text-center">
           <div className="text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase">Inversión total</div>
           <div className="text-[20px] font-bold text-primary mt-1 leading-tight">
-            C${totalInvested.toLocaleString('es-NI', { maximumFractionDigits: 0 })}
+            <Money value={totalInvested} />
           </div>
           <div className="text-[10px] text-on-surface-variant mt-0.5">lo que has pagado en total</div>
         </div>
         <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3 text-center">
           <div className="text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase">Costo de lo vendido</div>
           <div className="text-[20px] font-bold text-on-surface mt-1 leading-tight">
-            C${invested.toLocaleString('es-NI', { maximumFractionDigits: 0 })}
+            <Money value={invested} />
           </div>
         </div>
         <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3 text-center">
           <div className="text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase">Ganancia est.</div>
           <div className="text-[15px] font-bold text-primary mt-1.5 leading-tight">
-            +C${projected.toLocaleString('es-NI', { maximumFractionDigits: 0 })}
+            <Money value={projected} signo="+" />
           </div>
         </div>
       </div>
