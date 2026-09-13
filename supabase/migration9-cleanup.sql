@@ -1,5 +1,5 @@
 -- =====================================================
--- MI PRENDA · Migración 9: Limpieza de datos antiguos
+-- MI PRENDA - Migración 9: Limpieza de datos antiguos
 -- Borra registros con más de 30 días que ya no se ven en
 -- la app (Live, historial de clientes):
 --   - sales de Live (tiktok_live) viejas SIN crédito pendiente
@@ -17,7 +17,7 @@ returns int
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $func$
 declare
   v_limite timestamptz := now() - interval '30 days';
   v_borrados int := 0;
@@ -64,14 +64,24 @@ begin
 
   return v_borrados;
 end;
-$$;
+$func$;
 
 grant execute on function public.limpiar_datos_antiguos() to authenticated;
 
--- Programar limpieza diaria (3 AM UTC-6 = 9 AM UTC) si pg_cron está activo.
--- Si no lo está, la app puede llamar la función manual desde SQL Editor.
-select cron.schedule(
-  'miprenda-limpieza-diaria',
-  '0 9 * * *',
-  $$select public.limpiar_datos_antiguos();$$
-);
+-- Programar limpieza diaria (9 AM UTC = 3 AM Nicaragua) si pg_cron está activo.
+-- Si pg_cron no existe en el proyecto, la app puede llamar la función manual:
+--   select public.limpiar_datos_antiguos();
+do $do$
+begin
+  if exists (select 1 from pg_catalog.pg_extension where extname = 'pg_cron') then
+    perform cron.schedule(
+      'miprenda-limpieza-diaria',
+      '0 9 * * *',
+      'select public.limpiar_datos_antiguos();'
+    );
+    raise notice 'Limpieza diaria programada (9 AM UTC).';
+  else
+    raise notice 'pg_cron no esta activo: la limpieza se puede correr manual con select public.limpiar_datos_antiguos();';
+  end if;
+end
+$do$;
