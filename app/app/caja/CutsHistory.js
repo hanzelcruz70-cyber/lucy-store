@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Money from '@/components/Money';
+
+const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
 const RANGES = [
   { days: 7, label: '7 días' },
@@ -75,25 +76,25 @@ export default function CutsHistory({ cuts }) {
                         dif === 0 ? 'bg-primary-fixed text-primary' : dif > 0 ? 'bg-primary text-on-primary' : 'bg-inverse-surface text-inverse-on-surface'
                       }`}
                     >
-                      {dif === 0 ? '✓ Cuadró' : dif > 0 ? <>Sobró <Money value={dif} /></> : <>Faltó <Money value={Math.abs(dif)} /></>}
+                      {dif === 0 ? '✓ Cuadró' : dif > 0 ? `Sobró ${money(dif)}` : `Faltó ${money(Math.abs(dif))}`}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-3 mt-1 text-[11.5px] text-on-surface-variant flex-wrap">
                   <span>
-                    Contado <b className="text-on-surface"><Money value={c.sales_total} /></b>
+                    Contado <b className="text-on-surface">{money(c.sales_total)}</b>
                   </span>
                   <span>
-                    Gastos <b className="text-on-surface"><Money value={c.expenses_total} /></b>
+                    Gastos <b className="text-on-surface">{money(c.expenses_total)}</b>
                   </span>
                   {abonos > 0 && (
                     <span>
-                      Abonos <b className="text-on-surface"><Money value={abonos} /></b>
+                      Abonos <b className="text-on-surface">{money(abonos)}</b>
                     </span>
                   )}
                   {fisico !== null && fisico > 0 && (
                     <span>
-                      Físico <b className="text-primary"><Money value={fisico} /></b>
+                      Físico <b className="text-primary">{money(fisico)}</b>
                     </span>
                   )}
                 </div>
