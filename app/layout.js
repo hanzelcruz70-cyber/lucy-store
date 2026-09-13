@@ -1,4 +1,5 @@
 import './globals.css';
+import ConfirmDialogProvider from '@/components/ConfirmDialog';
 
 const SITE_URL = 'https://mi-prenda.vercel.app';
 
@@ -75,7 +76,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="bg-surface font-body-md text-body-md text-on-surface antialiased min-h-screen flex flex-col">
-        {children}
+        <ConfirmDialogProvider>{children}</ConfirmDialogProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}`

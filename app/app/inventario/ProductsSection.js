@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { isOffline, enqueueOp } from '@/lib/offline-queue';
+import { appConfirm } from '@/components/ConfirmDialog';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -92,9 +93,10 @@ export default function ProductsSection({ initialProducts, lots }) {
   const deleteProduct = async (p) => {
     if (busy) return;
     const stock = stockOf(p);
-    const ok = confirm(
+    const ok = await appConfirm(
       `¿Eliminar "${p.name}"${stock !== null ? ` (quedaban ${stock} prendas)` : ''}?\n\n` +
-        `Dejará de aparecer en Vender. Esta acción no se puede deshacer.`
+        `Dejará de aparecer en Vender. Esta acción no se puede deshacer.`,
+      { title: 'Eliminar producto', confirmText: 'Eliminar', danger: true }
     );
     if (!ok) return;
     setBusy(true);

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
+import { appConfirm } from '@/components/ConfirmDialog';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -18,8 +19,9 @@ export default function DailyCutButton({ collected, credit, expenses, cutDone })
 
   const doCut = async () => {
     if (done || busy) return;
-    const ok = confirm(
-      `¿Cerrar el turno de hoy?\n\nCobrado: ${money(collected)}\nFiado: ${money(credit)}\nGastos: ${money(expenses)}\n\nEl corte queda guardado en el historial.`
+    const ok = await appConfirm(
+      `¿Cerrar el turno de hoy?\n\nCobrado: ${money(collected)}\nFiado: ${money(credit)}\nGastos: ${money(expenses)}\n\nEl corte queda guardado en el historial.`,
+      { title: 'Corte de caja', confirmText: 'Cerrar turno' }
     );
     if (!ok) return;
     setBusy(true);

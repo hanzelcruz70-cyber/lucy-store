@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { appConfirm } from '@/components/ConfirmDialog';
 
 const Ico = ({ name, size = 22, cls = '' }) => {
   const paths = {
@@ -123,7 +124,8 @@ export default function AdminPage() {
   };
 
   const deleteStore = async (userId, storeName) => {
-    if (!confirm(`¿Eliminar la tienda "${storeName}" y su dueño? Se borrarán TODOS sus datos.`)) return;
+    const ok = await appConfirm(`¿Eliminar la tienda "${storeName}" y su dueño? Se borrarán TODOS sus datos.`, { title: 'Eliminar tienda', confirmText: 'Eliminar todo', danger: true });
+    if (!ok) return;
     const res = await fetch('/api/admin/stores', {
       method: 'DELETE',
       headers: headers(),
@@ -140,7 +142,8 @@ export default function AdminPage() {
 
   const patchStore = async (storeId, action, name) => {
     if (action === 'renew') {
-      if (!confirm(`¿Registrar pago de 31 días para "${name}"?`)) return;
+      const ok = await appConfirm(`¿Registrar pago de 31 días para "${name}"?`, { title: 'Registrar pago', confirmText: 'Registrar' });
+      if (!ok) return;
     }
     try {
       const res = await fetch('/api/admin/stores', {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 import { rpcFiarVenta, rpcCobrarVenta } from '@/lib/rpc-helpers';
+import { appConfirm } from '@/components/ConfirmDialog';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -258,9 +259,10 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds }) {
   /* ===== ELIMINAR APARTADO PENDIENTE ===== */
   const deleteSale = async (s) => {
     if (busy) return;
-    const ok = confirm(
+    const ok = await appConfirm(
       `¿Eliminar el apartado de ${s.client_name || 'cliente live'} (${money(s.total)})?\n\n` +
-        (s.notes || 'Prenda') + ' · Esta acción no se puede deshacer.'
+        (s.notes || 'Prenda') + ' · Esta acción no se puede deshacer.',
+      { title: 'Eliminar apartado', confirmText: 'Eliminar', danger: true }
     );
     if (!ok) return;
     setBusy(true);

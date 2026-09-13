@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 import { rpcAplicarAbono, rpcRegistrarVenta } from '@/lib/rpc-helpers';
+import { appConfirm } from '@/components/ConfirmDialog';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -124,11 +125,11 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         .ilike('name', name)
         .limit(1);
       if (existing && existing.length > 0) {
-        const ok = confirm(
+        const ok = await appConfirm(
           `Ya existe un cliente llamado "${existing[0].name}".\n\n` +
             `¿Seguro que quieres crear OTRO con el mismo nombre?\n` +
-            `Tener duplicados confunde los fiados y los abonos.\n\n` +
-            `ACEPTAR: crear de todas formas. CANCELAR: no crear.`
+            `Tener duplicados confunde los fiados y los abonos.`,
+          { title: 'Cliente duplicado', confirmText: 'Crear igual' }
         );
         if (!ok) {
           setBusy(false);
@@ -219,11 +220,11 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
     if (!amt || amt <= 0) return;
     if (amt > sheet.balance) {
       const excedente = amt - sheet.balance;
-      const ok = confirm(
+      const ok = await appConfirm(
         `El abono (C$${amt.toLocaleString('es-NI')}) supera la deuda (C$${sheet.balance.toLocaleString('es-NI')}).\n\n` +
-          `Sobran C$${excedente.toLocaleString('es-NI')}. ¿Deseas dar el cambio/vuelto al cliente?\n\n` +
-          `ACEPTAR: se registra solo C$${sheet.balance.toLocaleString('es-NI')} y la deuda queda saldada.\n` +
-          `CANCELAR: vuelve para corregir el monto.`
+          `Sobran C$${excedente.toLocaleString('es-NI')} de vuelto para el cliente.\n` +
+          `Se registrará solo C$${sheet.balance.toLocaleString('es-NI')} y la deuda queda saldada.`,
+        { title: 'Abono con vuelto', confirmText: 'Dar vuelto y saldar' }
       );
       if (!ok) return;
     }
@@ -377,7 +378,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
     if (busy) return;
     const c = clientArg || sheet?.client;
     if (!c) return;
-    const ok = confirm(`¿Eliminar a "${c.name}"?\n\nSe borrarán también sus ${money(balanceOf(c))} de deuda y su historial.`);
+    const ok = await appConfirm(`¿Eliminar a "${c.name}"?\n\nSe borrarán también sus ${money(balanceOf(c))} de deuda y su historial. Esta acción no se puede deshacer.`, { title: 'Eliminar cliente', confirmText: 'Eliminar', danger: true });
     if (!ok) return;
     setBusy(true);
     try {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { appAlert } from '@/components/ConfirmDialog';
 
 export default function PwaRegister() {
   const [deferred, setDeferred] = useState(null);
@@ -35,8 +36,9 @@ export default function PwaRegister() {
       if (outcome === 'accepted') setInstalled(true);
       setDeferred(null);
     } else {
-      alert(
-        'Para instalar: en Android usa "Agregar a pantalla de inicio". En iPhone: Compartir > "Añadir a inicio".'
+      await appAlert(
+        'Para instalar la app: en Android usa "Agregar a pantalla de inicio". En iPhone: Compartir > "Añadir a inicio".',
+        { title: 'Instalar Mi Prenda', okText: 'Entendido' }
       );
     }
   };

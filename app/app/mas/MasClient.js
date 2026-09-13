@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
+import { appConfirm } from '@/components/ConfirmDialog';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -212,8 +213,9 @@ export default function MasClient({ expenses: initialExpenses, sales, products }
   // ---------- ELIMINAR GASTO ----------
   const deleteExpense = async (e) => {
     if (busy) return;
-    const ok = confirm(
-      `¿Eliminar el gasto "${e.concept}" de ${money(e.amount)} (${catInfo(e.category).label})?`
+    const ok = await appConfirm(
+      `¿Eliminar el gasto "${e.concept}" de ${money(e.amount)} (${catInfo(e.category).label})?`,
+      { title: 'Eliminar gasto', confirmText: 'Eliminar', danger: true }
     );
     if (!ok) return;
     setBusy(true);
