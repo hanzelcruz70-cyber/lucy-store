@@ -214,7 +214,17 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
         remaining -= take;
       }
 
-      const newBalance = Math.max(0, abono.balance - montoReal);
+      // Saldo NUEVO calculado desde la BD (suma de deudas pendientes), no desde
+      // el snapshot del cliente: si hay dos abonos seguidos sin recargar, el
+      // segundo recalcula bien y no revierte el primero.
+      const { data: openDebts, error: errOpen } = await supabase
+        .from('debts')
+        .select('remaining')
+        .eq('client_id', abono.id)
+        .eq('status', 'pendiente');
+      if (errOpen) throw new Error('No se pudo leer el saldo nuevo: ' + errOpen.message);
+      const newBalance = (openDebts || []).reduce((a, d) => a + Number(d.remaining), 0);
+
       const { error: errBal, data: balData } = await supabase
         .from('clients')
         .update({ balance: newBalance })
@@ -226,10 +236,11 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
         throw new Error('El saldo quedó en ' + balData.balance + ' en lugar de ' + newBalance);
       }
 
+      const updatedClient = { ...abono, balance: newBalance };
       setDebtList((list) =>
         newBalance <= 0
           ? list.filter((c) => c.id !== abono.id)
-          : list.map((c) => (c.id === abono.id ? { ...c, balance: newBalance } : c))
+          : list.map((c) => (c.id === abono.id ? updatedClient : c))
       );
 
       // Insertar el abono EN VIVO en los movimientos de hoy (sin recargar la página)
@@ -266,7 +277,10 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
         return { ...movs, [abono.id]: list };
       });
 
-      setAbono(null);
+      // El modal PERMANECE ABIERTO con el saldo fresco: se puede abonar de
+      // nuevo o cerrar manualmente. Solo cierra solo si la deuda quedó saldada.
+      setAbono(updatedClient);
+      setAmount('');
       const msg =
         amt > abono.balance
           ? `Abono de ${money(montoReal)} confirmado (vuelto de ${money(amt - montoReal)}). Deuda saldada.`

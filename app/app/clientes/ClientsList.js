@@ -244,6 +244,8 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
             method,
           },
         });
+        // Offline: descuento local desde el snapshot (el sincronizador recalcula
+        // el balance desde las deudas reales al subir, así que no acumula drift)
         const newBalance = Math.max(0, sheet.balance - montoReal);
         setRecoveredNow((r) => r + montoReal);
         setItems((it) => {
@@ -307,7 +309,15 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         remainingAmt -= take;
       }
 
-      const newBalance = Math.max(0, sheet.balance - montoReal);
+      // Saldo NUEVO desde la BD (suma de deudas pendientes), no desde el
+      // snapshot: dos abonos seguidos sin recargar calculan bien.
+      const { data: openDebts, error: errOpen } = await supabase
+        .from('debts')
+        .select('remaining')
+        .eq('client_id', c.id)
+        .eq('status', 'pendiente');
+      if (errOpen) throw new Error('No se pudo leer el saldo nuevo: ' + errOpen.message);
+      const newBalance = (openDebts || []).reduce((a, d) => a + Number(d.remaining), 0);
       const { error: errBal, data: balData } = await supabase
         .from('clients')
         .update({ balance: newBalance })

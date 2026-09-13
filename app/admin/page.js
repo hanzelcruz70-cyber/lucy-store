@@ -24,6 +24,25 @@ const Ico = ({ name, size = 22, cls = '' }) => {
     ),
     person_add: <path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c1-3.4 3.5-5 6.5-5s5.5 1.6 6.5 5M18 5v6M15 8h6" />,
     delete: <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13M10 11v6M14 11v6" />,
+    search: (
+      <>
+        <circle cx="11" cy="11" r="6.5" />
+        <path d="M20 20l-4-4" />
+      </>
+    ),
+    check: <path d="M4 12l5 5L20 7" />,
+    block: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M6 6l12 12" />
+      </>
+    ),
+    payments: (
+      <>
+        <rect x="3" y="6" width="18" height="12" rx="2" />
+        <path d="M12 12h4M12 9.5h.01" />
+      </>
+    ),
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={cls}>
@@ -42,6 +61,8 @@ export default function AdminPage() {
   const [form, setForm] = useState({ ownerName: '', storeName: '', email: '', password: '' });
   const [msg, setMsg] = useState(null); // {type:'ok'|'err', text}
   const [busy, setBusy] = useState(false);
+  const [storeSearch, setStoreSearch] = useState('');
+  const [filter, setFilter] = useState('all'); // all | active | expired | suspended
 
   const headers = () => ({
     'Content-Type': 'application/json',
@@ -154,6 +175,71 @@ export default function AdminPage() {
   const inputCls =
     'w-full bg-surface-container-lowest px-space-md py-2.5 rounded-lg text-body-md font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary shadow-sm';
 
+  // Estado de suscripción de una tienda
+  const stateOf = (s) => {
+    if (s.active === false) return 'suspended';
+    if (s.paid_until && new Date(s.paid_until) <= new Date()) return 'expired';
+    return 'active';
+  };
+  const daysLeft = (s) =>
+    s.paid_until ? Math.ceil((new Date(s.paid_until) - new Date()) / (24 * 60 * 60 * 1000)) : null;
+
+  const norm = (str) =>
+    (str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const filteredStores = stores.filter((s) => {
+    if (filter !== 'all' && stateOf(s) !== filter) return false;
+    if (!storeSearch.trim()) return true;
+    const q = norm(storeSearch);
+    const profile = profiles.find((p) => p.store_id === s.id);
+    return (
+      norm(s.name).includes(q) ||
+      norm(s.owner_email).includes(q) ||
+      norm(profile?.display_name || '').includes(q)
+    );
+  });
+
+  const counts = {
+    all: stores.length,
+    active: stores.filter((s) => stateOf(s) === 'active').length,
+    expired: stores.filter((s) => stateOf(s) === 'expired').length,
+    suspended: stores.filter((s) => stateOf(s) === 'suspended').length,
+  };
+
+  const StateBadge = ({ s }) => {
+    const st = stateOf(s);
+    const d = daysLeft(s);
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${
+          st === 'suspended'
+            ? 'bg-error-container/40 text-error'
+            : st === 'expired'
+              ? 'bg-error-container/40 text-error'
+              : 'bg-secondary-container/40 text-on-secondary-container'
+        }`}
+      >
+        <span
+          className={`w-2 h-2 rounded-full ${
+            st === 'active' ? 'bg-primary' : 'bg-error'
+          }`}
+        />
+        {st === 'suspended'
+          ? 'Suspendida'
+          : st === 'expired'
+            ? 'Vencida'
+            : d !== null
+              ? `Vence en ${d}d`
+              : 'Activa'}
+      </span>
+    );
+  };
+
   // ---------- LOGIN DEL ADMIN ----------
   if (!authed) {
     return (
@@ -195,8 +281,9 @@ export default function AdminPage() {
 
   // ---------- PANEL ----------
   return (
-    <div className="min-h-screen px-gutter-mobile py-8 max-w-2xl mx-auto space-y-space-md">
-      <div className="flex items-center justify-between">
+    <div className="min-h-screen px-gutter-mobile py-8 max-w-6xl mx-auto space-y-space-md">
+      {/* Header con resumen */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-space-sm">
           <div className="w-11 h-11 rounded-xl bg-inverse-surface text-inverse-on-surface flex items-center justify-center">
             <Ico name="admin" size={24} />
@@ -204,170 +291,262 @@ export default function AdminPage() {
           <div>
             <h1 className="font-headline-md text-headline-md text-on-surface">Panel Admin</h1>
             <p className="font-body-sm text-body-sm text-on-surface-variant">
-              {stores.length} tiendas registradas
+              {stores.length} tiendas · {counts.active} activas
+              {counts.expired + counts.suspended > 0 &&
+                ` · ${counts.expired + counts.suspended} por cobrar`}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Crear tienda */}
-      <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-lg space-y-space-md">
-        <div className="flex items-center gap-2">
-          <Ico name="add_business" size={22} cls="text-primary" />
-          <h2 className="font-headline-sm text-headline-sm text-on-surface">Crear cuenta de cliente</h2>
+      {msg && (
+        <div
+          className={`rounded-xl p-space-sm font-body-sm text-body-sm ${
+            msg.type === 'ok'
+              ? 'bg-secondary-container/40 text-on-secondary-container'
+              : 'bg-error-container/40 text-on-error-container'
+          }`}
+        >
+          {msg.text}
         </div>
-        <form onSubmit={createStore} className="space-y-space-sm">
-          <div>
-            <label className="block font-body-sm text-body-sm font-medium text-on-surface mb-1">
-              Nombre del dueño
-            </label>
-            <input required value={form.ownerName} onChange={set('ownerName')} className={inputCls} placeholder="Lucy" />
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-space-md items-start">
+        {/* ===== Columna izquierda: crear tienda (sticky en desktop) ===== */}
+        <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-lg space-y-space-md lg:sticky lg:top-8">
+          <div className="flex items-center gap-2">
+            <Ico name="add_business" size={22} cls="text-primary" />
+            <h2 className="font-headline-sm text-headline-sm text-on-surface">Crear cuenta de cliente</h2>
           </div>
-          <div>
-            <label className="block font-body-sm text-body-sm font-medium text-on-surface mb-1">
-              Nombre del negocio (así lo verá el cliente)
-            </label>
-            <input
-              required
-              value={form.storeName}
-              onChange={set('storeName')}
-              className={inputCls}
-              placeholder="Lucy Store"
-            />
-          </div>
-          <div>
-            <label className="block font-body-sm text-body-sm font-medium text-on-surface mb-1">
-              Correo del cliente
-            </label>
-            <input required type="email" value={form.email} onChange={set('email')} className={inputCls} placeholder="cliente@correo.com" />
-          </div>
-          <div>
-            <label className="block font-body-sm text-body-sm font-medium text-on-surface mb-1">
-              Contraseña (se la entregas al cliente)
-            </label>
-            <div className="flex gap-2">
+          <form onSubmit={createStore} className="space-y-space-sm">
+            <div>
+              <label className="block font-body-sm text-body-sm font-medium text-on-surface mb-1">
+                Nombre del dueño
+              </label>
+              <input required value={form.ownerName} onChange={set('ownerName')} className={inputCls} placeholder="Lucy" />
+            </div>
+            <div>
+              <label className="block font-body-sm text-body-sm font-medium text-on-surface mb-1">
+                Nombre del negocio (así lo verá el cliente)
+              </label>
               <input
                 required
-                minLength={8}
-                value={form.password}
-                onChange={set('password')}
+                value={form.storeName}
+                onChange={set('storeName')}
                 className={inputCls}
-                placeholder="Mínimo 8 caracteres"
+                placeholder="Lucy Store"
               />
-              <button
-                type="button"
-                onClick={genPassword}
-                className="px-4 rounded-lg bg-surface-container-high text-on-surface font-headline-sm text-body-sm flex-shrink-0 active:bg-surface-container-highest"
-              >
-                Generar
-              </button>
+            </div>
+            <div>
+              <label className="block font-body-sm text-body-sm font-medium text-on-surface mb-1">
+                Correo del cliente
+              </label>
+              <input required type="email" value={form.email} onChange={set('email')} className={inputCls} placeholder="cliente@correo.com" />
+            </div>
+            <div>
+              <label className="block font-body-sm text-body-sm font-medium text-on-surface mb-1">
+                Contraseña (se la entregas al cliente)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  required
+                  minLength={8}
+                  value={form.password}
+                  onChange={set('password')}
+                  className={inputCls}
+                  placeholder="Mínimo 8 caracteres"
+                />
+                <button
+                  type="button"
+                  onClick={genPassword}
+                  className="px-4 rounded-lg bg-surface-container-high text-on-surface font-headline-sm text-body-sm flex-shrink-0 active:bg-surface-container-highest"
+                >
+                  Generar
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full min-h-[52px] bg-primary text-on-primary rounded-xl font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform disabled:opacity-60"
+            >
+              <Ico name="person_add" size={22} />
+              {busy ? 'Creando...' : 'Crear tienda y cuenta'}
+            </button>
+            <p className="text-[11px] text-on-surface-variant text-center">
+              Incluye su primer mes de suscripción (31 días)
+            </p>
+          </form>
+        </div>
+
+        {/* ===== Columna derecha: tiendas ===== */}
+        <div className="space-y-space-sm min-w-0">
+          {/* Buscador + filtros */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex items-center gap-2 bg-surface-container-lowest px-3 py-2.5 rounded-xl shadow-sm flex-1">
+              <Ico name="search" size={16} cls="text-on-surface-variant" />
+              <input
+                value={storeSearch}
+                onChange={(e) => setStoreSearch(e.target.value)}
+                placeholder="Buscar tienda, dueño o correo…"
+                className="flex-1 text-[13px] text-on-surface outline-none placeholder:text-on-surface-variant bg-transparent min-w-0"
+                type="search"
+              />
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto">
+              {[
+                { key: 'all', label: `Todas (${counts.all})` },
+                { key: 'active', label: `Activas (${counts.active})` },
+                { key: 'expired', label: `Vencidas (${counts.expired})` },
+                { key: 'suspended', label: `Suspendidas (${counts.suspended})` },
+              ].map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={`px-3 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition-colors ${
+                    filter === f.key
+                      ? 'bg-inverse-surface text-inverse-on-surface'
+                      : 'bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-low'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {msg && (
-            <div
-              className={`rounded-xl p-space-sm font-body-sm text-body-sm ${
-                msg.type === 'ok'
-                  ? 'bg-secondary-container/40 text-on-secondary-container'
-                  : 'bg-error-container/40 text-on-error-container'
-              }`}
-            >
-              {msg.text}
-            </div>
-          )}
+          {/* TABLA desktop */}
+          <div className="hidden md:block bg-surface-container-lowest rounded-2xl shadow-lg overflow-hidden">
+            {filteredStores.length === 0 ? (
+              <p className="p-space-lg text-center font-body-md text-body-md text-on-surface-variant">
+                {stores.length === 0 ? 'Aún no hay tiendas creadas.' : 'Ninguna tienda coincide con el filtro.'}
+              </p>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-container-low text-[11px] font-bold uppercase tracking-wide text-on-surface-variant">
+                    <th className="px-4 py-3">Tienda</th>
+                    <th className="px-4 py-3">Suscripción</th>
+                    <th className="px-4 py-3 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStores.map((s) => {
+                    const profile = profiles.find((p) => p.store_id === s.id);
+                    return (
+                      <tr key={s.id} className="border-t border-surface-container-low align-middle">
+                        <td className="px-4 py-3 min-w-0">
+                          <b className="block text-[13.5px] font-semibold text-on-surface truncate">{s.name}</b>
+                          <span className="block text-[11.5px] text-on-surface-variant truncate">
+                            {profile ? `${profile.display_name} · ` : ''}{s.owner_email}
+                          </span>
+                          <span className="block text-[10.5px] text-on-surface-variant">
+                            Desde {new Date(s.created_at).toLocaleDateString('es-MX')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <StateBadge s={s} />
+                          {s.paid_until && (
+                            <span className="block text-[10.5px] text-on-surface-variant mt-1">
+                              hasta {new Date(s.paid_until).toLocaleDateString('es-NI')}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                            <button
+                              onClick={() => patchStore(s.id, 'renew', s.name)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary text-on-primary text-[11px] font-semibold active:scale-95 whitespace-nowrap"
+                              title="Registrar pago y renovar 31 días"
+                            >
+                              <Ico name="payments" size={13} /> Pago 31d
+                            </button>
+                            <button
+                              onClick={() => patchStore(s.id, 'toggle', s.name)}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold active:scale-95 whitespace-nowrap ${
+                                s.active === false
+                                  ? 'bg-secondary-container text-on-secondary-container'
+                                  : 'bg-surface-container-highest text-on-surface-variant'
+                              }`}
+                              title={s.active === false ? 'Activar cuenta' : 'Suspender cuenta'}
+                            >
+                              <Ico name={s.active === false ? 'check' : 'block'} size={13} />
+                              {s.active === false ? 'Activar' : 'Suspender'}
+                            </button>
+                            <button
+                              onClick={() => profile && deleteStore(profile.id, s.name)}
+                              className="w-8 h-8 rounded-lg bg-error-container/40 text-error flex items-center justify-center flex-shrink-0 active:scale-95"
+                              title="Eliminar tienda"
+                            >
+                              <Ico name="delete" size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full min-h-[52px] bg-primary text-on-primary rounded-xl font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform disabled:opacity-60"
-          >
-            <Ico name="person_add" size={22} />
-            {busy ? 'Creando...' : 'Crear tienda y cuenta'}
-          </button>
-        </form>
-      </div>
-
-      {/* Listado de tiendas */}
-      <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-lg space-y-space-sm">
-        <div className="flex items-center gap-2">
-          <Ico name="store" size={22} cls="text-primary" />
-          <h2 className="font-headline-sm text-headline-sm text-on-surface">Tiendas del sistema</h2>
-        </div>
-        {stores.length === 0 && (
-          <p className="font-body-md text-body-md text-on-surface-variant">Aún no hay tiendas creadas.</p>
-        )}
-        <div className="space-y-space-xs">
-          {stores.map((s) => {
-            const profile = profiles.find((p) => p.store_id === s.id);
-            const owner = profile ? `${profile.display_name} · ${s.owner_email}` : s.owner_email;
-            const vencida =
-              s.active === false ||
-              (s.paid_until && new Date(s.paid_until) <= new Date());
-            const diasRestantes = s.paid_until
-              ? Math.ceil((new Date(s.paid_until) - new Date()) / (24 * 60 * 60 * 1000))
-              : null;
-            return (
-              <div key={s.id} className="bg-surface-container-low rounded-xl p-space-sm space-y-space-sm">
-                <div className="flex items-center justify-between gap-space-sm">
-                  <div className="min-w-0">
-                    <p className="font-headline-sm text-body-md text-on-surface truncate">{s.name}</p>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant truncate">{owner}</p>
-                    <p className="font-body-sm text-[11px] text-on-surface-variant">
-                      Creada: {new Date(s.created_at).toLocaleDateString('es-MX')}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => profile && deleteStore(profile.id, s.name)}
-                    className="w-10 h-10 rounded-lg bg-error-container/40 text-error flex items-center justify-center flex-shrink-0 active:scale-95"
-                    title="Eliminar tienda"
-                  >
-                    <Ico name="delete" size={20} />
-                  </button>
-                </div>
-                {/* Estado de suscripción */}
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-body-sm text-body-sm font-semibold ${
-                      vencida
-                        ? 'bg-error-container/40 text-error'
-                        : 'bg-secondary-container/40 text-on-secondary-container'
-                    }`}
-                  >
-                    <span
-                      className={`w-2 h-2 rounded-full ${vencida ? 'bg-error' : 'bg-primary'}`}
-                    />
-                    {s.active === false
-                      ? 'Suspendida'
-                      : vencida
-                        ? 'Suscripción vencida'
-                        : diasRestantes !== null
-                          ? `Activa · vence en ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}`
-                          : 'Activa'}
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => patchStore(s.id, 'renew', s.name)}
-                      className="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-body-sm text-body-sm font-semibold active:scale-95"
-                      title="Registrar pago y renovar 31 días"
-                    >
-                      Pago 31 días
-                    </button>
-                    <button
-                      onClick={() => patchStore(s.id, 'toggle', s.name)}
-                      className={`px-3 py-1.5 rounded-lg font-body-sm text-body-sm font-semibold active:scale-95 ${
-                        s.active === false
-                          ? 'bg-secondary-container text-on-secondary-container'
-                          : 'bg-surface-container-highest text-on-surface-variant'
-                      }`}
-                      title={s.active === false ? 'Activar cuenta' : 'Suspender cuenta'}
-                    >
-                      {s.active === false ? 'Activar' : 'Suspender'}
-                    </button>
-                  </div>
-                </div>
+          {/* TARJETAS móvil */}
+          <div className="md:hidden space-y-2">
+            {filteredStores.length === 0 && (
+              <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-lg">
+                <p className="text-center font-body-md text-body-md text-on-surface-variant">
+                  {stores.length === 0 ? 'Aún no hay tiendas creadas.' : 'Ninguna tienda coincide con el filtro.'}
+                </p>
               </div>
-            );
-          })}
+            )}
+            {filteredStores.map((s) => {
+              const profile = profiles.find((p) => p.store_id === s.id);
+              return (
+                <div key={s.id} className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <b className="block text-[14px] font-semibold text-on-surface truncate">{s.name}</b>
+                      <span className="block text-[11.5px] text-on-surface-variant truncate">
+                        {profile ? `${profile.display_name} · ` : ''}{s.owner_email}
+                      </span>
+                      <span className="block text-[10.5px] text-on-surface-variant">
+                        Desde {new Date(s.created_at).toLocaleDateString('es-MX')}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => profile && deleteStore(profile.id, s.name)}
+                      className="w-9 h-9 rounded-lg bg-error-container/40 text-error flex items-center justify-center flex-shrink-0 active:scale-95"
+                      title="Eliminar tienda"
+                    >
+                      <Ico name="delete" size={17} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <StateBadge s={s} />
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => patchStore(s.id, 'renew', s.name)}
+                        className="px-2.5 py-1.5 rounded-lg bg-primary text-on-primary text-[11px] font-semibold active:scale-95"
+                      >
+                        Pago 31d
+                      </button>
+                      <button
+                        onClick={() => patchStore(s.id, 'toggle', s.name)}
+                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold active:scale-95 ${
+                          s.active === false
+                            ? 'bg-secondary-container text-on-secondary-container'
+                            : 'bg-surface-container-highest text-on-surface-variant'
+                        }`}
+                      >
+                        {s.active === false ? 'Activar' : 'Suspender'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

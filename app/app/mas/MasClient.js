@@ -55,6 +55,8 @@ function extraerProductos(sales) {
 // Une las ventas por notas (ingresos reales) con el sold_count real de la BD.
 // Prioriza sold_count (fuente de verdad del trigger) y siempre incluye
 // TODOS los productos activos, aunque tengan 0 ventas.
+// Si un producto fue ELIMINADO del inventario, deja de mostrarse aquí:
+// la lista la define la tabla products, no las notas históricas.
 function mergeStats(sales, products) {
   const byNotes = extraerProductos(sales);
   const byName = {};
@@ -70,12 +72,6 @@ function mergeStats(sales, products) {
       ingreso: note ? note.ingreso : (prod.sold_count || 0) * Number(prod.sale_price),
       price: Number(prod.sale_price),
     };
-  });
-
-  // Productos que solo aparecen en notas (vendidos antes de la tabla products)
-  const prodNames = new Set((products || []).map((p) => p.name));
-  byNotes.forEach((p) => {
-    if (!prodNames.has(p.name)) merged.push({ ...p, code: null, price: null });
   });
 
   return merged.sort((a, b) => b.count - a.count);
