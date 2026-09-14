@@ -1,10 +1,13 @@
-/* Mi Prenda Service Worker v10 — datos frescos, estáticos rápidos, sin fuente de iconos */
-const CACHE = 'miprenda-v10';
+/* Mi Prenda Service Worker v11 — íconos nuevos de la percha (cache-bust) */
+const CACHE = 'miprenda-v11';
 const PRECACHE = [
   '/offline.html',
   '/manifest.json',
+  '/icons/favicon.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/icon-maskable-192.png',
+  '/icons/icon-maskable-512.png',
   '/icons/og-image.jpg',
 ];
 
