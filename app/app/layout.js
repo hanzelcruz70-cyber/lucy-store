@@ -59,10 +59,8 @@ export default async function AppLayout({ children }) {
       <div className="min-h-screen flex items-center justify-center px-gutter-mobile max-w-md mx-auto">
         <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-lg text-center space-y-space-sm w-full">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-            <path d="M4 10.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.5" />
-            <path d="M3.5 6.5L5 3h14l1.5 3.5" />
-            <path d="M3.5 6.5c0 1.4 1.2 2.5 2.6 2.5s2.6-1.1 2.6-2.5c0 1.4 1.2 2.5 2.6 2.5s2.6-1.1 2.6-2.5c0 1.4 1.2 2.5 2.6 2.5s2.6-1.1 2.6-2.5" />
-            <path d="M9.75 21v-5.5a1.25 1.25 0 0 1 1.25-1.25h2a1.25 1.25 0 0 1 1.25 1.25V21" />
+            <path d="M12 2.5a2 2 0 0 1 1.6 3.2c-.4.5-1 .8-1.6.9L18.5 13c.6.5.2 1.5-.6 1.5H6.1c-.8 0-1.2-1-.6-1.5l6.5-6.4" />
+            <path d="M5.4 14.5L3.7 19.4c-.2.7.3 1.6 1.1 1.6h14.4c.8 0 1.3-.9 1.1-1.6l-1.7-4.9" />
           </svg>
           <h1 className="font-headline-md text-headline-md text-on-surface">Cuenta sin tienda</h1>
           <p className="font-body-lg text-body-lg text-on-surface-variant">
