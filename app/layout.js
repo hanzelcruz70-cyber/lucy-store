@@ -32,10 +32,11 @@ export const metadata = {
     description:
       'Caja, créditos, inventario y Lives de TikTok en una sola app. Funciona sin internet e instalable en tu celular.',
     locale: 'es_NI',
-    // Imagen estática 1200x630 con zona segura de 15% (WhatsApp recorta los bordes)
+    // Imagen estática 1200x630, TODO CENTRADO (WhatsApp recorta bordes: el centro sobrevive).
+    // Archivo con versión en el nombre para romper la caché agresiva de WhatsApp.
     images: [
       {
-        url: '/icons/og-image.jpg',
+        url: '/icons/og-image-v3.jpg?v=3',
         width: 1200,
         height: 630,
         alt: 'Mi Prenda — punto de venta para tiendas de ropa americana',
@@ -48,7 +49,7 @@ export const metadata = {
     description: 'Caja, créditos, inventario y Lives de TikTok en una sola app. Instalable y offline.',
     images: [
       {
-        url: '/icons/og-image.jpg',
+        url: '/icons/og-image-v3.jpg?v=3',
         width: 1200,
         height: 630,
         alt: 'Mi Prenda — punto de venta para tiendas de ropa americana',
