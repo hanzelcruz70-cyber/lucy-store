@@ -213,7 +213,7 @@ export default function ProductsSection({ initialProducts, lots }) {
                   disabled={busy}
                   title={`Editar ${p.name}`}
                   aria-label={`Editar ${p.name}`}
-                  className="w-8 h-8 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity disabled:opacity-50"
+                  className="w-11 h-11 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity disabled:opacity-50"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 20h9" />
@@ -224,7 +224,7 @@ export default function ProductsSection({ initialProducts, lots }) {
                   onClick={() => deleteProduct(p)}
                   disabled={busy}
                   title={`Eliminar ${p.name}`}
-                  className="w-8 h-8 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity disabled:opacity-50"
+                  className="w-11 h-11 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity disabled:opacity-50"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13M10 11v6M14 11v6" />
@@ -242,7 +242,7 @@ export default function ProductsSection({ initialProducts, lots }) {
           <div className="bg-surface w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <b className="text-[16px] text-on-surface">Editar producto</b>
-              <button onClick={() => setEditOpen(null)} className="w-8 h-8 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center">
+              <button onClick={() => setEditOpen(null)} className="w-11 h-11 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
               </button>
             </div>

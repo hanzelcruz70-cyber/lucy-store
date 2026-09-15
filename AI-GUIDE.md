@@ -66,8 +66,9 @@ lucy-store/
 │   ├── migration2-products.sql   # Migración 2: products
 │   ├── migration5-fix-triggers.sql # Migración 5: triggers correctos (3,4 obsoletos)
 │   ├── migration6-expenses.sql   # Migración 6: categorías de gastos ampliadas + policy UPDATE
-│   ├── migration7-audit.sql      # Migración 7: RPCs transaccionales + UNIQUE clientes + cash_cuts numérico
-│   └── migration8-cash-opening.sql # Migración 8: caja inicial del día (cash_openings + opening_total en cash_cuts)
+│   ├── migration7-audit.sql       # Migración 7: RPCs transaccionales + UNIQUE clientes + cash_cuts numérico
+│   ├── migration8-cash-opening.sql # Migración 8: caja inicial del día (cash_openings + opening_total en cash_cuts)
+│   └── migration10-audit-fixes.sql # Migración 10: auditoría 2026-09-13 (tenant-checks, stock en la transacción, acentos, cortes únicos)
 ├── .github/workflows/ci.yml      # CI: build + secrets + deps en cada push
 ├── CONSTRAINTS.md                # CONTRATO DE CALIDAD (leer antes de codificar)
 ├── GUIA-USUARIO.pdf              # Guía del dueño de tienda (se genera con scripts/generar-guia-pdf.cjs)
@@ -107,14 +108,16 @@ ADMIN_SECRET=...                             # token alterno para scripts
 - El efectivo esperado del cierre = ventas efectivo + abonos en efectivo − gastos
 - Sobrepago: se registra solo hasta el saldo; el excedente es vuelto (confirm() avisa antes)
 
-**Integridad transaccional (auditoría 2026-09-13, migración 7):**
-- TODA operación de dinero pasa por RPCs transaccionales (`supabase/migration7-audit.sql`) vía `lib/rpc-helpers.js`: `registrar_venta` (venta+payment o venta+cliente+deuda), `aplicar_abono` (FIFO con `FOR UPDATE`), `fiar_venta` (Live, anti doble-fiado), `cobrar_venta` (Live), `registrar_producto` (lote+producto, códigos por contador `store_counters`)
-- Stock: decrementos atómicos (`decrement_stock`, `increment_sold`) — NUNCA enviar `pieces_left` absoluto desde el cliente
-- `clients.balance` lo recalcula un TRIGGER en cada cambio de `debts`: el cliente ya no debe actualizar el balance a mano
-- Clientes: UNIQUE `(store_id, lower(trim(name)))` — el RPC encuentra al cliente exacto o lo crea; no puede haber duplicados
-- `cash_cuts` guarda columnas numéricas: `abonos_total`, `transfer_total`, `fisico_total`, `discrepancy_amount`; `collected_total` = efectivo ventas + abonos efectivo
-- Corte offline: `createdAt` en el payload conserva la fecha ORIGINAL (no la del sync)
-- Idempotencia de RPCs: ids pre-generados en cliente + guardias por `sale_id`/`payment_id` — un reintento jamás duplica dinero
+**Integridad transaccional (auditoría 2026-09-13, migraciones 7 y 10):**
+- TODA operación de dinero pasa por RPCs transaccionales (`supabase/migration7-audit.sql`, `migration10-audit-fixes.sql`) vía `lib/rpc-helpers.js`: `registrar_venta` (venta+payment+deuda+STOCK en una sola transacción: recibe `p_items jsonb` y descuenta contador de vendidos y stock del lote dentro), `aplicar_abono` (FIFO con `FOR UPDATE`), `fiar_venta` (Live, anti doble-fiado, solo de mi tienda), `cobrar_venta` (Live, idempotente por venta: un solo cobro por `sale_id`), `registrar_producto` (lote+producto, códigos por contador `store_counters`)
+- TODAS las funciones security definer (stock incluido) verifican que la fila pertenezca a la tienda del que llama (`current_store_id_strict()`): nadie toca lotes/productos/deudas ajenos aunque conozca el uuid (migración 10)
+- Toda operación offline conserva su FECHA ORIGINAL: los RPCs aceptan `p_created_at` (migración 10) y la cola offline (`lib/offline-queue.js`) manda la fecha con la que se vendió/abonó/cerró, no la del sync
+- Cobrar un apartado de Live pregunta el MÉTODO (efectivo/transferencia): la transferencia NO entra al esperado del cajón (arqueo correcto)
+- Cobro de apartado de un día ANTERIOR: el efectivo de hoy SÍ lo cuenta (payment de hoy + `sale_id` del apartado viejo) — antes era invisible
+- `clients` tiene UNIQUE por nombre SIN ACENTOS (`norm_name`): "dona lupe" = "Doña Lupe" — no hay duplicados por tildes (migración 10)
+- `cash_cuts` tiene UNIQUE(store_id, nic_day(created_at)): una tienda solo puede hacer UN corte por día de negocio Nicaragua (migración 10)
+- clientes/borrado de apartado live: apartado PENDIENTE se borra; fiado o cobrado ya no se borran (FK `ON DELETE SET NULL` en la BD los protege)
+- El stock se muta SOLO dentro del RPC (migración 10), nunca desde el cliente — un fallo de red no deja venta sin descuento ni descuento sin venta
 
 ## Flujos clave
 
@@ -131,18 +134,20 @@ Modal (Inicio o Clientes) → validaciones (monto>0, sobrepago pide confirm con 
 Caja → arqueo: esperado = efectivo + abonos efectivo − gastos. Conteo por denominaciones (input o botones +/−). Insert cash_cuts. Botón bloqueado hasta mañana. Debajo: historial de cortes con filtro 7/15/30 días.
 
 ### 5. Modo offline (se cayó la luz/internet)
-Toda escritura cliente-side revisa `isOffline()` (lib/offline-queue.js). Sin conexión: se guarda en la cola local (localStorage `miprenda_outbox`) con id uuid pre-generado y la UI se actualiza igual. Al volver la red, `lib/offline-sync.js` procesa la cola FIFO automáticamente (evento `online`, focus, o cada 60s). Cada operación es IDEMPOTENTE (insert con id local, verificación anti-doble-fiado, abonos con debt_id FIFO, recálculo de balance desde la BD) para que un reintento no duplique dinero. Funciona offline: venta contado/fiado (Vender), apartar/cobrar/fiar (Live), abonos (Inicio/Clientes), fiado directo, cliente nuevo, gastos, corte de caja, producto nuevo. Banner `components/OfflineBanner.js` muestra estado ("Sin internet · N cambios guardados" / "Sincronizando…"). El SW cachea páginas para que la app abra offline (network-first con fallback a caché).
+Toda escritura cliente-side revisa `isOffline()` (lib/offline-queue.js). Sin conexión: se guarda en la cola local (localStorage `miprenda_outbox`) con id uuid pre-generado y **la fecha original del negocio** (`createdAt`), y la UI se actualiza igual. Al volver la red, `lib/offline-sync.js` procesa la cola FIFO automáticamente (evento `online`, focus, o cada 60s) y dispara `miprenda:synced` + `router.refresh()` para que las server-components muestren las cifras frescas. Cada operación es IDEMPOTENTE (insert con id local, RPC con guardia por `payment_id`/`sale_id`, corte por día NI, recálculo de balance desde la BD) para que un reintento no duplique dinero. Funciona offline: venta contado/fiado, apartar/cobrar/fiar, abonos, crédito directo, cliente nuevo/editar/borrar, gastos (+editar/borrar), corte de caja, y **caja inicial**. Banner `components/OfflineBanner.js` muestra estado ("Sin internet · N cambios guardados" / "Sincronizando…"). El SW cachea páginas para que la app abra offline (network-first con fallback a caché).
 
 ## Reglas de UI
 
 - **Paleta rosa**: primary `#E040A0`, texto `#19010C`, secundario `#952964`, superficies `#F7F4F5/#F7E9EC/#F6CCD9`
 - **Moneda:** SIEMPRE `C$` + `toLocaleString('es-NI')` — función `money()` al inicio de cada componente. Montos destacados usan `inline-flex items-center leading-none` (C$ alineado con los dígitos)
+- **Parseo de montos escritos a mano:** NUNCA `parseFloat` directo en inputs de dinero (en Nicaragua "1,500" con coma); usar `parseMonto` de `lib/validation.js` (acepta "1.500,50", "1,500.50" o "1500"). Inputs de dinero con `inputMode="decimal"` y `text-[16px]` (evita el zoom de iOS)
 - **Listas largas (>5 filas):** contenedor con `overflow-y-auto scroll-box` + `maxHeight` de 5 filas — la página no crece infinitamente (Clientes, CutsHistory, historiales de Live/Clientes; Inventario ya lo tenía)
 - **Diálogos:** NUNCA `window.confirm/alert` (congelan Android/PWA). Usar `appConfirm()/appAlert()` de `components/ConfirmDialog.js`
 - **Scroll:** `overscroll-behavior: auto` en `.scroll-box` (el scroll se derrama; con `contain` la página quedaba congelada)
+- **Móvil primero:** botones de acción con mínimo `w-11 h-11` (44px, táctil real); iconos de borrar/editar idem
+- **Nav inferior móvil** (AppShell): Inicio, Vender, Live y Caja a un toque en celular; drawer móvil y sidebar (md+) con las 7 rutas
 - Tipografías: Plus Jakarta Sans + Space Grotesk; iconos SVG inline de línea
-- Responsive: sidebar ≥768px; nav inferior + drawer móvil
-- Buscadores: normalización sin acentos (`norm()`), tolerante a espacios
+- Buscadores: normalización sin acentos (`norm()`) PERO al GUARDAR clients el servidor usa `norm_name()` de la BD (migración 10): el cliente existente se encuentra sin importar tildes ("dona lupe" encuentra "Doña Lupe")
 
 ## Convenciones CRÍTICAS
 
@@ -172,7 +177,7 @@ vercel --prod
 Variables en Dashboard: las 5 de `.env.local`. CI de GitHub corre build+audits en cada push.
 
 ### Migraciones Supabase (en orden)
-1. `schema.sql` → 2. `migration2-products.sql` → 3. `migration5-fix-triggers.sql` → 4. `migration6-expenses.sql` → 5. `migration7-subscription.sql` → 6. `migration7-audit.sql` → 7. `migration8-cash-opening.sql` → 8. `migration9-cleanup.sql`
+1. `schema.sql` → 2. `migration2-products.sql` → 3. `migration5-fix-triggers.sql` → 4. `migration6-expenses.sql` → 5. `migration7-subscription.sql` → 6. `migration7-audit.sql` → 7. `migration8-cash-opening.sql` → 8. `migration9-cleanup.sql` → 9. `migration10-audit-fixes.sql`
 **Detener servidor local antes (deadlock).** Las migraciones 7-audit, 8 y 9 son idempotentes (re-ejecutables); la 7-audit fusiona clientes duplicados automáticamente. La 9 programa limpieza diaria (pg_cron) de datos >30 días: apartados de Live, deudas SALDADAS y abonos viejos — los créditos PENDIENTES jamás se borran.
 
 ### Guía de usuario (PDF)
@@ -199,9 +204,11 @@ node scripts/generar-guia-pdf.cjs   # regenera GUIA-USUARIO.pdf (24 secciones)
 - RLS en TODAS las tablas por `store_id` (aislamiento multitenant en la BD, no en el código)
 - Excepción W1 documentada en CONSTRAINTS.md (sharp/postcss build-time de Next 15)
 
-## Historial de fixes importantes (contexto de QA 2026-09-09/10)
+## Historial de fixes importantes (contexto de QA 2026-09-09/10 + auditoría 2026-09-13)
 
-**Bugs ALTOS corregidos:** fiado a cliente duplicado (error técnico), abonos fantasma (pagos de venta duplicados como abonos), doble fiado en Live, precio Live sin validación ("250,200" aceptado), sobrepago desaparecía sin aviso, historial de cliente vacío (abonos sin debt_id).
+**Auditoría completa 2026-09-13 (~30 fixes, migración 10):** seg.: los 5 RPCs definer (decrement_stock, increment_sold, aplicar_abono, fiar_venta, cobrar_venta) verifican tenant; contables: `registrar_venta(p_items)` (venta+payment+deuda+stock en UNA tx, ids resueltos en BD), abono offline en ClientsList ya no rompe (`aplicado`→`montoReal`), inputs de dinero con parseMonto ("1,500"), clientes sin duplicados por acentos (`norm_name`), cobro de Live pregunta método (efectivo/transf), cobro de apartado viejo SÍ cuenta en el día, cortes únicos por tienda/día, cortes offline conservan fecha original, corte de cash_cuts re-ejecutable idempotente, `stores_created_today()` límite real BD, `dailyCutButton` (código muerto) borrado, nav inferior móvil, `getUser` en middleware, logout limpia cola+caché, SW sin `client.navigate()`, post-sync refresca pantallas.
+
+**Bugs ALTOS corregidos (QA 2026-09-09/10):** fiado a cliente duplicado (error técnico), abonos fantasma (pagos de venta duplicados como abonos), doble fiado en Live, precio Live sin validación ("250,200" aceptado), sobrepago desaparecía sin aviso, historial de cliente vacío (abonos sin debt_id).
 
 **MEDIOS:** arqueo sin abonos en efectivo, buscadores con acentos/espacios, método de pago en hoja de cliente, "Invertido" C$0 (ahora 4 métricas), advertencia de clientes duplicados.
 
@@ -209,8 +216,8 @@ node scripts/generar-guia-pdf.cjs   # regenera GUIA-USUARIO.pdf (24 secciones)
 
 ## Roadmap pendiente (sin catálogo — cancelado)
 
-- [ ] Exportar Excel real .xlsx (hoy es CSV con BOM)
+- [ ] Reportes históricos por rango de fechas
 - [ ] Edición de stock (ajuste manual de piezas de un producto)
 - [ ] Notificaciones push para cobros
-- [ ] Reportes históricos por rango de fechas
+- [ ] Ventas con pago mixto (parte efectivo, parte transferencia) y devoluciones
 - [ ] Upgrade a Next 16 (cierra vulnerabilidades build-time de sharp/postcss — ver W1 en CONSTRAINTS.md)

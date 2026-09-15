@@ -6,6 +6,7 @@ import { getMyContext } from '@/lib/get-store';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 import { rpcAplicarAbono, rpcRegistrarVenta } from '@/lib/rpc-helpers';
 import { appConfirm } from '@/components/ConfirmDialog';
+import { parseMonto } from '@/lib/validation';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -70,7 +71,9 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
 
   const showToast = (msg, ok = true) => {
     setToast({ msg, ok });
-    setTimeout(() => setToast(null), 2800);
+    // Los errores duran más: un fallo de dinero no puede desaparecer antes
+    // de que la dueña lo lea (QA 2026-09-14: C-7).
+    setTimeout(() => setToast(null), ok ? 2800 : 4500);
   };
 
   const balanceOf = (c) => items.debtByClient[c.id] || 0;
@@ -119,15 +122,22 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         return;
       }
 
-      // Advertir si ya existe un cliente con el mismo nombre (evita duplicados)
-      const { data: existing } = await supabase
-        .from('clients')
-        .select('id, name')
-        .ilike('name', name)
-        .limit(1);
-      if (existing && existing.length > 0) {
+      // Advertir si ya existe un cliente con el mismo nombre (evita duplicados).
+      // Comparación sin acentos ni mayúsculas ("dona lupe" == "Doña Lupe"),
+      // igual que el índice UNIQUE de la BD (norm_name).
+      const norm = (s) =>
+        (s || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      const existing = [...items.withDebt, ...items.current].find(
+        (c) => norm(c.name) === norm(name)
+      );
+      if (existing) {
         const ok = await appConfirm(
-          `Ya existe un cliente llamado "${existing[0].name}".\n\n` +
+          `Ya existe un cliente llamado "${existing.name}".\n\n` +
             `¿Seguro que quieres crear OTRO con el mismo nombre?\n` +
             `Tener duplicados confunde los créditos y los abonos.`,
           { title: 'Cliente duplicado', confirmText: 'Crear igual' }
@@ -148,6 +158,13 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         })
         .select('id, name, phone, tiktok, is_live_client')
         .single();
+      // 23505: UNIQUE(store_id, norm_name(name)) — ya existe un cliente
+      // con ese nombre con otra grafía (acento/mayúscula/espacio). La
+      // lista local no lo detectó porque la comparación JS fue exacta.
+      if (error && error.code === '23505') {
+        setNewError(`Ya existe un cliente llamado parecido a "${name}" (con o sin acentos). Usa otro nombre.`);
+        return;
+      }
       if (error) throw error;
       setItems((it) => ({ ...it, current: [data, ...it.current] }));
       setNewForm({ name: '', phone: '', tiktok: '' });
@@ -217,8 +234,11 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
   const confirmAbono = async (e) => {
     e.preventDefault();
     if (!sheet || busy) return;
-    const amt = parseFloat(amount);
-    if (!amt || amt <= 0) return;
+    const amt = parseMonto(amount);
+    if (!amt || amt <= 0) {
+      showToast('Escribe un monto válido (ej: 500 o 1,500)', false);
+      return;
+    }
     if (amt > sheet.balance) {
       const excedente = amt - sheet.balance;
       const ok = await appConfirm(
@@ -250,8 +270,8 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         // Offline: descuento local desde el snapshot (el sincronizador recalcula
         // el balance desde las deudas reales al subir, así que no acumula drift)
         const newBalance = Math.max(0, sheet.balance - montoReal);
-      setRecoveredNow((r) => r + aplicado);
-      setItems((it) => {
+        setRecoveredNow((r) => r + montoReal);
+        setItems((it) => {
           const newDebtByClient = { ...it.debtByClient };
           if (newBalance <= 0) delete newDebtByClient[c.id];
           else newDebtByClient[c.id] = newBalance;
@@ -313,8 +333,11 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
   const confirmFiado = async (e) => {
     e.preventDefault();
     if (!sheet || busy) return;
-    const amt = parseFloat(fiadoAmount);
-    if (!amt || amt <= 0) return;
+    const amt = parseMonto(fiadoAmount);
+    if (!amt || amt <= 0) {
+      showToast('Escribe un monto válido (ej: 500 o 1,500)', false);
+      return;
+    }
     setBusy(true);
     try {
       const c = sheet.client;
@@ -340,11 +363,13 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
         return;
       }
 
-      // RPC TRANSACCIONAL: venta + cliente + deuda + balance en una llamada
+      // RPC TRANSACCIONAL: venta + cliente + deuda + balance en una llamada.
+      // items_count 0: el crédito directo es dinero, no prendas — no debe
+      // inflar el contador "N prendas" del día (QA 2026-09-14: C-6).
       const { data: fiadoRes, error: errRpc } = await rpcRegistrarVenta({
         saleId: uuid(),
         total: amt,
-        itemsCount: 1,
+        itemsCount: 0,
         channel: 'mostrador',
         paymentMethod: 'fiado',
         clientName: c.name,
@@ -383,9 +408,14 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
     if (!ok) return;
     setBusy(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.from('clients').delete().eq('id', c.id);
-      if (error) throw error;
+      if (isOffline()) {
+        // ===== MODO OFFLINE: borrado en cola (el sincronizador lo aplica) =====
+        enqueueOp({ type: 'client_delete', payload: { clientId: c.id } });
+      } else {
+        const supabase = createClient();
+        const { error } = await supabase.from('clients').delete().eq('id', c.id);
+        if (error) throw error;
+      }
       setItems((it) => {
         const newDebtByClient = { ...it.debtByClient };
         delete newDebtByClient[c.id];
@@ -405,7 +435,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
   };
 
   const inputCls =
-    'w-full bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] text-on-surface outline-none focus:border-primary';
+    'w-full bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[16px] text-on-surface outline-none focus:border-primary';
 
   // Búsqueda tolerante: ignora espacios extra y acentos ("dona lupe" encuentra "Doña Lupe")
   const norm = (s) =>
@@ -561,9 +591,9 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                   disabled={busy}
                   title={`Editar ${c.name}`}
                   aria-label={`Editar ${c.name}`}
-                  className="w-8 h-8 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity disabled:opacity-50 flex-shrink-0"
+                  className="w-11 h-11 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity disabled:opacity-50 flex-shrink-0"
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 20h9" />
                     <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
                   </svg>
@@ -573,7 +603,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                   disabled={busy}
                   title={`Eliminar ${c.name}`}
                   aria-label={`Eliminar ${c.name}`}
-                  className="w-8 h-8 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity disabled:opacity-50 flex-shrink-0"
+                  className="w-11 h-11 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity disabled:opacity-50 flex-shrink-0"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13M10 11v6M14 11v6" />
@@ -718,10 +748,10 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                       </button>
                     </div>
                     <div className="flex gap-1.5 mt-2">
-                      <button onClick={() => setAmount(String((parseFloat(amount) || 0) + 100))} className="flex-1 bg-surface-container-lowest border border-outline rounded-[9px] py-1.5 text-[12px] font-semibold text-on-surface">
+                      <button onClick={() => setAmount(String((parseMonto(amount) || 0) + 100))} className="flex-1 bg-surface-container-lowest border border-outline rounded-[9px] py-1.5 text-[12px] font-semibold text-on-surface">
                         +C$100
                       </button>
-                      <button onClick={() => setAmount(String((parseFloat(amount) || 0) + 200))} className="flex-1 bg-surface-container-lowest border border-outline rounded-[9px] py-1.5 text-[12px] font-semibold text-on-surface">
+                      <button onClick={() => setAmount(String((parseMonto(amount) || 0) + 200))} className="flex-1 bg-surface-container-lowest border border-outline rounded-[9px] py-1.5 text-[12px] font-semibold text-on-surface">
                         +C$200
                       </button>
                       <button onClick={() => setAmount(String(sheet.balance))} className="flex-1 bg-inverse-surface text-inverse-on-surface rounded-[9px] py-1.5 text-[12px] font-semibold">
@@ -868,7 +898,7 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                 </div>
                 <div className="bg-surface-container-low border border-outline rounded-[10px] px-3.5 py-2.5 flex justify-between items-center">
                   <span className="text-[12.5px] text-on-surface-variant">Saldo tras el crédito</span>
-                  <b className="text-[14px] text-primary">{money((sheet.balance || 0) + (parseFloat(fiadoAmount) || 0))}</b>
+                  <b className="text-[14px] text-primary">{money((sheet.balance || 0) + (parseMonto(fiadoAmount) || 0))}</b>
                 </div>
                 <div className="flex gap-2">
                   <button type="submit" disabled={busy} className="flex-1 py-3 rounded-xl bg-primary text-on-primary text-[13.5px] font-semibold active:bg-primary-deep transition-colors disabled:opacity-60">

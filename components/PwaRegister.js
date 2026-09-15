@@ -6,11 +6,19 @@ import { appAlert } from '@/components/ConfirmDialog';
 export default function PwaRegister() {
   const [deferred, setDeferred] = useState(null);
   const [installed, setInstalled] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     // Solo mostrar el botón en pantallas táctiles pequeñas (celulares), no en escritorio
-    const isMobile = window.matchMedia('(pointer: coarse) and (max-width: 767px)').matches;
-    if (!isMobile) return;
+    const mobile = window.matchMedia('(pointer: coarse) and (max-width: 767px)').matches;
+    setIsMobile(mobile);
+    if (!mobile) return;
+    // iOS: standalone en la barra de medios = ya instalada
+    const iOSInstalled = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    if (iOSInstalled) {
+      setInstalled(true);
+      return;
+    }
     const onPrompt = (e) => {
       e.preventDefault();
       setDeferred(e);
@@ -36,14 +44,17 @@ export default function PwaRegister() {
       if (outcome === 'accepted') setInstalled(true);
       setDeferred(null);
     } else {
+      // iOS (y Android sin beforeinstallprompt): instrucciones manuales
       await appAlert(
-        'Para instalar la app: en Android usa "Agregar a pantalla de inicio". En iPhone: Compartir > "Añadir a inicio".',
+        'Para instalar la app:\n\nEn Android: menú del navegador > "Agregar a pantalla de inicio" o "Instalar app".\n\nEn iPhone: botón Compartir (cuadro con flecha) > "Añadir a pantalla de inicio".',
         { title: 'Instalar Mi Prenda', okText: 'Entendido' }
       );
     }
   };
 
-  if (!deferred) return null;
+  // En móvil SIEMPRE visible (iOS nunca dispara beforeinstallprompt);
+  // en escritorio no se muestra.
+  if (!isMobile) return null;
 
   return (
     <button

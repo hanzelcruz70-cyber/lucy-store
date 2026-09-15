@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
 import { sanitizeNumber } from '@/lib/validation';
+import { isOffline, enqueueOp } from '@/lib/offline-queue';
 
 /* Caja inicial del día: con cuánto dinero se abre el turno.
  * Una fila por tienda/día (upsert). Se suma al esperado del arqueo. */
@@ -33,6 +34,13 @@ export default function CajaInicial({ initial = 0, editable = true }) {
       const hoy = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'America/Managua', year: 'numeric', month: '2-digit', day: '2-digit',
       }).format(new Date());
+      if (isOffline()) {
+        // ===== MODO OFFLINE: caja inicial en cola (se sube al volver la red) =====
+        enqueueOp({ type: 'cash_opening', payload: { day: hoy, amount: monto } });
+        setSaved(monto);
+        showToast(monto > 0 ? `Caja inicial: ${money(monto)} (se sincroniza sola)` : 'Caja inicial en C$0');
+        return;
+      }
       const supabase = createClient();
       const ctx = await getMyContext();
       const { error } = await supabase
@@ -66,7 +74,7 @@ export default function CajaInicial({ initial = 0, editable = true }) {
           placeholder="C$ 0"
           inputMode="decimal"
           disabled={!editable || busy}
-          className="flex-1 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] font-semibold text-on-surface outline-none focus:border-primary disabled:opacity-60"
+          className="flex-1 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[16px] font-semibold text-on-surface outline-none focus:border-primary disabled:opacity-60"
         />
         <button
           onClick={save}

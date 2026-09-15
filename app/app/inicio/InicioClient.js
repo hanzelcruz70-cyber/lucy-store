@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase-browser';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 import { rpcAplicarAbono, rpcRegistrarVenta } from '@/lib/rpc-helpers';
 import { appConfirm } from '@/components/ConfirmDialog';
+import { parseMonto } from '@/lib/validation';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -46,6 +47,12 @@ const IcoAbono = () => (
     <path d="M14 7h6v6" />
   </svg>
 );
+const IcoClock = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5V12l3 2" />
+  </svg>
+);
 
 const SearchField = ({ value, onChange, placeholder }) => (
   <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2">
@@ -63,7 +70,7 @@ const SearchField = ({ value, onChange, placeholder }) => (
   </div>
 );
 
-export default function InicioClient({ contado, fiado, abonos, gastos, piezas, sales, expenses, payments: initialPayments, debtors, folioByMov, debtorNameByPayment = {}, movsByClient: initialMovsByClient = {} }) {
+export default function InicioClient({ contado, fiado, abonos, gastos, piezas, sales, expenses, payments: initialPayments, debtors, folioByMov, debtorNameByPayment = {}, movsByClient: initialMovsByClient = {}, pendingLiveIds = [] }) {
   const [movSearch, setMovSearch] = useState('');
   const [cliSearch, setCliSearch] = useState('');
   const [busy, setBusy] = useState(false);
@@ -84,7 +91,9 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
 
   const showToast = (m, ok = true) => {
     setToast({ m, ok });
-    setTimeout(() => setToast(null), 2600);
+    // Los errores duran más: un fallo de dinero no puede desaparecer antes
+    // de que la dueña lo lea (QA 2026-09-14: C-7).
+    setTimeout(() => setToast(null), ok ? 2600 : 4500);
   };
 
   const openAbono = (c) => {
@@ -96,9 +105,9 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
   };
 
   const submitAbono = () => {
-    const amt = parseFloat(amount);
+    const amt = parseMonto(amount);
     if (!amt || amt <= 0) {
-      showToast('Escribe el monto del abono', false);
+      showToast('Escribe el monto del abono (ej: 500 o 1,500)', false);
       return;
     }
     confirmAbono({ preventDefault: () => {} });
@@ -107,7 +116,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
   const confirmAbono = async (e) => {
     e.preventDefault();
     if (!abono || busy) return;
-    const amt = parseFloat(amount);
+    const amt = parseMonto(amount);
     if (!amt || amt <= 0) return;
     if (amt > abono.balance) {
       const excedente = amt - abono.balance;
@@ -126,10 +135,11 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
 
       if (isOffline()) {
         // ===== MODO OFFLINE: abono local =====
+        const offPayId = uuid();
         enqueueOp({
           type: 'abono',
           payload: {
-            localId: uuid(),
+            localId: offPayId,
             clientId: abono.id,
             amount: montoReal,
             method,
@@ -144,7 +154,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
         setMovsByClient((movs) => {
           const list = [...(movs[abono.id] || [])];
           list.unshift({
-            id: 'p-off-' + Date.now(),
+            id: 'p-off-' + offPayId,
             type: 'ABONO',
             amount: montoReal,
             description: null,
@@ -169,7 +179,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
             })
           ) + 1;
         setPayments((list) => [
-          { id: 'p-off-' + Date.now(), sale_id: null, debt_id: null, amount: montoReal, method, created_at: new Date().toISOString(), _clientName: abono.name, _folio: '#' + String(offFolioNum).padStart(3, '0') },
+          { id: 'p-off-' + offPayId, sale_id: null, debt_id: null, amount: montoReal, method, created_at: new Date().toISOString(), _clientName: abono.name, _folio: '#' + String(offFolioNum).padStart(3, '0') },
           ...list,
         ]);
         setAbonosVivo((a) => a + montoReal);
@@ -222,7 +232,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
             return isNaN(n) ? 0 : n;
           })
         ) + 1;
-      const livePaymentId = 'p-live-' + Date.now();
+      const livePaymentId = 'p-live-' + uuid();
       const liveFolio = '#' + String(nextFolioNum).padStart(3, '0');
       setPayments((list) => [
         { id: livePaymentId, sale_id: null, debt_id: null, amount: aplicado, method, created_at: new Date().toISOString(), _clientName: abono.name, _folio: liveFolio },
@@ -234,7 +244,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
       setMovsByClient((movs) => {
         const list = [...(movs[abono.id] || [])];
         list.unshift({
-          id: 'p-live-' + Date.now(),
+          id: 'm-live-' + uuid(),
           type: 'ABONO',
           amount: aplicado,
           description: null,
@@ -265,24 +275,25 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
   const confirmFiado = async (e) => {
     e.preventDefault();
     if (!abono || busy) return;
-    const amt = parseFloat(fiadoAmount);
+    const amt = parseMonto(fiadoAmount);
     if (!amt || amt <= 0) {
-      showToast('Escribe el monto del crédito', false);
+      showToast('Escribe el monto del crédito (ej: 500 o 1,500)', false);
       return;
     }
     setBusy(true);
     try {
       if (isOffline()) {
+        const offDebtId = uuid();
         enqueueOp({
           type: 'fiado_directo',
-          payload: { localId: uuid(), saleLocalId: uuid(), clientId: abono.id, clientName: abono.name, amount: amt },
+          payload: { localId: offDebtId, saleLocalId: uuid(), clientId: abono.id, clientName: abono.name, amount: amt },
         });
         const newBalance = (abono.balance || 0) + amt;
         setDebtList((list) => list.map((c) => (c.id === abono.id ? { ...c, balance: newBalance } : c)));
         setMovsByClient((movs) => {
           const list = [...(movs[abono.id] || [])];
           list.unshift({
-            id: 'd-off-' + Date.now(),
+            id: 'd-off-' + offDebtId,
             type: 'FIADO',
             amount: amt,
             description: null,
@@ -297,10 +308,11 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
 
       // RPC TRANSACCIONAL: venta + cliente + deuda + balance en una llamada.
       // El reintento (mismo id) no duplica; el trigger recalcula el balance.
+      // items_count 0: el crédito directo es dinero, no prendas (C-6).
       const { data: fiadoRes, error: errRpc } = await rpcRegistrarVenta({
         saleId: uuid(),
         total: amt,
-        itemsCount: 1,
+        itemsCount: 0,
         channel: 'mostrador',
         paymentMethod: 'fiado',
         clientName: abono.name,
@@ -315,7 +327,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
       setMovsByClient((movs) => {
         const list = [...(movs[abono.id] || [])];
         list.unshift({
-          id: 'd-live-' + Date.now(),
+          id: 'd-live-' + uuid(),
           type: 'FIADO',
           amount: amt,
           description: null,
@@ -339,9 +351,14 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
     if (!ok) return;
     setBusy(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.from('clients').delete().eq('id', abono.id);
-      if (error) throw error;
+      if (isOffline()) {
+        // ===== MODO OFFLINE: borrado en cola =====
+        enqueueOp({ type: 'client_delete', payload: { clientId: abono.id } });
+      } else {
+        const supabase = createClient();
+        const { error } = await supabase.from('clients').delete().eq('id', abono.id);
+        if (error) throw error;
+      }
       setDebtList((list) => list.filter((c) => c.id !== abono.id));
       setAbono(null);
       showToast(`Cliente "${abono.name}" eliminado`);
@@ -353,14 +370,22 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
   };
 
   // Línea de tiempo de movimientos con folio único
+  // Los apartados de Live PENDIENTES (fiado sin deuda) se listan como
+  // "Apartado pendiente" (C-4): no son venta ni crédito — la venta nace
+  // al cobrarlos o fiarlos.
+  const pendingSet = new Set(pendingLiveIds);
   const movimientos = [
     ...sales.map((s) => ({
       key: s.id,
       folio: folioByMov[s.id] || '',
-      tipo: s.payment_method === 'fiado' ? 'fiado' : 'venta',
+      tipo: pendingSet.has(s.id) ? 'pendiente' : s.payment_method === 'fiado' ? 'fiado' : 'venta',
       titulo: `${s.client_name || 'Venta mostrador'}${s.notes ? ' · ' + s.notes : ''}`,
       sub: `${new Date(s.created_at).toLocaleTimeString('es-NI', { hour: 'numeric', minute: '2-digit' })} · ${
-        s.payment_method === 'fiado' ? 'Crédito' : 'Contado'
+        pendingSet.has(s.id)
+          ? 'Pendiente de cobrar o pasar a crédito'
+          : s.payment_method === 'fiado'
+            ? 'Crédito'
+            : 'Contado'
       }${s.channel === 'tiktok_live' ? ' · Live' : ''}`,
       monto: Number(s.total),
       signo: '+',
@@ -466,7 +491,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
             {movsFiltrados.map((m) => (
               <div key={m.key} className="flex items-center gap-2.5 py-2.5 border-b border-surface-container last:border-0">
                 <Thumb>
-                  {m.tipo === 'gasto' ? <IcoOut /> : m.tipo === 'abono' ? <IcoAbono /> : <IcoIn />}
+                  {m.tipo === 'gasto' ? <IcoOut /> : m.tipo === 'abono' ? <IcoAbono /> : m.tipo === 'pendiente' ? <IcoClock /> : <IcoIn />}
                 </Thumb>
                 <div className="flex-1 min-w-0">
                   <b className="block text-[13.5px] font-semibold text-on-surface truncate">
@@ -578,16 +603,16 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
             {/* MODO INFO: abono + acciones + movimientos */}
             {sheetMode === 'info' && (
             <form className="mt-3 space-y-3" onSubmit={confirmAbono}>
-              <div>
-                <Label className="mb-1.5">Anotar abono</Label>
-                <div className="flex gap-2">
-                  <input
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    inputMode="decimal"
-                    placeholder="Monto…"
-                    className="flex-1 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] text-on-surface font-semibold outline-none focus:border-primary"
-                  />
+                <div>
+                  <Label className="mb-1.5">Anotar abono</Label>
+                  <div className="flex gap-2">
+                    <input
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      inputMode="decimal"
+                      placeholder="Monto…"
+                      className="flex-1 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[16px] text-on-surface font-semibold outline-none focus:border-primary"
+                    />
                   <button
                     type="button"
                     onClick={submitAbono}
@@ -598,10 +623,10 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
                   </button>
                 </div>
                 <div className="flex gap-1.5 mt-2">
-                  <button type="button" onClick={() => setAmount(String((parseFloat(amount) || 0) + 100))} className="flex-1 bg-surface-container-lowest border border-outline rounded-[9px] py-1.5 text-[12px] font-semibold text-on-surface">
+                  <button type="button" onClick={() => setAmount(String((parseMonto(amount) || 0) + 100))} className="flex-1 bg-surface-container-lowest border border-outline rounded-[9px] py-1.5 text-[12px] font-semibold text-on-surface">
                     +C$100
                   </button>
-                  <button type="button" onClick={() => setAmount(String((parseFloat(amount) || 0) + 200))} className="flex-1 bg-surface-container-lowest border border-outline rounded-[9px] py-1.5 text-[12px] font-semibold text-on-surface">
+                  <button type="button" onClick={() => setAmount(String((parseMonto(amount) || 0) + 200))} className="flex-1 bg-surface-container-lowest border border-outline rounded-[9px] py-1.5 text-[12px] font-semibold text-on-surface">
                     +C$200
                   </button>
                   <button type="button" onClick={() => setAmount(String(abono.balance))} className="flex-1 bg-inverse-surface text-inverse-on-surface rounded-[9px] py-1.5 text-[12px] font-semibold">
@@ -709,12 +734,12 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
                     onChange={(e) => setFiadoAmount(e.target.value)}
                     inputMode="decimal"
                     placeholder="C$ 0.00"
-                    className="w-full bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] text-on-surface outline-none focus:border-primary"
+                    className="w-full bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[16px] text-on-surface outline-none focus:border-primary"
                   />
                 </div>
                 <div className="bg-surface-container-low border border-outline rounded-[10px] px-3.5 py-2.5 flex justify-between items-center">
                   <span className="text-[12.5px] text-on-surface-variant">Saldo tras el crédito</span>
-                  <b className="inline-flex items-center leading-none text-[14px] text-primary">{money((abono.balance || 0) + (parseFloat(fiadoAmount) || 0))}</b>
+                  <b className="inline-flex items-center leading-none text-[14px] text-primary">{money((abono.balance || 0) + (parseMonto(fiadoAmount) || 0))}</b>
                 </div>
                 <div className="flex gap-2">
                   <button type="submit" disabled={busy} className="flex-1 py-3 rounded-xl bg-primary text-on-primary text-[13.5px] font-semibold active:bg-primary-deep transition-colors disabled:opacity-60">

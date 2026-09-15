@@ -12,12 +12,14 @@ export default async function InventarioPage() {
     supabase
       .from('lots')
       .select('id, code, name, pieces_total, pieces_left, total_cost, avg_sale_price, store_id, created_at')
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .limit(500),
     supabase
       .from('products')
       .select('id, code, name, sale_price, sold_count, lot_id, is_active')
       .eq('is_active', true)
-      .order('sold_count', { ascending: false }),
+      .order('sold_count', { ascending: false })
+      .limit(500),
   ]);
 
   const lotList = lots || [];
@@ -125,6 +127,13 @@ export default async function InventarioPage() {
           <div className="text-[20px] font-bold text-on-surface mt-1 leading-tight">{pieces + orphanStock}</div>
         </div>
         <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3 text-center">
+          <div className="text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase">En stock cuesta</div>
+          <div className="inline-flex items-center leading-none text-[20px] font-bold text-on-surface mt-1">
+            C${stockCost.toLocaleString('es-NI', { maximumFractionDigits: 0 })}
+          </div>
+          <div className="text-[10px] text-on-surface-variant mt-0.5">invertido en lo que queda</div>
+        </div>
+        <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3 text-center">
           <div className="text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase">Inversión total</div>
           <div className="inline-flex items-center leading-none text-[20px] font-bold text-primary mt-1">
             C${totalInvested.toLocaleString('es-NI', { maximumFractionDigits: 0 })}
@@ -137,11 +146,12 @@ export default async function InventarioPage() {
             C${invested.toLocaleString('es-NI', { maximumFractionDigits: 0 })}
           </div>
         </div>
-        <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3 text-center">
-          <div className="text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase">Ganancia est.</div>
-          <div className="inline-flex items-center leading-none text-[15px] font-bold text-primary mt-1.5">
+        <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3 text-center col-span-2">
+          <div className="text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase">Ganancia est. de lo que queda</div>
+          <div className="inline-flex items-center leading-none text-[20px] font-bold text-primary mt-1">
             +C${projected.toLocaleString('es-NI', { maximumFractionDigits: 0 })}
           </div>
+          <div className="text-[10px] text-on-surface-variant mt-0.5">si vendes todo el stock al precio actual</div>
         </div>
       </div>
 

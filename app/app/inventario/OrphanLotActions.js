@@ -98,7 +98,7 @@ export default function OrphanLotActions({ lot }) {
           <div className="bg-surface w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <b className="text-[16px] text-on-surface">Crear producto</b>
-              <button onClick={() => setAskPrice(false)} className="w-8 h-8 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center">
+              <button onClick={() => setAskPrice(false)} className="w-11 h-11 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
               </button>
             </div>

@@ -17,6 +17,12 @@ function getIp(request) {
 
 function isRateLimited(ip) {
   const now = Date.now();
+  // Purga: entradas viejas fuera de ventana no crecen sin límite
+  if (attempts.size > 1000) {
+    for (const [key, rec] of attempts) {
+      if (now - rec.ts > WINDOW) attempts.delete(key);
+    }
+  }
   const rec = attempts.get(ip);
   if (!rec || now - rec.ts > WINDOW) {
     attempts.set(ip, { ts: now, count: 0 });
@@ -213,6 +219,17 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Servidor sin configurar' }, { status: 500 });
     }
     const admin = createSupabaseClient(url, key, { auth: { persistSession: false } });
+
+    // Límite real de creación: 5 tiendas por día (verificado en BD con
+    // service_role vía stores_created_today — migración 10; el límite en
+    // memoria de Vercel es multi-instancia y evitable)
+    const { data: todayCount } = await admin.rpc('stores_created_today');
+    if (Number(todayCount || 0) >= 5) {
+      return NextResponse.json(
+        { error: 'Límite de 5 tiendas nuevas por día alcanzado. Intenta mañana.' },
+        { status: 429 }
+      );
+    }
 
     // 1) Crear usuario en Auth (sin confirmación de email: el admin ya lo valida)
     const { data: userData, error: errUser } = await admin.auth.admin.createUser({

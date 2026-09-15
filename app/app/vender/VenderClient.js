@@ -2,15 +2,16 @@
 
 import { useState } from 'react';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
-import { rpcRegistrarVenta, rpcDecrementStock, rpcIncrementSold } from '@/lib/rpc-helpers';
+import { rpcRegistrarVenta } from '@/lib/rpc-helpers';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
 const norm = (s) => (s || '').toLowerCase().normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 
-export default function VenderClient({ products: initialProducts, lots, clients }) {
+export default function VenderClient({ products: initialProducts, lots: initialLots, clients }) {
   const [products, setProducts] = useState(initialProducts);
+  const [lotsState, setLotsState] = useState(initialLots);
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState('');
   const [payMethod, setPayMethod] = useState('efectivo');
@@ -21,14 +22,25 @@ export default function VenderClient({ products: initialProducts, lots, clients 
 
   const showToast = (m, ok = true) => {
     setToast({ m, ok });
-    setTimeout(() => setToast(null), 2600);
+    // Los errores duran más: un fallo de dinero no puede desaparecer antes
+    // de que la dueña lo lea (QA 2026-09-14: C-7).
+    setTimeout(() => setToast(null), ok ? 2600 : 4500);
   };
 
   const lotById = {};
-  lots.forEach((l) => (lotById[l.id] = l));
+  lotsState.forEach((l) => (lotById[l.id] = l));
 
-  // Stock restante por producto: piezas que quedan en su lote (null = sin lote asignado)
-  const stockOf = (p) => (p.lot_id && lotById[p.lot_id] ? lotById[p.lot_id].pieces_left : null);
+  // Stock restante por producto: piezas que quedan en su lote (null = sin
+  // lote asignado) MENOS lo que ya está en el carrito — la tarjeta dice
+  // "Quedan 8" desde que agregas 2, no solo tras cobrar (QA C-9).
+  const inCartByProduct = {};
+  cart.forEach((i) => (inCartByProduct[i.productId] = i.qty));
+  const stockOf = (p) => {
+    if (!p.lot_id || !lotById[p.lot_id]) return null;
+    const left = lotById[p.lot_id].pieces_left;
+    if (left === null || left === undefined) return null;
+    return left - (inCartByProduct[p.id] || 0);
+  };
 
   // Detectar si el nombre escrito coincide con un cliente existente (para sugerir/buscar al fiar)
   const fiadoSugerencia = (() => {
@@ -79,6 +91,22 @@ export default function VenderClient({ products: initialProducts, lots, clients 
     );
   };
 
+  const applyLocalStock = (items) => {
+    // Estado local de stock SIN mutar props: crea copias nuevas de lots
+    setLotsState((list) =>
+      list.map((l) => {
+        const item = items.find((i) => i.lotId === l.id);
+        return item ? { ...l, pieces_left: l.pieces_left - item.qty } : l;
+      })
+    );
+    setProducts((list) =>
+      list.map((p) => {
+        const item = items.find((i) => i.productId === p.id);
+        return item ? { ...p, sold_count: p.sold_count + item.qty } : p;
+      })
+    );
+  };
+
   const confirmSale = async () => {
     if (busy || cart.length === 0) return;
     if (payMethod === 'fiado' && !fiadoClient.trim()) {
@@ -97,6 +125,7 @@ export default function VenderClient({ products: initialProducts, lots, clients 
           type: 'sale',
           payload: {
             localId,
+            createdAt: new Date().toISOString(),
             total,
             itemsCount,
             channel: 'mostrador',
@@ -111,17 +140,7 @@ export default function VenderClient({ products: initialProducts, lots, clients 
             })),
           },
         });
-        // Actualizar stock local (misma lógica que en línea)
-        await Promise.all(
-          cart.map(async (item) => {
-            setProducts((list) =>
-              list.map((p) => (p.id === item.productId ? { ...p, sold_count: p.sold_count + item.qty } : p))
-            );
-            if (item.lotId && lotById[item.lotId]) {
-              lotById[item.lotId].pieces_left -= item.qty;
-            }
-          })
-        );
+        applyLocalStock(cart);
         setCart([]);
         setFiadoClient('');
         showToast(
@@ -132,13 +151,16 @@ export default function VenderClient({ products: initialProducts, lots, clients 
         return;
       }
 
+      // IDs REUSABLES durante el intento actual: si el RPC llega al servidor
+      // pero la respuesta se pierde, el reintento con los MISMOS ids no
+      // duplica ni la venta ni el pago (idempotencia por id en la BD).
       const saleId = uuid();
       const paymentId = payMethod === 'fiado' ? null : uuid();
 
-      // RPC TRANSACCIONAL: venta + payment o venta + cliente + deuda + balance.
-      // Si la red cae a mitad, no entra nada a medias (todo o nada) y el
-      // reintento con el mismo id no duplica dinero.
-      const { data, error: errRpc } = await rpcRegistrarVenta({
+      // RPC TRANSACCIONAL ÚNICO: venta + payment/deuda + stock + vendidos
+      // en UNA llamada atómica (migración 10). Si algo falla, no entra
+      // nada a medias — el carrito NO se vacía y el reintento es seguro.
+      const { error: errRpc } = await rpcRegistrarVenta({
         saleId,
         total,
         itemsCount,
@@ -147,29 +169,11 @@ export default function VenderClient({ products: initialProducts, lots, clients 
         clientName,
         notes: cart.map((i) => `${i.qty}x ${i.name}`).join(', ').slice(0, 200),
         paymentId,
+        items: cart.map((i) => ({ productId: i.productId, lotId: i.lotId, qty: i.qty })),
       });
       if (errRpc) throw new Error('No se registró la venta: ' + errRpc.message);
 
-      // Stock y contadores: decrementos ATÓMICOS en la BD (nunca valores
-      // absolutos calculados en el cliente — evita que dos cajeros se pisen)
-      await Promise.all(
-        cart.map(async (item) => {
-          const { error: errSold } = await rpcIncrementSold({ productId: item.productId, qty: item.qty });
-          if (errSold) throw new Error('No se actualizó vendidos: ' + errSold.message);
-          if (item.lotId) {
-            const { error: errLot } = await rpcDecrementStock({ lotId: item.lotId, qty: item.qty });
-            if (errLot) throw new Error('No se descontó el stock: ' + errLot.message);
-            lotById[item.lotId].pieces_left -= item.qty;
-          }
-        })
-      );
-
-      setProducts((list) =>
-        list.map((p) => {
-          const item = cart.find((i) => i.productId === p.id);
-          return item ? { ...p, sold_count: p.sold_count + item.qty } : p;
-        })
-      );
+      applyLocalStock(cart);
 
       setCart([]);
       setFiadoClient('');
@@ -179,7 +183,7 @@ export default function VenderClient({ products: initialProducts, lots, clients 
           : `Venta de ${money(total)} registrada`
       );
     } catch (err) {
-      showToast('Error: ' + err.message, false);
+      showToast('Error: ' + err.message + ' — puedes reintentar, no se duplica', false);
     } finally {
       setBusy(false);
     }

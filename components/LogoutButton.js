@@ -2,12 +2,18 @@
 
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
+import { clearStoreCache } from '@/lib/get-store';
+import { clearQueue } from '@/lib/offline-queue';
 
 export default function LogoutButton({ label = 'Cerrar sesión y volver al login' }) {
   const router = useRouter();
 
   const logout = async () => {
     const supabase = createClient();
+    // Limpia caché de contexto y cola offline: la próxima sesión (que puede
+    // ser OTRA tienda) no hereda store_id/user_id ni operaciones viejas
+    clearStoreCache();
+    clearQueue();
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();

@@ -581,8 +581,13 @@ update public.cash_cuts
 -- collected_total ya incluía SOLO efectivo de ventas; para que los reportes
 -- sumen el dinero real recolectado en caja, collected_total pasa a ser
 -- efectivo de ventas + abonos en efectivo (la BD queda consistente con el arqueo).
+-- GUARD (migración 10): solo la PRIMERA vez — re-ejecutar la migración no
+-- debe inflar collected_total otra vez. Se marca en notes la primera pasada.
 update public.cash_cuts
-  set collected_total = collected_total + abonos_total;
+   set collected_total = collected_total + abonos_total,
+       notes = notes || ' [col-fixed]'
+ where abonos_total > 0
+   and notes not like '%[col-fixed]%';
 
 -- ----------------------------------------------------
 -- 11) Grants para los RPCs (acceso autenticado)

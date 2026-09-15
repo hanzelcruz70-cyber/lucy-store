@@ -9,7 +9,7 @@ export default async function InicioPage() {
   // "Hoy" en Nicaragua (UTC-6), no medianoche UTC del servidor
   const start = startOfTodayNic();
 
-  const [sales, expenses, payments, debts, clients, allPayments] = await Promise.all([
+  const [sales, expenses, payments, debts, clients, allPayments, todayDebts] = await Promise.all([
     supabase
       .from('sales')
       .select('id, total, items_count, channel, payment_method, client_name, notes, created_at')
@@ -44,6 +44,14 @@ export default async function InicioPage() {
       .select('id, debt_id, sale_id, amount, method, created_at')
       .order('created_at', { ascending: false })
       .limit(150),
+    // Deudas contraídas HOY: el "Crédito" del día es deuda REAL (mostrador
+    // + fiado directo + fiados de Live). Un apartado PENDIENTE de Live NO
+    // es crédito todavía (QA 2026-09-14: C-4) — la deuda nace al fiar.
+    supabase
+      .from('debts')
+      .select('id, original_amount')
+      .gte('created_at', start.toISOString())
+      .limit(200),
   ]);
 
   const saleList = sales.data || [];
@@ -101,7 +109,9 @@ export default async function InicioPage() {
   const contado = saleList
     .filter((s) => s.payment_method !== 'fiado')
     .reduce((a, s) => a + Number(s.total), 0);
-  const fiado = saleList.filter((s) => s.payment_method === 'fiado').reduce((a, s) => a + Number(s.total), 0);
+  // Crédito del día = deudas reales contraídas hoy (C-4): los apartados
+  // PENDIENTES de Live (venta fiado SIN deuda) no son crédito todavía.
+  const fiado = (todayDebts.data || []).reduce((a, d) => a + Number(d.original_amount), 0);
   const abonos = payList.reduce((a, p) => a + Number(p.amount), 0);
   const gastos = expList.reduce((a, e) => a + Number(e.amount), 0);
   const piezas = saleList.reduce((a, s) => a + s.items_count, 0);
@@ -117,6 +127,15 @@ export default async function InicioPage() {
     folioByMov[m.id] = '#' + String(i + 1).padStart(3, '0');
   });
 
+  // Ventas de hoy que son apartados de Live PENDIENTES (fiado sin deuda):
+  // no son ni contado ni crédito — se listan aparte en los movimientos.
+  const debtSaleIds = new Set(debtList.filter((d) => d.sale_id).map((d) => d.sale_id));
+  const pendingLiveIds = new Set(
+    saleList
+      .filter((s) => s.channel === 'tiktok_live' && s.payment_method === 'fiado' && !debtSaleIds.has(s.id))
+      .map((s) => s.id)
+  );
+
   return (
     <InicioClient
       contado={contado}
@@ -131,6 +150,7 @@ export default async function InicioPage() {
       folioByMov={folioByMov}
       debtorNameByPayment={debtorNameByPayment}
       movsByClient={movsByClient}
+      pendingLiveIds={[...pendingLiveIds]}
     />
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { buildReportWorkbook, workbookToBlob } from '@/lib/excel-report';
 
-export default function ExportButton({ sales, expenses, storeName = 'Mi Prenda' }) {
+export default function ExportButton({ sales, expenses, payments = [], fondoInicial = 0, abonosEfectivo = 0, cobrosApartadosEfectivo = 0, cobrosApartadosTransferencia = 0, storeName = 'Mi Prenda', pendingSaleIds = [] }) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -16,9 +16,20 @@ export default function ExportButton({ sales, expenses, storeName = 'Mi Prenda' 
     if (busy) return;
     setBusy(true);
     try {
-      const contado = sales.filter((s) => s.payment_method !== 'fiado').reduce((a, s) => a + Number(s.total), 0);
-      const fiado = sales.filter((s) => s.payment_method === 'fiado').reduce((a, s) => a + Number(s.total), 0);
+      // Apartados PENDIENTES de Live: no son venta ni crédito todavía (C-4) —
+      // se excluyen de los totales del reporte.
+      const pending = new Set(pendingSaleIds);
+      const realSales = sales.filter((s) => !pending.has(s.id));
+      const efectivo = realSales.filter((s) => s.payment_method === 'efectivo').reduce((a, s) => a + Number(s.total), 0);
+      const contado = realSales.filter((s) => s.payment_method !== 'fiado').reduce((a, s) => a + Number(s.total), 0);
+      const fiado = realSales.filter((s) => s.payment_method === 'fiado').reduce((a, s) => a + Number(s.total), 0);
       const gastos = expenses.reduce((a, e) => a + Number(e.amount), 0);
+      const transferencias =
+        realSales.filter((s) => s.payment_method === 'transferencia').reduce((a, s) => a + Number(s.total), 0) +
+        cobrosApartadosTransferencia;
+
+      // Arqueo: el efectivo esperado del cajón (idéntico a CierreCaja)
+      const esperado = efectivo + abonosEfectivo + cobrosApartadosEfectivo - gastos + fondoInicial;
 
       const wb = await buildReportWorkbook({
         storeName,
@@ -26,9 +37,15 @@ export default function ExportButton({ sales, expenses, storeName = 'Mi Prenda' 
         contado,
         fiado,
         gastos,
-        cajaNeta: contado - gastos,
-        sales,
+        esperado,
+        fisico: null,
+        fondo: fondoInicial,
+        abonosEfectivo,
+        cobrosApartadosEfectivo,
+        transferencias,
+        sales: realSales,
         expenses,
+        payments,
       });
       const blob = await workbookToBlob(wb);
       const url = URL.createObjectURL(blob);

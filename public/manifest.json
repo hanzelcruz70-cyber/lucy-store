@@ -35,5 +35,25 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nueva venta",
+      "short_name": "Vender",
+      "description": "Venta al mostrador con carrito",
+      "url": "/app/vender"
+    },
+    {
+      "name": "Live de TikTok",
+      "short_name": "Live",
+      "description": "Apartar prendas al vuelo",
+      "url": "/app/live"
+    },
+    {
+      "name": "Cobrar créditos",
+      "short_name": "Clientes",
+      "description": "Clientes con deuda y abonos",
+      "url": "/app/clientes"
+    }
   ]
 }

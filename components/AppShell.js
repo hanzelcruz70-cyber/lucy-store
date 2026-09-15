@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { clearStoreCache } from '@/lib/get-store';
@@ -66,6 +66,30 @@ export default function AppShell({ storeName, userName, children }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Datos frescos al volver a la app (QA 2026-09-14): la PWA en el celular
+  // puede quedar horas en segundo plano mostrando cifras viejas. Al
+  // recuperar el foco o la visibilidad se re-consultan los server
+  // components de la pantalla actual. Throttle 30s: no martillar la BD
+  // con cada alt-tab.
+  const lastRefresh = useRef(0);
+  useEffect(() => {
+    const refreshIfStale = () => {
+      const now = Date.now();
+      if (now - lastRefresh.current < 30000) return;
+      lastRefresh.current = now;
+      router.refresh();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshIfStale();
+    };
+    window.addEventListener('focus', refreshIfStale);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', refreshIfStale);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [router]);
+
   const logout = async () => {
     const supabase = createClient();
     clearStoreCache();
@@ -81,20 +105,25 @@ export default function AppShell({ storeName, userName, children }) {
     <div className="flex items-center gap-2.5 px-4 py-3.5 bg-surface-container-lowest border-b border-outline">
       <button
         onClick={onMenu}
-        className="w-9 h-9 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity"
+        className="w-11 h-11 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity"
         aria-label="Abrir menú"
       >
         <Icon name="menu" size={18} />
       </button>
-      <div className="flex-1 flex items-center justify-center gap-1.5 min-w-0">
-        <span className="text-primary flex-none" aria-hidden="true">
-          <Icon name="store" size={19} />
+      <div className="flex-1 flex flex-col items-center justify-center gap-0 min-w-0">
+        <span className="flex items-center gap-1.5">
+          <span className="text-primary flex-none" aria-hidden="true">
+            <Icon name="store" size={17} />
+          </span>
+          <b className="text-[15px] font-bold text-on-surface truncate leading-tight">{storeName}</b>
         </span>
-        <b className="text-[15px] font-bold text-on-surface truncate leading-tight">{storeName}</b>
+        {userName && (
+          <span className="text-[10.5px] text-on-surface-variant truncate leading-tight">{userName}</span>
+        )}
       </div>
       <button
         onClick={logout}
-        className="w-9 h-9 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity"
+        className="w-11 h-11 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity"
         aria-label="Cerrar sesión"
       >
         <Icon name="logout" size={17} />
@@ -215,9 +244,43 @@ export default function AppShell({ storeName, userName, children }) {
           </div>
         )}
 
-        <main className="flex flex-col relative w-full pt-[62px] md:pt-0 pb-8 md:pb-12 bg-surface min-h-screen max-w-3xl lg:max-w-4xl mx-auto">
+        <main className="flex flex-col relative w-full pt-[70px] md:pt-0 pb-28 md:pb-12 bg-surface min-h-screen max-w-3xl lg:max-w-4xl mx-auto">
           {children}
         </main>
+
+        {/* ============ NAV INFERIOR MÓVIL ============
+         * Las 4 rutas más usadas a UN tap; Inventario/Clientes/Más siguen en
+         * el drawer del menú hamburguesa. */}
+        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface-container-lowest border-t border-outline pb-safe">
+          <div className="grid grid-cols-4">
+            {[
+              { href: '/app/inicio', label: 'Inicio', icon: 'home' },
+              { href: '/app/vender', label: 'Vender', icon: 'sell' },
+              { href: '/app/live', label: 'Live', icon: 'videocam', live: true },
+              { href: '/app/caja', label: 'Caja', icon: 'point_of_sale' },
+            ].map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={`flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] active:opacity-70 transition-opacity ${
+                    active ? 'text-primary' : 'text-on-surface-variant'
+                  }`}
+                >
+                  <span className="relative">
+                    <Icon name={item.icon} size={21} />
+                    {item.live && !active && (
+                      <span className="absolute -top-0.5 -right-1 w-[6px] h-[6px] rounded-full bg-primary" />
+                    )}
+                  </span>
+                  <span className="text-[10px] font-semibold">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
       </div>
 
       <PwaRegister />

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { getQueueCount, subscribeQueue } from '@/lib/offline-queue';
 import { syncNow, setSyncObserver } from '@/lib/offline-sync';
 
 export default function OfflineBanner() {
+  const router = useRouter();
   const [online, setOnline] = useState(true);
   const [pending, setPending] = useState(0);
   const [syncState, setSyncState] = useState(null); // 'syncing' | 'done' | 'stuck'
@@ -28,14 +30,24 @@ export default function OfflineBanner() {
       syncNow('online-banner');
     };
     const onOffline = () => setOnline(false);
+    // Tras sincronizar la cola, los server components tienen datos viejos
+    // (pre-sync) — refresca la ruta actual para mostrar cifras frescas
+    const onSynced = () => router.refresh();
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
+    window.addEventListener('miprenda:synced', onSynced);
+    // Poll de respaldo: en PWA (especialmente iOS) el evento offline no
+    // siempre dispara — sin esto el banner "Sin internet" jamás aparecía
+    // aunque la red se cayera (QA 2026-09-14: C-11).
+    const poll = setInterval(refresh, 3000);
     return () => {
       unsub();
+      clearInterval(poll);
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
+      window.removeEventListener('miprenda:synced', onSynced);
     };
-  }, [refresh]);
+  }, [refresh, router]);
 
   // Nada que mostrar: hay internet y no hay pendientes
   if (online && pending === 0 && !syncState) return null;
@@ -60,7 +72,7 @@ export default function OfflineBanner() {
   }
 
   return (
-    <div className={`fixed bottom-20 md:bottom-6 inset-x-4 md:inset-x-auto md:left-6 z-40 flex justify-center pointer-events-none`}>
+    <div className={`fixed bottom-24 md:bottom-6 inset-x-4 md:inset-x-auto md:left-6 z-40 flex justify-center pointer-events-none`}>
       <div className={`px-4 py-2 rounded-full flex items-center gap-2 text-[12px] font-semibold ${cls}`}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           {!online ? (

@@ -37,8 +37,9 @@ lucy-store/
 1. Crea cuenta en [supabase.com](https://supabase.com) → **New project**.
 2. En **SQL Editor** pega TODO el contenido de `supabase/schema.sql` → **Run**.
    Luego en orden: `migration2-products.sql`, `migration5-fix-triggers.sql`, `migration6-expenses.sql`,
-   `migration7-subscription.sql`, `migration7-audit.sql`, `migration8-cash-opening.sql`
-   y `migration9-cleanup.sql` (limpieza automática de datos >30 días).
+   `migration7-subscription.sql`, `migration7-audit.sql`, `migration8-cash-opening.sql`,
+   `migration9-cleanup.sql` (limpieza automática de datos >30 días) y `migration10-audit-fixes.sql`
+   (tenant-checks, stock transaccional, clientes sin acentos, cortes únicos por día).
 3. En **Settings → API** copia:
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`

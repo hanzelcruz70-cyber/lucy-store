@@ -1,5 +1,5 @@
-/* Mi Prenda Service Worker v11 — íconos nuevos de la percha (cache-bust) */
-const CACHE = 'miprenda-v11';
+/* Mi Prenda Service Worker v13 — fixes QA 2026-09-14 */
+const CACHE = 'miprenda-v13';
 const PRECACHE = [
   '/offline.html',
   '/manifest.json',
@@ -18,16 +18,13 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  // Toma el control de las pestañas abiertas SIN forzar navegación: un deploy
+  // durante un carrito o un arqueo en curso ya no pierde lo escrito. La
+  // próxima navegación natural ya sirve el HTML nuevo (network-first).
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
-  );
-  // Forzar que todas las pestañas abiertas tomen el control del SW nuevo
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then((clients) => {
-      clients.forEach((client) => client.navigate(client.url));
-    })
   );
 });
 
@@ -40,6 +37,15 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/') || url.hostname.endsWith('.supabase.co')) {
     return;
   }
+
+  // Navegación client-side de Next (fetch RSC, header RSC-Next-Router o
+  // ?_rsc=): SIEMPRE red, sin caché. Antes caían en stale-while-revalidate
+  // y servían el payload del "día de antes" al instante (QA 2026-09-14:
+  // Caja/Inicio mostraban datos viejos incluso tras re-login).
+  const isRsc =
+    url.searchParams.has('_rsc') ||
+    (request.headers && (request.headers.get('RSC-Next-Router-State') || request.headers.get('Next-Router-State-Tree')));
+  if (isRsc) return;
 
   // Navegación: SIEMPRE red primero (datos frescos del día), offline usa caché
   if (request.mode === 'navigate') {

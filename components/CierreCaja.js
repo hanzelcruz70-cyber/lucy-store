@@ -10,7 +10,7 @@ const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFr
 
 const DENOMS = [1000, 500, 200, 100, 50, 20, 10, 5, 1];
 
-export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gastos, abonosEfectivo = 0, fondoInicial = 0, cutDone }) {
+export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gastos, abonosEfectivo = 0, cobrosAparadosEfectivo = 0, cobrosAparadosTransferencia = 0, fondoInicial = 0, cutDone }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [counts, setCounts] = useState({});
@@ -24,8 +24,19 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
   };
 
   const contadoTotal = Number(contadoEfectivo) + Number(contadoTransferencia);
-  // El efectivo esperado incluye los abonos de deudas recibidos en efectivo
-  const esperadoEnCaja = Number(contadoEfectivo) + Number(abonosEfectivo) - Number(gastos) + Number(fondoInicial);
+  // El efectivo esperado del cajón incluye:
+  //   + ventas en efectivo de hoy
+  //   + abonos de deudas en efectivo
+  //   + cobros EN EFECTIVO de apartados de días anteriores (la clienta
+  //     pasó hoy por su prenda del Live de ayer — ese billete está hoy)
+  //   + fondo inicial
+  //   − gastos del día
+  const esperadoEnCaja =
+    Number(contadoEfectivo) +
+    Number(abonosEfectivo) +
+    Number(cobrosAparadosEfectivo) -
+    Number(gastos) +
+    Number(fondoInicial);
   const contadoFisico = DENOMS.reduce((a, d) => a + d * (parseInt(counts[d]) || 0), 0);
   const diferencia = contadoFisico - esperadoEnCaja;
 
@@ -55,15 +66,15 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
           payload: {
             localId: uuid(),
             createdAt: new Date().toISOString(),
-            salesTotal: contadoTotal,
-            collectedTotal: Number(contadoEfectivo),
+            salesTotal: contadoTotal + Number(cobrosAparadosEfectivo) + Number(cobrosAparadosTransferencia),
+            collectedTotal: Number(contadoEfectivo) + Number(cobrosAparadosEfectivo),
             expensesTotal: Number(gastos),
             abonosTotal: Number(abonosEfectivo),
-            transferTotal: Number(contadoTransferencia),
+            transferTotal: Number(contadoTransferencia) + Number(cobrosAparadosTransferencia),
             fisicoTotal: contadoFisico,
             discrepancyAmount: diferencia,
             openingTotal: Number(fondoInicial),
-            notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(contadoTransferencia)}. Abonos en efectivo: ${money(abonosEfectivo)}`,
+            notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(Number(contadoTransferencia) + Number(cobrosAparadosTransferencia))}. Abonos en efectivo: ${money(abonosEfectivo)}`,
           },
         });
         setDone(true);
@@ -74,19 +85,27 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
       const supabase = createClient();
       const ctx = await getMyContext();
       const { error } = await supabase.from('cash_cuts').insert({
-        sales_total: contadoTotal,
-        collected_total: Number(contadoEfectivo) + Number(abonosEfectivo), // efectivo real en caja
+        sales_total: contadoTotal + Number(cobrosAparadosEfectivo) + Number(cobrosAparadosTransferencia),
+        collected_total: Number(contadoEfectivo) + Number(abonosEfectivo) + Number(cobrosAparadosEfectivo), // efectivo real en caja
         abonos_total: Number(abonosEfectivo),
-        transfer_total: Number(contadoTransferencia),
+        transfer_total: Number(contadoTransferencia) + Number(cobrosAparadosTransferencia),
         fisico_total: contadoFisico,
         discrepancy_amount: diferencia,
         opening_total: Number(fondoInicial),
         credit_total: 0,
         expenses_total: gastos,
-        notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(contadoTransferencia)}. Abonos en efectivo: ${money(abonosEfectivo)}`,
+        notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(Number(contadoTransferencia) + Number(cobrosAparadosTransferencia))}. Abonos en efectivo: ${money(abonosEfectivo)}`,
         store_id: ctx.storeId,
         user_id: ctx.userId,
       });
+      // 23505 = UNIQUE(store_id, día NI) (migración 10): otro dispositivo
+      // (PC + celular) ya cerró el día — el corte existe, no es un error.
+      if (error && error.code === '23505') {
+        setDone(true);
+        setOpen(false);
+        showToast('El corte de hoy ya estaba guardado (otro dispositivo)');
+        return;
+      }
       if (error) throw error;
       setDone(true);
       setOpen(false);
@@ -143,6 +162,18 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
                 <span className="text-on-surface-variant">De esas, por transferencia</span>
                 <b className="text-on-surface-variant">{money(contadoTransferencia)}</b>
               </div>
+              {Number(cobrosAparadosEfectivo) > 0 && (
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-on-surface-variant">Apartados de días anteriores (efectivo)</span>
+                  <b className="text-primary">+{money(cobrosAparadosEfectivo)}</b>
+                </div>
+              )}
+              {Number(cobrosAparadosTransferencia) > 0 && (
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-on-surface-variant">Apartados de días anteriores (transferencia)</span>
+                  <b className="text-on-surface-variant">{money(cobrosAparadosTransferencia)}</b>
+                </div>
+              )}
               <div className="flex justify-between text-[13px]">
                 <span className="text-on-surface-variant">Gastos del día</span>
                 <b className="text-on-surface">−{money(gastos)}</b>
@@ -179,7 +210,7 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
                       onClick={() => bumpCount(d, -1)}
                       disabled={qty <= 0}
                       aria-label={`Quitar un billete de ${money(d)}`}
-                      className="w-7 h-7 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center text-[15px] leading-none active:opacity-70 transition-opacity disabled:opacity-40"
+                      className="w-11 h-11 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center text-[18px] leading-none active:opacity-70 transition-opacity disabled:opacity-40"
                     >
                       −
                     </button>
@@ -189,13 +220,13 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
                       inputMode="numeric"
                       placeholder="0"
                       aria-label={`Cantidad de billetes de ${money(d)}`}
-                      className="w-16 bg-surface border border-outline rounded-lg px-2 py-1 text-[13px] font-semibold text-on-surface text-center outline-none focus:border-primary"
+                      className="w-16 bg-surface border border-outline rounded-lg px-2 py-2 text-[16px] font-semibold text-on-surface text-center outline-none focus:border-primary"
                     />
                     <button
                       type="button"
                       onClick={() => bumpCount(d, 1)}
                       aria-label={`Agregar un billete de ${money(d)}`}
-                      className="w-7 h-7 rounded-full bg-primary-fixed text-primary flex items-center justify-center text-[15px] font-bold leading-none active:opacity-70 transition-opacity"
+                      className="w-11 h-11 rounded-full bg-primary-fixed text-primary flex items-center justify-center text-[18px] font-bold leading-none active:opacity-70 transition-opacity"
                     >
                       +
                     </button>

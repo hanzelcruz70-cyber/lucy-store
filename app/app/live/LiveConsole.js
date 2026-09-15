@@ -42,6 +42,8 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
   const [processingId, setProcessingId] = useState(null);
   const [editSale, setEditSale] = useState(null); // apartado pendiente en edición
   const [editForm, setEditForm] = useState({ client: '', desc: '', price: '' });
+  const [collectSale, setCollectSale] = useState(null); // apartado a cobrar (elige método)
+  const [collectMethod, setCollectMethod] = useState('efectivo');
 
   // Validación del precio: solo número positivo razonable (rechaza texto, comas, montos absurdos)
   const setPriceSafe = (raw) => {
@@ -57,7 +59,9 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
 
   const showToast = (m, ok = true) => {
     setToast({ m, ok });
-    setTimeout(() => setToast(null), 2600);
+    // Los errores duran más: un fallo de dinero no puede desaparecer antes
+    // de que la dueña lo lea (QA 2026-09-14: C-7).
+    setTimeout(() => setToast(null), ok ? 2600 : 4500);
   };
 
   const submitHold = async (e) => {
@@ -73,6 +77,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
           type: 'live_hold',
           payload: {
             localId,
+            createdAt: new Date().toISOString(),
             total: amt,
             clientName: client.trim(),
             notes: desc.trim() || null,
@@ -118,8 +123,15 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
     }
   };
 
-  const markPaid = async (sale) => {
+  const openCollect = (sale) => {
     if (processingId || debtSaleIds.has(sale.id)) return;
+    setCollectMethod('efectivo');
+    setCollectSale(sale);
+  };
+
+  const markPaid = async () => {
+    const sale = collectSale;
+    if (!sale || processingId || debtSaleIds.has(sale.id)) return;
     setProcessingId(sale.id);
     try {
       if (isOffline()) {
@@ -130,22 +142,27 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
             saleLocalId: sale.id,
             paymentLocalId: uuid(),
             amount: Number(sale.total),
+            method: collectMethod,
+            createdAt: new Date().toISOString(),
           },
         });
-        setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: 'efectivo' } : x)));
+        setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: collectMethod } : x)));
+        setCollectSale(null);
         showToast('Cobrado (se sincroniza solo)');
         return;
       }
       // RPC TRANSACCIONAL: update de venta + payment en UNA llamada.
-      // Idempotente por paymentId: un reintento no duplica el cobro.
+      // Idempotente POR VENTA (migración 10): un reintento —o un segundo
+      // dispositivo con el mismo apartado abierto— JAMÁS inserta dos cobros.
       const { error: errRpc } = await rpcCobrarVenta({
         saleId: sale.id,
         paymentId: uuid(),
         amount: Number(sale.total),
-        method: 'efectivo',
+        method: collectMethod,
       });
       if (errRpc) throw errRpc;
-      setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: 'efectivo' } : x)));
+      setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: collectMethod } : x)));
+      setCollectSale(null);
       showToast('Cobrado y registrado en caja');
       router.refresh();
     } catch (err) {
@@ -177,6 +194,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
             clientName: name,
             amount: Number(sale.total),
             notes: sale.notes || 'Prenda de Live',
+            createdAt: new Date().toISOString(),
           },
         });
         setDebtSaleIds((ids) => new Set(ids).add(sale.id));
@@ -245,7 +263,13 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
         return;
       }
       const supabase = createClient();
-      const { error } = await supabase.from('sales').update(patch).eq('id', editSale.id);
+      // Guard en BD: solo apartados PENDIENTES de esta tienda se editan
+      // (evita mutar el precio de una venta ya cobrada en otro dispositivo)
+      const { error } = await supabase
+        .from('sales')
+        .update(patch)
+        .eq('id', editSale.id)
+        .eq('payment_method', 'fiado');
       if (error) throw error;
       setSales((list) => list.map((s) => (s.id === editSale.id ? { ...s, ...patch } : s)));
       setEditSale(null);
@@ -279,7 +303,13 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
         return;
       }
       const supabase = createClient();
-      const { error } = await supabase.from('sales').delete().eq('id', s.id);
+      // Guard en BD: solo se borran apartados PENDIENTES (los cobrados o
+      // fiados quedan fuera; la FK de debts protege el dinero por si acaso)
+      const { error } = await supabase
+        .from('sales')
+        .delete()
+        .eq('id', s.id)
+        .eq('payment_method', 'fiado');
       if (error) throw error;
       setSales((list) => list.filter((x) => x.id !== s.id));
       showToast('Apartado eliminado');
@@ -437,13 +467,13 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
                 {!paid && !inDebt && (
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => markPaid(s)}
+                      onClick={() => openCollect(s)}
                       disabled={processing}
-                      title="Cobrar en efectivo"
+                      title="Cobrar apartado"
                       aria-label={`Cobrar apartado de ${s.client_name || 'cliente'}`}
-                      className="w-9 h-9 rounded-[10px] bg-primary text-on-primary flex items-center justify-center active:bg-primary-deep disabled:opacity-50 transition-colors"
+                      className="w-11 h-11 rounded-[10px] bg-primary text-on-primary flex items-center justify-center active:bg-primary-deep disabled:opacity-50 transition-colors"
                     >
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="6" width="18" height="12" rx="2" />
                         <circle cx="12" cy="12" r="2.5" />
                       </svg>
@@ -453,9 +483,9 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
                       disabled={processing}
                       title="Pasar a crédito"
                       aria-label={`Fiar apartado de ${s.client_name || 'cliente'}`}
-                      className="w-9 h-9 rounded-[10px] bg-inverse-surface text-inverse-on-surface flex items-center justify-center active:opacity-80 disabled:opacity-50 transition-opacity"
+                      className="w-11 h-11 rounded-[10px] bg-inverse-surface text-inverse-on-surface flex items-center justify-center active:opacity-80 disabled:opacity-50 transition-opacity"
                     >
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M4 5c2.5-1 5.5-1 8 1 2.5-2 5.5-2 8-1v14c-2.5-1-5.5-1-8 1-2.5-2-5.5-2-8-1z" />
                         <path d="M12 6v14" />
                       </svg>
@@ -465,9 +495,9 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
                       disabled={processing || busy}
                       aria-label={`Editar apartado de ${s.client_name || 'cliente'}`}
                       title="Editar apartado"
-                      className="w-9 h-9 rounded-[10px] bg-surface-container-low border border-outline text-on-surface flex items-center justify-center active:opacity-70 disabled:opacity-50 transition-opacity"
+                      className="w-11 h-11 rounded-[10px] bg-surface-container-low border border-outline text-on-surface flex items-center justify-center active:opacity-70 disabled:opacity-50 transition-opacity"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 20h9" />
                         <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
                       </svg>
@@ -477,9 +507,9 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
                       disabled={processing || busy}
                       aria-label={`Eliminar apartado de ${s.client_name || 'cliente'}`}
                       title="Eliminar apartado"
-                      className="w-9 h-9 rounded-[10px] bg-surface-container-low border border-outline text-error flex items-center justify-center active:opacity-70 disabled:opacity-50 transition-opacity"
+                      className="w-11 h-11 rounded-[10px] bg-surface-container-low border border-outline text-error flex items-center justify-center active:opacity-70 disabled:opacity-50 transition-opacity"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13M10 11v6M14 11v6" />
                       </svg>
                     </button>
@@ -619,6 +649,61 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal cobrar apartado: elegir método (el efectivo entra al arqueo,
+          la transferencia NO — igual que una venta de mostrador) */}
+      {collectSale && (
+        <div className="fixed inset-0 z-50 bg-inverse-surface/50 backdrop-blur-[2px] flex items-end sm:items-center justify-center" onClick={() => setCollectSale(null)}>
+          <div className="bg-surface w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <b className="text-[16px] text-on-surface">Cobrar apartado</b>
+              <button onClick={() => setCollectSale(null)} className="w-8 h-8 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            </div>
+            <span className="text-[11px] text-on-surface-variant font-semibold uppercase tracking-[0.06em]">
+              {collectSale.client_name || 'Cliente live'} · {money(collectSale.total)}
+            </span>
+            <div className="mt-3 space-y-2">
+              <div>
+                <Label className="mb-1.5">¿Cómo te pagó?</Label>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCollectMethod('efectivo')}
+                    className={`flex-1 py-3 rounded-[10px] text-[13px] font-semibold border transition-colors ${
+                      collectMethod === 'efectivo' ? 'bg-primary border-primary text-on-primary' : 'bg-surface-container-lowest border-outline text-on-surface'
+                    }`}
+                  >
+                    Efectivo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCollectMethod('transferencia')}
+                    className={`flex-1 py-3 rounded-[10px] text-[13px] font-semibold border transition-colors ${
+                      collectMethod === 'transferencia' ? 'bg-primary border-primary text-on-primary' : 'bg-surface-container-lowest border-outline text-on-surface'
+                    }`}
+                  >
+                    Transferencia
+                  </button>
+                </div>
+              </div>
+              {collectMethod === 'transferencia' && (
+                <p className="text-[11.5px] text-on-surface-variant">
+                  La transferencia NO cuenta como efectivo del cajón — solo el efectivo entra al arqueo del cierre.
+                </p>
+              )}
+              <button
+                onClick={markPaid}
+                disabled={processingId === collectSale.id}
+                className="w-full py-3 rounded-xl bg-primary text-on-primary text-[13.5px] font-semibold active:bg-primary-deep transition-colors disabled:opacity-60"
+              >
+                {processingId === collectSale.id ? 'Cobrando…' : `Cobrar ${money(collectSale.total)}`}
+              </button>
+            </div>
           </div>
         </div>
       )}
