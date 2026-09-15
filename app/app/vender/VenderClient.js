@@ -30,17 +30,14 @@ export default function VenderClient({ products: initialProducts, lots: initialL
   const lotById = {};
   lotsState.forEach((l) => (lotById[l.id] = l));
 
-  // Stock restante por producto: piezas que quedan en su lote (null = sin
-  // lote asignado) MENOS lo que ya está en el carrito — la tarjeta dice
-  // "Quedan 8" desde que agregas 2, no solo tras cobrar (QA C-9).
-  const inCartByProduct = {};
-  cart.forEach((i) => (inCartByProduct[i.productId] = i.qty));
+  // Stock REAL del lote (piezas que quedan). El chequeo de sobreventa usa
+  // SIEMPRE este — nunca resta el carrito aquí o bloquea de más (bug visto
+  // en prueba manual: pedía 5 de 5 y se trababa en el 3.º).
   const stockOf = (p) => {
     if (!p.lot_id || !lotById[p.lot_id]) return null;
-    const left = lotById[p.lot_id].pieces_left;
-    if (left === null || left === undefined) return null;
-    return left - (inCartByProduct[p.id] || 0);
+    return lotById[p.lot_id].pieces_left;
   };
+  const inCart = (productId) => cart.find((i) => i.productId === productId)?.qty || 0;
 
   // Detectar si el nombre escrito coincide con un cliente existente (para sugerir/buscar al fiar)
   const fiadoSugerencia = (() => {
@@ -252,6 +249,7 @@ export default function VenderClient({ products: initialProducts, lots: initialL
                     }`}
                   >
                     {stock <= 0 ? 'Agotado' : `Quedan ${stock}`}
+                    {inCart(p.id) > 0 && stock > 0 ? ` · llevas ${inCart(p.id)}` : ''}
                   </span>
                 ) : (
                   <span className="text-[10px] font-semibold px-2 py-[2px] rounded-full bg-surface-container-low border border-outline text-on-surface-variant whitespace-nowrap">
@@ -362,6 +360,18 @@ export default function VenderClient({ products: initialProducts, lots: initialL
                   {fiadoSugerencia.debe
                     ? `Ya existe: ${fiadoSugerencia.name} · debe ${money(fiadoSugerencia.balance)}`
                     : `Ya existe: ${fiadoSugerencia.name} · al día`}
+                </p>
+              )}
+              {/* Si el nombre no coincide con NADIE, avisar que se va a crear
+                  uno nuevo — la dueña sabe si hace un cliente duplicado
+                  (ha pasado escribiendo con tildes o con typo) */}
+              {!fiadoSugerencia && fiadoClient.trim() && clientMatches.length === 0 && (
+                <p className="text-[11px] font-semibold mt-1 text-on-surface-variant flex items-center gap-1">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                    <circle cx="10" cy="8" r="3.4" />
+                    <path d="M4 20c1.4-3.4 3.6-5 6-5 1.6 0 3 .6 4.2 1.7M18 8v6M15 11h6" />
+                  </svg>
+                  Se creará cliente nuevo: <b className="text-on-surface">{fiadoClient.trim()}</b>
                 </p>
               )}
             </div>

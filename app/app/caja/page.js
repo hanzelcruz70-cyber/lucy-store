@@ -262,6 +262,9 @@ export default async function CajaPage() {
         {d.todaySales.length === 0 && d.todayExpenses.length === 0 && d.todayPayments.filter((p) => !d.todaySaleIds.includes(p.sale_id)).length === 0 && (
           <p className="py-6 text-center text-[13px] text-on-surface-variant">Aún no hay movimientos hoy.</p>
         )}
+        {/* Lista con scroll a 5 filas (regla de UI: listas largas no crecen
+            la página — se desplazan dentro de la cajita) */}
+        <div className="overflow-y-auto scroll-box -mr-1 pr-1" style={{ maxHeight: 5 * 62 }}>
         {d.todaySales.map((s) => {
           const esPendiente = d.pendingApar && d.pendingApar.some((p) => p.id === s.id);
           return (
@@ -306,6 +309,7 @@ export default async function CajaPage() {
             <span className="inline-flex items-center leading-none text-[14px] font-bold text-on-surface whitespace-nowrap">−{money(ex.amount)}</span>
           </div>
         ))}
+        </div>
       </div>
 
       {/* Historial de cortes de caja (filtro máximo 30 días) */}

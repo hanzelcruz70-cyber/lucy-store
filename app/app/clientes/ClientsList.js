@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
@@ -50,12 +51,16 @@ const estadoCliente = (movs, balance) => {
 };
 
 export default function ClientsList({ withDebt, current, debtByClient, totalDebt, fiadoHoy = 0, recuperadoHoy = 0, historial = [], movsByClient }) {
+  const router = useRouter();
   const [tab, setTab] = useState('todos');
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
   const [items, setItems] = useState({ withDebt, current, debtByClient });
   const [recoveredNow, setRecoveredNow] = useState(recuperadoHoy);
+  // Copia local del historial de movimientos por cliente: la hoja muestra
+  // el movimiento recién añadido SIN recargar la página (fix C-3 de hoy).
+  const [movsLocal, setMovsLocal] = useState(movsByClient || {});
 
   const [sheet, setSheet] = useState(null);
   const [amount, setAmount] = useState('');
@@ -304,6 +309,11 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
       const aplicado = Number((abonoRes && abonoRes.applied) || montoReal);
 
       setRecoveredNow((r) => r + montoReal);
+      setMovsLocal((m) => {
+        const list = [...(m[c.id] || [])];
+        list.unshift({ id: 'p-live-' + uuid(), type: 'ABONO', amount: aplicado, description: null, date: new Date().toISOString() });
+        return { ...m, [c.id]: list };
+      });
       setItems((it) => {
         const newDebtByClient = { ...it.debtByClient };
         if (newBalance <= 0) delete newDebtByClient[c.id];
@@ -322,6 +332,9 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
           ? `Abono de ${money(montoReal)} confirmado (vuelto de ${money(amt - montoReal)}). Deuda saldada.`
           : `Abono de ${money(montoReal)} confirmado. Nuevo saldo: ${money(newBalance)}`;
       showToast(msg);
+      // Refresca el server component: "Crédito en calle" y el estado de riesgo
+      // (días desde el último crédito) se recalculan con datos de la BD.
+      router.refresh();
     } catch (err) {
       showToast('Error: ' + err.message, false);
     } finally {
@@ -389,9 +402,17 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
           debtByClient: newDebtByClient,
         };
       });
+      setMovsLocal((m) => {
+        const list = [...(m[c.id] || [])];
+        list.unshift({ id: 'd-live-' + uuid(), type: 'FIADO', amount: amt, description: null, date: new Date().toISOString() });
+        return { ...m, [c.id]: list };
+      });
 
       setSheet(null);
       showToast(`Crédito de ${money(amt)} registrado a ${c.name}`);
+      // Refresca el server component: la métrica "Crédito hoy" y los
+      // historiales por día se recalculan con datos de la BD.
+      router.refresh();
     } catch (err) {
       showToast('Error: ' + err.message, false);
     } finally {
@@ -699,13 +720,13 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                 <div>
                   <b className="block text-[15px] font-bold text-on-surface">{sheet.client.name}</b>
                   <span className={`inline-block mt-0.5 text-[10.5px] font-bold px-2 py-[2px] rounded-md uppercase ${
-                    estadoCliente(movsByClient[sheet.client.id], sheet.balance).kind === 'bad'
+                    estadoCliente(movsLocal[sheet.client.id], sheet.balance).kind === 'bad'
                       ? 'bg-primary text-on-primary'
-                      : estadoCliente(movsByClient[sheet.client.id], sheet.balance).kind === 'warn'
+                      : estadoCliente(movsLocal[sheet.client.id], sheet.balance).kind === 'warn'
                         ? 'bg-primary-fixed text-primary-deep'
                         : 'bg-primary-fixed text-primary'
                   }`}>
-                    {estadoCliente(movsByClient[sheet.client.id], sheet.balance).label}
+                    {estadoCliente(movsLocal[sheet.client.id], sheet.balance).label}
                   </span>
                 </div>
               </div>
@@ -812,10 +833,10 @@ export default function ClientsList({ withDebt, current, debtByClient, totalDebt
                 <div>
                   <Label className="mb-1.5">Movimientos</Label>
                   <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
-                    {(movsByClient[sheet.client.id] || []).length === 0 && (
+                    {(movsLocal[sheet.client.id] || []).length === 0 && (
                       <p className="py-3 text-center text-[12.5px] italic text-on-surface-variant">Sin movimientos todavía</p>
                     )}
-                    {(movsByClient[sheet.client.id] || [])
+                    {(movsLocal[sheet.client.id] || [])
                       .slice()
                       .sort((a, b) => new Date(b.date) - new Date(a.date))
                       .map((m) => (

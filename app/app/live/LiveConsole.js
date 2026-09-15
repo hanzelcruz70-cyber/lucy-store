@@ -437,6 +437,8 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
 
       {sales.length > 0 && (
         <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
+        {/* Scroll a 5 filas: la lista de apartados no crece la página */}
+        <div className="overflow-y-auto scroll-box -mr-1 pr-1" style={{ maxHeight: 5 * 62 }}>
           {sales.map((s) => {
             const paid = s.payment_method !== 'fiado';
             const inDebt = debtSaleIds.has(s.id);
@@ -522,6 +524,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
               </div>
             );
           })}
+        </div>
         </div>
       )}
 
