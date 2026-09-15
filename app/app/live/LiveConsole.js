@@ -211,6 +211,10 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
 
       setDebtSaleIds((ids) => new Set(ids).add(sale.id));
       showToast(`Deuda de ${money(Number(sale.total))} registrada a ${name}`);
+      // Refresca el server component: Inicio/Caja reclasifican el apartado
+      // de "pendiente" a "crédito" — sin esto seguía listado como pendiente
+      // hasta la próxima navegación (QA 2026-09-14: D-9).
+      router.refresh();
     } catch (err) {
       showToast('Error: ' + err.message, false);
     } finally {

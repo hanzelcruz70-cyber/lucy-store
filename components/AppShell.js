@@ -179,7 +179,7 @@ export default function AppShell({ storeName, userName, children }) {
       </aside>
 
       {/* ============ COLUMNA PRINCIPAL ============ */}
-      <div className="flex-1 min-w-0 flex flex-col relative">
+      <div className="flex-1 min-w-0 flex flex-col relative overflow-x-hidden">
         {/* Appbar móvil (fija, estilo v2) */}
         <header className="md:hidden fixed top-0 inset-x-0 z-40 pt-safe">
           <Appbar onMenu={() => setMenuOpen(true)} />
@@ -244,43 +244,9 @@ export default function AppShell({ storeName, userName, children }) {
           </div>
         )}
 
-        <main className="flex flex-col relative w-full pt-[70px] md:pt-0 pb-28 md:pb-12 bg-surface min-h-screen max-w-3xl lg:max-w-4xl mx-auto">
+        <main className="flex flex-col relative w-full pt-[70px] md:pt-0 pb-16 md:pb-12 bg-surface min-h-screen max-w-3xl lg:max-w-4xl mx-auto overflow-x-hidden">
           {children}
         </main>
-
-        {/* ============ NAV INFERIOR MÓVIL ============
-         * Las 4 rutas más usadas a UN tap; Inventario/Clientes/Más siguen en
-         * el drawer del menú hamburguesa. */}
-        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface-container-lowest border-t border-outline pb-safe">
-          <div className="grid grid-cols-4">
-            {[
-              { href: '/app/inicio', label: 'Inicio', icon: 'home' },
-              { href: '/app/vender', label: 'Vender', icon: 'sell' },
-              { href: '/app/live', label: 'Live', icon: 'videocam', live: true },
-              { href: '/app/caja', label: 'Caja', icon: 'point_of_sale' },
-            ].map((item) => {
-              const active = isActive(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={active ? 'page' : undefined}
-                  className={`flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] active:opacity-70 transition-opacity ${
-                    active ? 'text-primary' : 'text-on-surface-variant'
-                  }`}
-                >
-                  <span className="relative">
-                    <Icon name={item.icon} size={21} />
-                    {item.live && !active && (
-                      <span className="absolute -top-0.5 -right-1 w-[6px] h-[6px] rounded-full bg-primary" />
-                    )}
-                  </span>
-                  <span className="text-[10px] font-semibold">{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
       </div>
 
       <PwaRegister />

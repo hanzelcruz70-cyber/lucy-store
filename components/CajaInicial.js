@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { getMyContext } from '@/lib/get-store';
 import { sanitizeNumber } from '@/lib/validation';
@@ -9,6 +10,7 @@ import { isOffline, enqueueOp } from '@/lib/offline-queue';
 /* Caja inicial del día: con cuánto dinero se abre el turno.
  * Una fila por tienda/día (upsert). Se suma al esperado del arqueo. */
 export default function CajaInicial({ initial = 0, editable = true }) {
+  const router = useRouter();
   const [value, setValue] = useState(initial > 0 ? String(initial) : '');
   const [saved, setSaved] = useState(initial > 0 ? Number(initial) : 0);
   const [busy, setBusy] = useState(false);
@@ -52,6 +54,10 @@ export default function CajaInicial({ initial = 0, editable = true }) {
       if (error) throw error;
       setSaved(monto);
       showToast(monto > 0 ? `Caja inicial: ${money(monto)}` : 'Caja inicial en C$0');
+      // Refresca el server component: el "Efectivo esperado" del cierre
+      // se calcula con datos del servidor — sin esto usaba la caja inicial
+      // vieja hasta la próxima navegación (QA 2026-09-14: D-8).
+      router.refresh();
     } catch (err) {
       showToast('Error: ' + err.message, false);
     } finally {

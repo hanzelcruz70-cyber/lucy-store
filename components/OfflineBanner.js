@@ -72,7 +72,7 @@ export default function OfflineBanner() {
   }
 
   return (
-    <div className={`fixed bottom-24 md:bottom-6 inset-x-4 md:inset-x-auto md:left-6 z-40 flex justify-center pointer-events-none`}>
+    <div className={`fixed bottom-6 md:bottom-6 inset-x-4 md:inset-x-auto md:left-6 z-40 flex justify-center pointer-events-none`}>
       <div className={`px-4 py-2 rounded-full flex items-center gap-2 text-[12px] font-semibold ${cls}`}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           {!online ? (

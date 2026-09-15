@@ -8,7 +8,11 @@
     margin: 0;
     padding: 0;
   }
+  html {
+    overflow-x: hidden;
+  }
   body {
+    overflow-x: hidden;
     overscroll-behavior-x: none;
     overscroll-behavior-y: auto;
     -webkit-tap-highlight-color: transparent;

@@ -59,7 +59,7 @@ export default function PwaRegister() {
   return (
     <button
       onClick={install}
-      className="fixed bottom-20 right-4 z-50 bg-primary text-on-primary rounded-full shadow-lg px-4 py-2.5 flex items-center gap-1.5 font-label-badge text-label-badge active:scale-95 transition-transform"
+      className="fixed bottom-6 right-4 z-50 bg-primary text-on-primary rounded-full shadow-lg px-4 py-2.5 flex items-center gap-1.5 font-label-badge text-label-badge active:scale-95 transition-transform"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 3v12M7 10l5 5 5-5M4 21h16" />

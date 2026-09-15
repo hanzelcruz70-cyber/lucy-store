@@ -230,10 +230,14 @@ begin
   -- Venta idempotente por id local. v_new dice si ESTA llamada creó la
   -- fila (reintento = false): los efectos (payment/deuda/stock) SOLO se
   -- aplican cuando la venta es nueva — así un reintento jamás repite nada.
+  -- FIX QA 2026-09-14 (D-1/D-2/D-3): FOUND es TRUE cuando el INSERT creó
+  -- la fila; con ON CONFLICT DO NOTHING un conflicto deja FOUND=FALSE.
+  -- La asignación estaba invertida: las ventas NUEVAS salían como
+  -- "alreadyProcessed" sin deuda, sin pago y sin stock.
   insert into public.sales (id, total, items_count, channel, payment_method, client_name, notes, store_id, user_id, created_at)
   values (p_sale_id, p_total, p_items_count, p_channel, p_payment_method, p_client_name, p_notes, v_store, v_user, v_created)
   on conflict (id) do nothing;
-  v_new := not found;
+  v_new := found;
 
   -- Stock y contadores DENTRO de la transacción y ANTES de cualquier
   -- return (A2, fix QA 2026-09-14): un fiado con items descuenta stock

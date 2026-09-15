@@ -269,7 +269,9 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
     }
   };
 
-  const remainingCalc = abono ? Math.max(0, abono.balance - (parseFloat(amount) || 0)) : 0;
+  // Preview del saldo con parseMonto (no parseFloat): "2,000" son dos mil
+  // (coma de miles, formato NI), no 2 — QA 2026-09-14: D-5.
+  const remainingCalc = abono ? Math.max(0, abono.balance - (parseMonto(amount) || 0)) : 0;
 
   // ---------- FIADO DIRECTO (mismo flujo que la hoja de cliente) ----------
   const confirmFiado = async (e) => {
@@ -686,7 +688,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
 
               <div className="bg-surface-container-low border border-outline rounded-[10px] px-3.5 py-2.5 flex justify-between items-center">
                 <span className="text-[12.5px] text-on-surface-variant">Nuevo saldo</span>
-                <b className={`inline-flex items-center leading-none text-[15px] ${remainingCalc === 0 && (parseFloat(amount) || 0) > 0 ? 'text-primary' : 'text-on-surface'}`}>
+                <b className={`inline-flex items-center leading-none text-[15px] ${remainingCalc === 0 && (parseMonto(amount) || 0) > 0 ? 'text-primary' : 'text-on-surface'}`}>
                   {money(remainingCalc)}
                 </b>
               </div>

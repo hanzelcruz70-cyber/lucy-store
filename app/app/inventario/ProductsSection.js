@@ -224,6 +224,7 @@ export default function ProductsSection({ initialProducts, lots }) {
                   onClick={() => deleteProduct(p)}
                   disabled={busy}
                   title={`Eliminar ${p.name}`}
+                  aria-label={`Eliminar ${p.name}`}
                   className="w-11 h-11 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center active:opacity-70 transition-opacity disabled:opacity-50"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

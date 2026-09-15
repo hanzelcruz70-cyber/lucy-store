@@ -84,11 +84,25 @@ export default function VenderClient({ products: initialProducts, lots: initialL
   };
 
   const changeQty = (productId, delta) => {
-    setCart((c) =>
-      c
+    setCart((c) => {
+      const item = c.find((i) => i.productId === productId);
+      // Sobreventa bloqueada también desde los botones +/− del carrito
+      // (QA 2026-09-14: D-4): no se puede pedir más de las piezas que
+      // quedan en el lote del producto.
+      if (item && delta > 0 && item.lotId) {
+        const lote = lotById[item.lotId];
+        if (lote && item.qty + delta > lote.pieces_left) {
+          showToast(
+            lote.pieces_left <= 0 ? `"${item.name}" está agotado` : `Solo quedan ${lote.pieces_left} de "${item.name}"`,
+            false
+          );
+          return c;
+        }
+      }
+      return c
         .map((i) => (i.productId === productId ? { ...i, qty: i.qty + delta } : i))
-        .filter((i) => i.qty > 0)
-    );
+        .filter((i) => i.qty > 0);
+    });
   };
 
   const applyLocalStock = (items) => {
