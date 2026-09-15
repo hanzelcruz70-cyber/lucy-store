@@ -93,8 +93,21 @@ export default function AdminPage() {
   useEffect(() => {
     if (!authed) return;
     load(pass);
+    // El contador "Vence en Nd" debe moverse con los días AUNQUE el panel
+    // quede abierto: recalcula cada 60s y recarga datos al volver el foco
+    // (antes quedaba fijo en el valor del momento del login — bug reportado
+    // 2026-09-15).
+    const tick = setInterval(() => {
+      load(pass); // recarga y re-renderiza con Date.now() actual
+    }, 60 * 1000);
+    const onFocus = () => load(pass);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(tick);
+      window.removeEventListener('focus', onFocus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authed]);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
