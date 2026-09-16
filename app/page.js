@@ -187,7 +187,9 @@ export default function Home() {
     <div id="top" className="min-h-screen bg-surface-canvas font-body-md text-body-md text-on-surface antialiased">
       {/* ============ HEADER FIJO ============ */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface-canvas/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-        <div className="h-20 max-w-6xl mx-auto px-4 sm:px-8 flex items-center justify-between">
+        {/* 2xl:max-w-[1500px] solo ensancha en monitores ≥1536px (27" 1440p/4K);
+            en móvil y laptop (<1536px) todo queda idéntico (tope 1152px). */}
+        <div className="h-20 max-w-6xl 2xl:max-w-[1500px] mx-auto px-4 sm:px-8 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-[10px] bg-primary text-on-primary flex items-center justify-center">
               <M name="storefront" size={20} />
@@ -217,7 +219,7 @@ export default function Home() {
           <section className="relative w-full overflow-hidden pb-12">
             <div className="absolute top-12 left-1/2 -translate-x-1/2 w-[850px] h-[450px] bg-gradient-to-tr from-secondary-container/20 via-primary/5 to-tertiary-container/10 blur-3xl pointer-events-none -z-10 rounded-full" />
             <div className="absolute -top-10 right-10 w-72 h-72 bg-mint-surface rounded-full blur-2xl pointer-events-none -z-10" />
-            <div className="max-w-6xl mx-auto px-4 sm:px-8">
+            <div className="max-w-6xl 2xl:max-w-[1500px] mx-auto px-4 sm:px-8">
               <div className="flex items-center justify-center pt-5 mb-5">
                 <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-mint-surface shadow-sm hover:scale-[1.01] transition-transform">
                   <span className="flex h-2 w-2 relative">
@@ -279,7 +281,7 @@ export default function Home() {
 
           {/* ============ SECCIÓN 2: ¿TE SUENA FAMILIAR? ============ */}
           <section className="w-full py-12 bg-surface-container-low/60" id="funciones">
-            <div className="max-w-6xl mx-auto px-4 sm:px-8">
+            <div className="max-w-6xl 2xl:max-w-[1500px] mx-auto px-4 sm:px-8">
               <div className="text-center max-w-2xl mx-auto mb-8">
                 <span className="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Diagnóstico diario de bazar</span>
                 <h2 className="font-headline-lg text-headline-lg text-on-surface font-extrabold mt-1">¿Te suena familiar?</h2>
@@ -288,7 +290,7 @@ export default function Home() {
                   calma mental. Mira la diferencia.
                 </p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl 2xl:max-w-6xl mx-auto">
                 {/* ANTES: La Libreta y el Caos */}
                 <div className="bg-surface-card rounded-2xl p-8 shadow-sm relative overflow-hidden flex flex-col justify-between">
                   <div className="absolute -right-10 -bottom-10 w-36 h-36 bg-error/5 rounded-full blur-xl pointer-events-none" />
@@ -358,7 +360,7 @@ export default function Home() {
 
           {/* ============ SECCIÓN 3: FUNCIONES (BENTO GRID) ============ */}
           <section className="w-full py-12">
-            <div className="max-w-6xl mx-auto px-4 sm:px-8">
+            <div className="max-w-6xl 2xl:max-w-[1500px] mx-auto px-4 sm:px-8">
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-8">
                 <div>
                   <span className="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Herramientas Operativas</span>
@@ -529,7 +531,7 @@ export default function Home() {
           <section className="w-full pt-24 pb-20 px-4 sm:px-8 bg-gradient-to-br from-primary via-primary-container to-secondary text-on-primary relative overflow-hidden" id="beneficios">
             <div className="absolute -right-24 -bottom-24 w-96 h-96 bg-secondary-fixed-dim/20 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -left-20 top-0 w-80 h-80 bg-tertiary/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="max-w-6xl mx-auto w-full relative z-10">
+            <div className="max-w-6xl 2xl:max-w-[1500px] mx-auto w-full relative z-10">
               <div className="max-w-3xl mb-8 mx-auto text-center flex flex-col items-center">
                 <span className="font-label-md text-label-md uppercase tracking-wider text-secondary-fixed-dim font-extrabold">Ingeniería Robusta y Simple</span>
                 <h2 className="font-headline-lg text-headline-lg text-on-primary font-extrabold mt-3 tracking-tight">
@@ -563,7 +565,7 @@ export default function Home() {
 
           {/* ============ SECCIÓN 5: CÓMO EMPEZAR ============ */}
           <section className="w-full py-12 bg-surface-canvas" id="como-empezar">
-            <div className="max-w-6xl mx-auto px-4 sm:px-8">
+            <div className="max-w-6xl 2xl:max-w-[1500px] mx-auto px-4 sm:px-8">
               <div className="text-center max-w-2xl mx-auto mb-8">
                 <span className="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Sin configuraciones difíciles</span>
                 <h2 className="font-headline-lg text-headline-lg text-on-surface font-extrabold mt-1">Empezar es fácil</h2>
@@ -599,7 +601,7 @@ export default function Home() {
 
           {/* ============ SECCIÓN 6: CTA FINAL ============ */}
           <section className="w-full py-12">
-            <div className="max-w-6xl mx-auto px-4 sm:px-8">
+            <div className="max-w-6xl 2xl:max-w-[1500px] mx-auto px-4 sm:px-8">
               <div className="bg-surface-container-high/60 rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden shadow-sm">
                 <div className="absolute top-0 right-1/4 w-72 h-72 bg-secondary-fixed-dim/30 rounded-full blur-3xl pointer-events-none" />
                 <div className="max-w-2xl mx-auto relative z-10">
@@ -650,7 +652,7 @@ export default function Home() {
 
       {/* ============ FOOTER ============ */}
       <footer className="w-full bg-surface-container-low mt-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 pt-12 pb-8">
+        <div className="max-w-6xl 2xl:max-w-[1500px] mx-auto px-4 sm:px-8 pt-12 pb-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="md:col-span-1">
               <div className="flex items-center gap-1.5 mb-2.5">
