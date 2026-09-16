@@ -244,7 +244,10 @@ export default function AppShell({ storeName, userName, children }) {
           </div>
         )}
 
-        <main className="flex flex-col relative w-full pt-[70px] md:pt-0 pb-16 md:pb-12 bg-surface min-h-screen max-w-3xl lg:max-w-4xl mx-auto overflow-x-hidden">
+        {/* max-w progresivo: en celular/laptop el ancho es el de siempre (3xl/4xl);
+            en monitores grandes (xl ≥1280, 2xl ≥1536, ej. 27" 1440p/4K) el contenido
+            crece hasta 1152px/1500px para no verse diminuto con márgenes enormes. */}
+        <main className="flex flex-col relative w-full pt-[70px] md:pt-0 pb-16 md:pb-12 bg-surface min-h-screen max-w-3xl lg:max-w-4xl xl:max-w-6xl 2xl:max-w-[1500px] mx-auto overflow-x-hidden">
           {children}
         </main>
       </div>
