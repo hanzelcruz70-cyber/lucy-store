@@ -110,9 +110,11 @@ ADMIN_SECRET=...                             # token alterno para scripts
 
 **Integridad transaccional (auditoría 2026-09-13, migraciones 7 y 10):**
 - TODA operación de dinero pasa por RPCs transaccionales (`supabase/migration7-audit.sql`, `migration10-audit-fixes.sql`) vía `lib/rpc-helpers.js`: `registrar_venta` (venta+payment+deuda+STOCK en una sola transacción: recibe `p_items jsonb` y descuenta contador de vendidos y stock del lote dentro), `aplicar_abono` (FIFO con `FOR UPDATE`), `fiar_venta` (Live, anti doble-fiado, solo de mi tienda), `cobrar_venta` (Live, idempotente por venta: un solo cobro por `sale_id`), `registrar_producto` (lote+producto, códigos por contador `store_counters`)
+- REBAJAS (migración 11, 2026-09-17): `sales.discount` guarda la rebaja manual y `sales.total` SIGUE siendo la plata REAL cobrada/fiada (original = total + discount). `registrar_venta`, `cobrar_venta` y `fiar_venta` aceptan `p_discount`; en Live el cobrar/fiar comparten el mismo modal. ATENCIÓN PostgREST: las firmas viejas de estos RPCs se DROPEAN en la migración — dejar ambas versiones rompe las llamadas con error 300 (overloading ambiguo).
 - TODAS las funciones security definer (stock incluido) verifican que la fila pertenezca a la tienda del que llama (`current_store_id_strict()`): nadie toca lotes/productos/deudas ajenos aunque conozca el uuid (migración 10)
 - Toda operación offline conserva su FECHA ORIGINAL: los RPCs aceptan `p_created_at` (migración 10) y la cola offline (`lib/offline-queue.js`) manda la fecha con la que se vendió/abonó/cerró, no la del sync
-- Cobrar un apartado de Live pregunta el MÉTODO (efectivo/transferencia): la transferencia NO entra al esperado del cajón (arqueo correcto)
+- Cobrar/fiar un apartado de Live usa UN modal unificado con método (efectivo/transferencia/crédito) + rebaja: la transferencia NO entra al esperado del cajón (arqueo correcto) y el crédito nace por el monto final
+- El borrador del apartado rápido de Live (cliente/prenda/precio) persiste en localStorage (`live_draft_v1`): cambiar de sección o cerrar la PWA NO lo borra; se limpia solo al apartar la prenda (2026-09-17)
 - Cobro de apartado de un día ANTERIOR: el efectivo de hoy SÍ lo cuenta (payment de hoy + `sale_id` del apartado viejo) — antes era invisible
 - `clients` tiene UNIQUE por nombre SIN ACENTOS (`norm_name`): "dona lupe" = "Doña Lupe" — no hay duplicados por tildes (migración 10)
 - `cash_cuts` tiene UNIQUE(store_id, nic_day(created_at)): una tienda solo puede hacer UN corte por día de negocio Nicaragua (migración 10)

@@ -1,13 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 import { rpcFiarVenta, rpcCobrarVenta } from '@/lib/rpc-helpers';
+import { parseMonto } from '@/lib/validation';
 import { appConfirm } from '@/components/ConfirmDialog';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
+
+/* Borrador del apartado ultrarrápido: en un Live se va y viene entre
+ * secciones (ir a Inicio a revisar algo y volver) y la pantalla se
+ * DESMONTA perdiendo el formulario. El borrador vive en localStorage:
+ * sobrevive a la navegación entre secciones y hasta al cierre de la PWA;
+ * se limpia solo al apartar la prenda. */
+const DRAFT_KEY = 'live_draft_v1';
 
 const Label = ({ children, className = '' }) => (
   <div className={`text-[11px] font-semibold text-on-surface-variant tracking-[0.06em] uppercase flex items-center gap-1.5 ${className}`}>
@@ -42,8 +50,52 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
   const [processingId, setProcessingId] = useState(null);
   const [editSale, setEditSale] = useState(null); // apartado pendiente en edición
   const [editForm, setEditForm] = useState({ client: '', desc: '', price: '' });
-  const [collectSale, setCollectSale] = useState(null); // apartado a cobrar (elige método)
-  const [collectMethod, setCollectMethod] = useState('efectivo');
+  const [collectSale, setCollectSale] = useState(null); // apartado en el modal cobrar/fiar
+  const [collectMethod, setCollectMethod] = useState('efectivo'); // 'efectivo' | 'transferencia' | 'fiado'
+  const [collectDiscount, setCollectDiscount] = useState(''); // rebaja manual opcional (migración 11)
+
+  // Rebaja del modal cobrar/fiar: lo que entra a caja o a deuda es el
+  // total FINAL (lista − rebaja); la rebaja queda en sales.discount y
+  // el original siempre se recupera como total + discount.
+  const collectRebaja = parseMonto(collectDiscount, { min: 0 }) || 0;
+  const collectLista = collectSale ? Number(collectSale.total) : 0;
+  const collectRebajaExcedida = collectLista > 0 && collectRebaja >= collectLista;
+  const collectFinal = Math.max(0, collectLista - collectRebaja);
+
+  // ===== Borrador del apartado (cliente/prenda/precio) =====
+  // Restaurar DESPUÉS de montar (en useEffect, nunca en useState): el
+  // server render no tiene localStorage y un valor distinto rompería la
+  // hidratación. Se guarda en cada cambio; vacío = llave borrada.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d && typeof d === 'object') {
+        if (typeof d.client === 'string' && d.client) setClient(d.client);
+        if (typeof d.desc === 'string' && d.desc) setDesc(d.desc);
+        if (typeof d.price === 'string' && d.price) setPrice(d.price);
+      }
+    } catch { /* localStorage lleno o bloqueado: sin borrador, no pasa nada */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (!client && !desc && !price) {
+        localStorage.removeItem(DRAFT_KEY);
+      } else {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ client, desc, price }));
+      }
+    } catch { /* sin almacenamiento: el borrador simplemente no persiste */ }
+  }, [client, desc, price]);
+
+  // Al apartar: limpiar formulario + borrador de una vez
+  const clearDraft = () => {
+    setClient('');
+    setDesc('');
+    setPrice('');
+  };
 
   // Validación del precio: solo número positivo razonable (rechaza texto, comas, montos absurdos)
   const setPriceSafe = (raw) => {
@@ -87,9 +139,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
           { id: localId, total: amt, items_count: 1, channel: 'tiktok_live', payment_method: 'fiado', client_name: client.trim(), notes: desc.trim() || null, created_at: new Date().toISOString() },
           ...s,
         ]);
-        setClient('');
-        setDesc('');
-        setPrice('');
+        clearDraft();
         showToast('Prenda apartada (se sincroniza sola)');
         return;
       }
@@ -112,9 +162,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
         .single();
       if (error) throw error;
       setSales((s) => [data, ...s]);
-      setClient('');
-      setDesc('');
-      setPrice('');
+      clearDraft();
       showToast('Prenda apartada al vuelo');
     } catch (err) {
       showToast('Error: ' + err.message, false);
@@ -123,9 +171,12 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
     }
   };
 
-  const openCollect = (sale) => {
+  // Modal unificado cobrar/fiar: ambos botones lo abren, cada uno con su
+  // método preseleccionado (migración 11: aquí también vive la rebaja).
+  const openCollect = (sale, method = 'efectivo') => {
     if (processingId || debtSaleIds.has(sale.id)) return;
-    setCollectMethod('efectivo');
+    setCollectMethod(method);
+    setCollectDiscount('');
     setCollectSale(sale);
   };
 
@@ -141,12 +192,13 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
           payload: {
             saleLocalId: sale.id,
             paymentLocalId: uuid(),
-            amount: Number(sale.total),
+            amount: collectFinal,      // monto FINAL (rebaja ya restada)
+            discount: collectRebaja,   // la rebaja viaja aparte
             method: collectMethod,
             createdAt: new Date().toISOString(),
           },
         });
-        setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: collectMethod } : x)));
+        setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: collectMethod, total: collectFinal } : x)));
         setCollectSale(null);
         showToast('Cobrado (se sincroniza solo)');
         return;
@@ -154,16 +206,22 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
       // RPC TRANSACCIONAL: update de venta + payment en UNA llamada.
       // Idempotente POR VENTA (migración 10): un reintento —o un segundo
       // dispositivo con el mismo apartado abierto— JAMÁS inserta dos cobros.
+      // amount = FINAL cobrado; la rebaja queda en sales.discount (migración 11).
       const { error: errRpc } = await rpcCobrarVenta({
         saleId: sale.id,
         paymentId: uuid(),
-        amount: Number(sale.total),
+        amount: collectFinal,
         method: collectMethod,
+        discount: collectRebaja,
       });
       if (errRpc) throw errRpc;
-      setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: collectMethod } : x)));
+      setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, payment_method: collectMethod, total: collectFinal } : x)));
       setCollectSale(null);
-      showToast('Cobrado y registrado en caja');
+      showToast(
+        collectRebaja > 0
+          ? `Cobrado ${money(collectFinal)} (rebaja de ${money(collectRebaja)})`
+          : 'Cobrado y registrado en caja'
+      );
       router.refresh();
     } catch (err) {
       const msg =
@@ -176,8 +234,12 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
     }
   };
 
-  const markFiado = async (sale) => {
-    if (processingId) return;
+  // Fiado desde el MODAL unificado (ya no es de 1 toque: ahí viven la
+  // rebaja opcional y la confirmación). La deuda nace por el monto FINAL
+  // con la rebaja ya restada; la rebaja queda en sales.discount.
+  const markFiado = async () => {
+    const sale = collectSale;
+    if (!sale || processingId) return;
     if (debtSaleIds.has(sale.id)) {
       showToast('Esta venta ya está en crédito', false);
       return;
@@ -192,25 +254,31 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
           payload: {
             saleLocalId: sale.id,
             clientName: name,
-            amount: Number(sale.total),
+            amount: collectFinal,      // deuda FINAL (rebaja ya restada)
+            discount: collectRebaja,   // la rebaja viaja aparte
             notes: sale.notes || 'Prenda de Live',
             createdAt: new Date().toISOString(),
           },
         });
         setDebtSaleIds((ids) => new Set(ids).add(sale.id));
-        showToast(`Crédito de ${money(Number(sale.total))} guardado (se sincroniza solo)`);
+        setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, total: collectFinal } : x)));
+        setCollectSale(null);
+        showToast(`Crédito de ${money(collectFinal)} guardado (se sincroniza solo)`);
         return;
       }
       // RPC TRANSACCIONAL con anti doble-fiado (guardia por sale_id DENTRO
       // de la transacción). Balance recalculado por trigger.
       const { error: errRpc } = await rpcFiarVenta({
         saleId: sale.id,
-        amount: Number(sale.total),
+        amount: collectFinal,
+        discount: collectRebaja,
       });
       if (errRpc) throw errRpc;
 
       setDebtSaleIds((ids) => new Set(ids).add(sale.id));
-      showToast(`Deuda de ${money(Number(sale.total))} registrada a ${name}`);
+      setSales((s) => s.map((x) => (x.id === sale.id ? { ...x, total: collectFinal } : x)));
+      setCollectSale(null);
+      showToast(`Deuda de ${money(collectFinal)} registrada a ${name}`);
       // Refresca el server component: Inicio/Caja reclasifican el apartado
       // de "pendiente" a "crédito" — sin esto seguía listado como pendiente
       // hasta la próxima navegación (QA 2026-09-14: D-9).
@@ -485,7 +553,7 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
                       </svg>
                     </button>
                     <button
-                      onClick={() => markFiado(s)}
+                      onClick={() => openCollect(s, 'fiado')}
                       disabled={processing}
                       title="Pasar a crédito"
                       aria-label={`Fiar apartado de ${s.client_name || 'cliente'}`}
@@ -660,28 +728,30 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
         </div>
       )}
 
-      {/* Modal cobrar apartado: elegir método (el efectivo entra al arqueo,
-          la transferencia NO — igual que una venta de mostrador) */}
+      {/* Modal unificado cobrar/fiar (migración 11): método (efectivo,
+          transferencia o crédito) + rebaja manual opcional. Lo que entra
+          a caja o a deuda es el total FINAL; la rebaja queda en
+          sales.discount y el original se recupera como total + discount. */}
       {collectSale && (
         <div className="fixed inset-0 z-50 bg-inverse-surface/50 backdrop-blur-[2px] flex items-end sm:items-center justify-center" onClick={() => setCollectSale(null)}>
           <div className="bg-surface w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-1">
-              <b className="text-[16px] text-on-surface">Cobrar apartado</b>
+              <b className="text-[16px] text-on-surface">{collectMethod === 'fiado' ? 'Pasar a crédito' : 'Cobrar apartado'}</b>
               <button onClick={() => setCollectSale(null)} className="w-8 h-8 rounded-[10px] bg-primary-fixed text-primary flex items-center justify-center">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
               </button>
             </div>
             <span className="text-[11px] text-on-surface-variant font-semibold uppercase tracking-[0.06em]">
-              {collectSale.client_name || 'Cliente live'} · {money(collectSale.total)}
+              {collectSale.client_name || 'Cliente live'} · precio {money(collectLista)}
             </span>
             <div className="mt-3 space-y-2">
               <div>
-                <Label className="mb-1.5">¿Cómo te pagó?</Label>
-                <div className="flex gap-1.5">
+                <Label className="mb-1.5">¿Cómo cierra la prenda?</Label>
+                <div className="grid grid-cols-3 gap-1.5">
                   <button
                     type="button"
                     onClick={() => setCollectMethod('efectivo')}
-                    className={`flex-1 py-3 rounded-[10px] text-[13px] font-semibold border transition-colors ${
+                    className={`py-3 rounded-[10px] text-[13px] font-semibold border transition-colors ${
                       collectMethod === 'efectivo' ? 'bg-primary border-primary text-on-primary' : 'bg-surface-container-lowest border-outline text-on-surface'
                     }`}
                   >
@@ -690,25 +760,66 @@ export default function LiveConsole({ initialSales, initialDebtSaleIds, historia
                   <button
                     type="button"
                     onClick={() => setCollectMethod('transferencia')}
-                    className={`flex-1 py-3 rounded-[10px] text-[13px] font-semibold border transition-colors ${
+                    className={`py-3 rounded-[10px] text-[13px] font-semibold border transition-colors ${
                       collectMethod === 'transferencia' ? 'bg-primary border-primary text-on-primary' : 'bg-surface-container-lowest border-outline text-on-surface'
                     }`}
                   >
                     Transferencia
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setCollectMethod('fiado')}
+                    className={`py-3 rounded-[10px] text-[13px] font-semibold border transition-colors ${
+                      collectMethod === 'fiado' ? 'bg-primary border-primary text-on-primary' : 'bg-surface-container-lowest border-outline text-on-surface'
+                    }`}
+                  >
+                    Crédito
+                  </button>
                 </div>
               </div>
+
+              <div>
+                <Label className="mb-1.5">Rebaja (opcional)</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={collectDiscount}
+                    onChange={(e) => setCollectDiscount(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="C$ 0"
+                    className="flex-1 min-w-0 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] font-semibold text-on-surface placeholder:font-normal placeholder:text-on-surface-variant outline-none focus:border-primary"
+                  />
+                  {collectRebaja > 0 && <b className="text-[13px] text-error whitespace-nowrap">− {money(collectRebaja)}</b>}
+                </div>
+              </div>
+
+              {collectRebajaExcedida ? (
+                <p className="text-[11.5px] text-error font-semibold">La rebaja no puede dejar la prenda en C$0</p>
+              ) : collectRebaja > 0 ? (
+                <p className="text-[12px] text-on-surface-variant">
+                  Precio {money(collectLista)} − rebaja {money(collectRebaja)} = <b className="text-on-surface">{money(collectFinal)}</b>
+                </p>
+              ) : null}
               {collectMethod === 'transferencia' && (
                 <p className="text-[11.5px] text-on-surface-variant">
                   La transferencia NO cuenta como efectivo del cajón — solo el efectivo entra al arqueo del cierre.
                 </p>
               )}
+              {collectMethod === 'fiado' && (
+                <p className="text-[11.5px] text-on-surface-variant">
+                  Queda como deuda de {collectSale.client_name || 'la clienta'} por el total con la rebaja incluida.
+                </p>
+              )}
+
               <button
-                onClick={markPaid}
-                disabled={processingId === collectSale.id}
+                onClick={collectMethod === 'fiado' ? markFiado : markPaid}
+                disabled={processingId === collectSale.id || collectRebajaExcedida}
                 className="w-full py-3 rounded-xl bg-primary text-on-primary text-[13.5px] font-semibold active:bg-primary-deep transition-colors disabled:opacity-60"
               >
-                {processingId === collectSale.id ? 'Cobrando…' : `Cobrar ${money(collectSale.total)}`}
+                {processingId === collectSale.id
+                  ? (collectMethod === 'fiado' ? 'Fiando…' : 'Cobrando…')
+                  : collectMethod === 'fiado'
+                    ? `Fiar ${money(collectFinal)}`
+                    : `Cobrar ${money(collectFinal)}`}
               </button>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { isOffline, enqueueOp, uuid } from '@/lib/offline-queue';
 import { rpcRegistrarVenta } from '@/lib/rpc-helpers';
+import { parseMonto } from '@/lib/validation';
 
 const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFractionDigits: 0 });
 
@@ -16,6 +17,8 @@ export default function VenderClient({ products: initialProducts, lots: initialL
   const [search, setSearch] = useState('');
   const [payMethod, setPayMethod] = useState('efectivo');
   const [fiadoClient, setFiadoClient] = useState('');
+  const [discount, setDiscount] = useState(''); // rebaja manual (texto libre: "1,500")
+  const [discountOpen, setDiscountOpen] = useState(false);
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
@@ -60,6 +63,12 @@ export default function VenderClient({ products: initialProducts, lots: initialL
 
   const filtered = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
   const total = cart.reduce((a, i) => a + i.price * i.qty, 0);
+  // Rebaja manual (migración 11): lo que se cobra/fía de verdad es
+  // total − rebaja, y la rebaja queda guardada en sales.discount para
+  // no perder la contabilidad (original = total + discount).
+  const rebaja = parseMonto(discount, { min: 0 }) || 0;
+  const rebajaExcedida = total > 0 && rebaja >= total;
+  const totalFinal = Math.max(0, total - rebaja);
 
   const addToCart = (p) => {
     const stock = stockOf(p);
@@ -120,6 +129,10 @@ export default function VenderClient({ products: initialProducts, lots: initialL
 
   const confirmSale = async () => {
     if (busy || cart.length === 0) return;
+    if (rebajaExcedida) {
+      showToast('La rebaja no puede dejar la venta en C$0', false);
+      return;
+    }
     if (payMethod === 'fiado' && !fiadoClient.trim()) {
       showToast('Escribe el nombre del cliente para el crédito', false);
       return;
@@ -137,7 +150,8 @@ export default function VenderClient({ products: initialProducts, lots: initialL
           payload: {
             localId,
             createdAt: new Date().toISOString(),
-            total,
+            total: totalFinal, // monto FINAL (rebaja ya restada)
+            discount: rebaja,  // la rebaja viaja aparte (sales.discount)
             itemsCount,
             channel: 'mostrador',
             paymentMethod: payMethod === 'fiado' ? 'fiado' : payMethod,
@@ -154,10 +168,12 @@ export default function VenderClient({ products: initialProducts, lots: initialL
         applyLocalStock(cart);
         setCart([]);
         setFiadoClient('');
+        setDiscount('');
+        setDiscountOpen(false);
         showToast(
           payMethod === 'fiado'
-            ? `Crédito de ${money(total)} guardado (se sincroniza solo)`
-            : `Venta de ${money(total)} guardada (se sincroniza sola)`
+            ? `Crédito de ${money(totalFinal)} guardado (se sincroniza solo)`
+            : `Venta de ${money(totalFinal)} guardada (se sincroniza sola)`
         );
         return;
       }
@@ -173,7 +189,8 @@ export default function VenderClient({ products: initialProducts, lots: initialL
       // nada a medias — el carrito NO se vacía y el reintento es seguro.
       const { error: errRpc } = await rpcRegistrarVenta({
         saleId,
-        total,
+        total: totalFinal, // monto FINAL (rebaja ya restada)
+        discount: rebaja,    // la rebaja queda en sales.discount
         itemsCount,
         channel: 'mostrador',
         paymentMethod: payMethod,
@@ -188,10 +205,12 @@ export default function VenderClient({ products: initialProducts, lots: initialL
 
       setCart([]);
       setFiadoClient('');
+      setDiscount('');
+      setDiscountOpen(false);
       showToast(
         payMethod === 'fiado'
-          ? `Crédito de ${money(total)} registrado`
-          : `Venta de ${money(total)} registrada`
+          ? `Crédito de ${money(totalFinal)} registrado`
+          : `Venta de ${money(totalFinal)} registrada`
       );
     } catch (err) {
       showToast('Error: ' + err.message + ' — puedes reintentar, no se duplica', false);
@@ -269,7 +288,10 @@ export default function VenderClient({ products: initialProducts, lots: initialL
         <div className="fixed bottom-0 md:bottom-4 inset-x-0 md:inset-x-auto md:right-6 md:w-96 z-40 bg-surface rounded-t-2xl md:rounded-2xl border-t-2 border-primary md:border outline-none p-3.5">
           <div className="flex items-center justify-between mb-2">
             <b className="text-[14px] text-on-surface">Venta en curso</b>
-            <button onClick={() => setCart([])} className="text-[12px] text-error font-semibold">
+            <button
+              onClick={() => { setCart([]); setDiscount(''); setDiscountOpen(false); }}
+              className="text-[12px] text-error font-semibold"
+            >
               Vaciar
             </button>
           </div>
@@ -288,9 +310,53 @@ export default function VenderClient({ products: initialProducts, lots: initialL
             ))}
           </div>
 
+          {/* Rebaja manual (opcional, migración 11): el total REAL de la
+              venta es total − rebaja y la rebaja queda guardada en la venta
+              (sales.discount) para no perder la contabilidad. Aplica por
+              igual al contado, transferencia o crédito. */}
+          {discountOpen ? (
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[12.5px] font-semibold text-on-surface-variant whitespace-nowrap">Rebaja</span>
+              <input
+                value={discount}
+                onChange={(e) => setDiscount(e.target.value)}
+                inputMode="decimal"
+                placeholder="C$ 0"
+                autoFocus
+                className="flex-1 min-w-0 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2 text-[13px] font-semibold text-on-surface outline-none focus:border-primary"
+              />
+              <button
+                onClick={() => { setDiscount(''); setDiscountOpen(false); }}
+                aria-label="Quitar rebaja"
+                className="w-8 h-8 rounded-[10px] bg-surface-container-low border border-outline text-on-surface-variant flex items-center justify-center flex-none"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setDiscountOpen(true)}
+              className="mt-1.5 inline-flex items-center gap-1 text-[12.5px] font-bold text-primary"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12l9-9h9v9l-9 9z" /><circle cx="16.5" cy="7.5" r="1.5" /></svg>
+              Agregar rebaja
+            </button>
+          )}
+          {rebajaExcedida && (
+            <p className="text-[11px] text-error font-semibold mt-1">
+              La rebaja no puede dejar la venta en C$0
+            </p>
+          )}
+          {rebaja > 0 && !rebajaExcedida && (
+            <div className="flex justify-between items-center mt-2 text-[12.5px]">
+              <span className="text-on-surface-variant">Subtotal {money(total)}</span>
+              <span className="font-bold text-error">− {money(rebaja)}</span>
+            </div>
+          )}
+
           <div className="flex justify-between items-center mt-2 pt-2 border-t border-outline">
-            <span className="text-[13px] text-on-surface-variant">Total</span>
-            <span className="text-[20px] font-bold text-on-surface">{money(total)}</span>
+            <span className="text-[13px] text-on-surface-variant">{rebaja > 0 && !rebajaExcedida ? 'Total a cobrar' : 'Total'}</span>
+            <span className="text-[20px] font-bold text-on-surface">{money(rebajaExcedida ? total : totalFinal)}</span>
           </div>
 
           <div className="grid grid-cols-3 gap-1.5 mt-2">
@@ -379,10 +445,10 @@ export default function VenderClient({ products: initialProducts, lots: initialL
 
           <button
             onClick={confirmSale}
-            disabled={busy}
+            disabled={busy || rebajaExcedida}
             className="w-full h-13 py-3 mt-2.5 rounded-xl bg-primary text-on-primary text-[14px] font-semibold flex items-center justify-center gap-2 active:bg-primary-deep transition-colors disabled:opacity-60"
           >
-            {busy ? 'Registrando…' : payMethod === 'fiado' ? `Dar crédito ${money(total)}` : `Cobrar ${money(total)}`}
+            {busy ? 'Registrando…' : payMethod === 'fiado' ? `Dar crédito ${money(totalFinal)}` : `Cobrar ${money(totalFinal)}`}
           </button>
         </div>
       )}
