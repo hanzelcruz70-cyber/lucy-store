@@ -17,7 +17,7 @@ const EXPENSE_CATEGORIES = [
   { value: 'proveedor', label: 'Compra de mercadería', emoji: '👕' },
   { value: 'transporte', label: 'Transporte / Flete', emoji: '🚚' },
   { value: 'empaque', label: 'Bolsas / Empaque', emoji: '🛍️' },
-  { value: 'publicidad', label: 'Publicidad / Lives', emoji: '📣' },
+  { value: 'publicidad', label: 'Publicidad', emoji: '📣' },
   { value: 'telefono', label: 'Teléfono / Datos', emoji: '📱' },
   { value: 'salario', label: 'Salario / Ayuda', emoji: '🤝' },
   { value: 'limpieza', label: 'Limpieza', emoji: '🧹' },
@@ -361,13 +361,13 @@ export default function MasClient({ expenses: initialExpenses, sales, products }
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
               <path d="M13 2L4 14h6l-1 8 9-12h-6z" />
             </svg>
-            Calculado automáticamente con tus ventas (Live, Vender y mostrador)
+            Calculado automáticamente con tus ventas
           </div>
 
           {productos.length === 0 && (
             <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-6 text-center">
               <p className="text-[13px] text-on-surface-variant">
-                Aún no hay ventas con productos. Los apartados del Live aparecen aquí solos.
+                Aún no hay ventas con productos.
               </p>
             </div>
           )}

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { buildReportWorkbook, workbookToBlob } from '@/lib/excel-report';
 
-export default function ExportButton({ sales, expenses, payments = [], fondoInicial = 0, abonosEfectivo = 0, cobrosApartadosEfectivo = 0, cobrosApartadosTransferencia = 0, storeName = 'Mi Prenda', pendingSaleIds = [] }) {
+export default function ExportButton({ sales, expenses, payments = [], fondoInicial = 0, abonosEfectivo = 0, storeName = 'Mi Prenda' }) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -16,20 +16,15 @@ export default function ExportButton({ sales, expenses, payments = [], fondoInic
     if (busy) return;
     setBusy(true);
     try {
-      // Apartados PENDIENTES de Live: no son venta ni crédito todavía (C-4) —
-      // se excluyen de los totales del reporte.
-      const pending = new Set(pendingSaleIds);
-      const realSales = sales.filter((s) => !pending.has(s.id));
-      const efectivo = realSales.filter((s) => s.payment_method === 'efectivo').reduce((a, s) => a + Number(s.total), 0);
-      const contado = realSales.filter((s) => s.payment_method !== 'fiado').reduce((a, s) => a + Number(s.total), 0);
-      const fiado = realSales.filter((s) => s.payment_method === 'fiado').reduce((a, s) => a + Number(s.total), 0);
+      // `sales` ya viene depurado en page.js (sin pendientes viejos de Live)
+      const efectivo = sales.filter((s) => s.payment_method === 'efectivo').reduce((a, s) => a + Number(s.total), 0);
+      const contado = sales.filter((s) => s.payment_method !== 'fiado').reduce((a, s) => a + Number(s.total), 0);
+      const fiado = sales.filter((s) => s.payment_method === 'fiado').reduce((a, s) => a + Number(s.total), 0);
       const gastos = expenses.reduce((a, e) => a + Number(e.amount), 0);
-      const transferencias =
-        realSales.filter((s) => s.payment_method === 'transferencia').reduce((a, s) => a + Number(s.total), 0) +
-        cobrosApartadosTransferencia;
+      const transferencias = sales.filter((s) => s.payment_method === 'transferencia').reduce((a, s) => a + Number(s.total), 0);
 
       // Arqueo: el efectivo esperado del cajón (idéntico a CierreCaja)
-      const esperado = efectivo + abonosEfectivo + cobrosApartadosEfectivo - gastos + fondoInicial;
+      const esperado = efectivo + abonosEfectivo - gastos + fondoInicial;
 
       const wb = await buildReportWorkbook({
         storeName,
@@ -41,9 +36,8 @@ export default function ExportButton({ sales, expenses, payments = [], fondoInic
         fisico: null,
         fondo: fondoInicial,
         abonosEfectivo,
-        cobrosApartadosEfectivo,
         transferencias,
-        sales: realSales,
+        sales,
         expenses,
         payments,
       });

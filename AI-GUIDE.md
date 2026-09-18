@@ -5,9 +5,9 @@
 
 ## Qué es
 
-Mi Prenda es un **Punto de Venta (POS) multitenant en modo PWA** para tiendas de ropa (paca/americana) que venden por mostrador y por **Lives de TikTok**, con gestión de **créditos (fiados)**, inventario de productos con stock, gastos y estadísticas. Moneda: **Córdobas (C$)** — Nicaragua.
+Mi Prenda es un **Punto de Venta (POS) multitenant en modo PWA** para tiendas de ropa (paca/americana) que venden por mostrador, con gestión de **créditos (fiados)**, inventario de productos con stock, gastos y estadísticas. Moneda: **Córdobas (C$)** — Nicaragua. **ELIMINADO (migración 12, 2026-09-17): el módulo Live TikTok** (pantalla, RPCs `fiar_venta`/`cobrar_venta`, cola offline `live_*`) — toda venta pasa por Vender; las ventas históricas de Live NO se tocaron.
 
-**TERMINOLOGÍA (2026-09-13):** en la UI, PDF, Excel y marketing la palabra es **"crédito"** — NO "fiado". Los valores internos de BD (`payment_method='fiado'`, tipos de cola `live_fiado`, `fiado_directo`) y los nombres de función RPC/JS NO se renombraron (romperían RLS/sync/migraciones históricas). Regla: texto visible = "crédito"; código/BD = "fiado".
+**TERMINOLOGÍA (2026-09-13):** en la UI, PDF, Excel y marketing la palabra es **"crédito"** — NO "fiado". Los valores internos de BD (`payment_method='fiado'`, tipo de cola `fiado_directo`) y los nombres de función RPC/JS NO se renombraron (romperían RLS/sync/migraciones históricas). Regla: texto visible = "crédito"; código/BD = "fiado".
 
 **Marca/Nombre:** Mi Prenda (antes Mi Prenda, renombrado 2026-09-11) — app multitenant: cada tienda es un cliente; nunca nombrar con el nombre de UNA tienda (Lucy Store fue el primero, el nombre del repo es histórico)
 
@@ -93,14 +93,14 @@ ADMIN_SECRET=...                             # token alterno para scripts
 |---|---|---|
 | `stores` | Tenant/tienda | id, name, slug, owner_email |
 | `profiles` | Usuario ↔ tienda | id (=auth.users), store_id, role, display_name |
-| `sales` | Ventas | store_id, user_id, total, items_count, channel (mostrador/tiktok_live), payment_method (efectivo/transferencia/fiado), client_name, notes |
+| `sales` | Ventas | store_id, user_id, total (plata REAL cobrada/fiada), discount (rebaja, m11), total_cost (costo de prendas desde lote, m12), items_count, channel (mostrador; tiktok_live solo histórico), payment_method (efectivo/transferencia/fiado), client_name (opcional en contado, obligatorio en fiado), notes |
 | `expenses` | Gastos | concept, amount, category (luz/agua/internet/transporte/empaque/publicidad/telefono/salario/limpieza/mantenimiento/renta/proveedor/impuestos/otro) |
 | `lots` | Stock interno por producto (INVISIBLE en UI) | code, name, pieces_total, pieces_left, total_cost, avg_sale_price |
 | `products` | Productos (lo que ve la dueña) | code, name, sale_price, sold_count, lot_id |
 | `clients` | Clientes | name, phone, tiktok, balance, is_live_client |
 | `debts` | Fiados | client_id, original_amount, remaining, status, sale_id |
 | `payments` | Abonos/pagos | debt_id?, sale_id?, amount, method |
-| `cash_cuts` | Cortes diarios | sales_total, collected_total (efectivo ventas + abonos), abonos_total, transfer_total, fisico_total, discrepancy_amount, expenses_total, notes |
+| `cash_cuts` | Cortes diarios | sales_total, collected_total (efectivo ventas + abonos), abonos_total, transfer_total, fisico_total, discrepancy_amount, profit_total (ganancia real del día, m13; null en cortes viejos), expenses_total, notes |
 
 **Claves de integridad de dinero (aprendidas de QA):**
 - Los `payments` con `sale_id` son cobros de venta (no abonos de deuda): NO cuentan como "Abonos" ni salen como "Abono recibido" en Inicio
@@ -108,17 +108,16 @@ ADMIN_SECRET=...                             # token alterno para scripts
 - El efectivo esperado del cierre = ventas efectivo + abonos en efectivo − gastos
 - Sobrepago: se registra solo hasta el saldo; el excedente es vuelto (confirm() avisa antes)
 
-**Integridad transaccional (auditoría 2026-09-13, migraciones 7 y 10):**
-- TODA operación de dinero pasa por RPCs transaccionales (`supabase/migration7-audit.sql`, `migration10-audit-fixes.sql`) vía `lib/rpc-helpers.js`: `registrar_venta` (venta+payment+deuda+STOCK en una sola transacción: recibe `p_items jsonb` y descuenta contador de vendidos y stock del lote dentro), `aplicar_abono` (FIFO con `FOR UPDATE`), `fiar_venta` (Live, anti doble-fiado, solo de mi tienda), `cobrar_venta` (Live, idempotente por venta: un solo cobro por `sale_id`), `registrar_producto` (lote+producto, códigos por contador `store_counters`)
-- REBAJAS (migración 11, 2026-09-17): `sales.discount` guarda la rebaja manual y `sales.total` SIGUE siendo la plata REAL cobrada/fiada (original = total + discount). `registrar_venta`, `cobrar_venta` y `fiar_venta` aceptan `p_discount`; en Live el cobrar/fiar comparten el mismo modal. ATENCIÓN PostgREST: las firmas viejas de estos RPCs se DROPEAN en la migración — dejar ambas versiones rompe las llamadas con error 300 (overloading ambiguo).
+**Integridad transaccional (auditoría 2026-09-13, migraciones 7 y 10; y 11/12 del 2026-09-17):**
+- TODA operación de dinero pasa por RPCs transaccionales (`supabase/migration7-audit.sql`, `migration10-audit-fixes.sql`, `migration11-discount.sql`, `migration12-profit-remove-live.sql`) vía `lib/rpc-helpers.js`: `registrar_venta` (venta+payment+deuda+STOCK+COSTO en una sola transacción: recibe `p_items jsonb`, descuenta contador de vendidos/stock del lote y guarda `sales.total_cost` = costo calculado desde el lote), `aplicar_abono` (FIFO con `FOR UPDATE`), `registrar_producto` (lote+producto, códigos por contador `store_counters`)
+- REBAJAS (migración 11): `sales.discount` guarda la rebaja manual y `sales.total` SIGUE siendo la plata REAL cobrada/fiada (original = total + discount). ATENCIÓN PostgREST: las firmas viejas de los RPCs se DROPEAN en las migraciones — dejar ambas versiones rompe las llamadas con error 300 (overloading ambiguo).
+- GANANCIA (migración 12): `ganancia del día = Σ(total − total_cost)` solo de ventas con `items_count > 0` (un crédito directo es plata prestada, no mercadería). Ventas sin costo conocido (producto sin lote o anteriores a m12) cuentan al 100% y se marcan como estimadas en Caja/Excel.
+- NOMBRE DE CLIENTE (migración 12): `client_name` es OPCIONAL en contado/transferencia (queda en la venta, NO crea cliente ni deuda) y OBLIGATORIO en fiado.
+- LIVE ELIMINADO (migración 12): no existe la pantalla, los RPCs `fiar_venta`/`cobrar_venta` están DROPEADOS y la cola offline ya no tiene procesadores `live_*` (el sync descarta tipos desconocidos: ops viejas encoladas se descartan solas). El historial (ventas channel `tiktok_live`, deudas, cortes) permanece intacto.
 - TODAS las funciones security definer (stock incluido) verifican que la fila pertenezca a la tienda del que llama (`current_store_id_strict()`): nadie toca lotes/productos/deudas ajenos aunque conozca el uuid (migración 10)
 - Toda operación offline conserva su FECHA ORIGINAL: los RPCs aceptan `p_created_at` (migración 10) y la cola offline (`lib/offline-queue.js`) manda la fecha con la que se vendió/abonó/cerró, no la del sync
-- Cobrar/fiar un apartado de Live usa UN modal unificado con método (efectivo/transferencia/crédito) + rebaja: la transferencia NO entra al esperado del cajón (arqueo correcto) y el crédito nace por el monto final
-- El borrador del apartado rápido de Live (cliente/prenda/precio) persiste en localStorage (`live_draft_v1`): cambiar de sección o cerrar la PWA NO lo borra; se limpia solo al apartar la prenda (2026-09-17)
-- Cobro de apartado de un día ANTERIOR: el efectivo de hoy SÍ lo cuenta (payment de hoy + `sale_id` del apartado viejo) — antes era invisible
 - `clients` tiene UNIQUE por nombre SIN ACENTOS (`norm_name`): "dona lupe" = "Doña Lupe" — no hay duplicados por tildes (migración 10)
 - `cash_cuts` tiene UNIQUE(store_id, nic_day(created_at)): una tienda solo puede hacer UN corte por día de negocio Nicaragua (migración 10)
-- clientes/borrado de apartado live: apartado PENDIENTE se borra; fiado o cobrado ya no se borran (FK `ON DELETE SET NULL` en la BD los protege)
 - El stock se muta SOLO dentro del RPC (migración 10), nunca desde el cliente — un fallo de red no deja venta sin descuento ni descuento sin venta
 
 ## Flujos clave
@@ -214,7 +213,9 @@ node scripts/generar-guia-pdf.cjs   # regenera GUIA-USUARIO.pdf (24 secciones)
 
 **MEDIOS:** arqueo sin abonos en efectivo, buscadores con acentos/espacios, método de pago en hoja de cliente, "Invertido" C$0 (ahora 4 métricas), advertencia de clientes duplicados.
 
-**Features:** historial de movimientos en modal de abono (Inicio), stock "Quedan X" en Vender con bloqueo de sobreventa, sugerencias de clientes al fiar (búsqueda con dropdown máx 6 + "Ya existe"), "Instalar App" solo móvil, badge "Sin lote", contexto cacheado (localStorage) para velocidad, updates de stock en paralelo, exportar Excel con formato Mi Prenda (exceljs lazy-chunk), edición de clientes/productos/apartados del Live, historial de cortes con filtro 7/15/30 días, arqueo con botones +/- clickeables, estadísticas sin repetir top en "menos vendidos", abonos en vivo en Inicio (folio correlativo sin recargar).
+**Features:** historial de movimientos en modal de abono (Inicio), stock "Quedan X" en Vender con bloqueo de sobreventa, sugerencias de clientes al fiar (búsqueda con dropdown máx 6 + "Ya existe"), "Instalar App" solo móvil, badge "Sin lote", contexto cacheado (localStorage) para velocidad, updates de stock en paralelo, exportar Excel con formato Mi Prenda (exceljs lazy-chunk), edición de clientes/productos, historial de cortes con filtro 7/15/30 días, arqueo con botones +/- clickeables, estadísticas sin repetir top en "menos vendidos", abonos en vivo en Inicio (folio correlativo sin recargar).
+
+**2026-09-17 (migraciones 11, 12 y 13):** rebajas manuales en cualquier método (`sales.discount`; total = plata real); ganancia exacta del día en Caja y Excel (`sales.total_cost` calculado del lote dentro de `registrar_venta`) y guardada en el corte (`cash_cuts.profit_total`, migración 13 → el historial de cortes la muestra; puede ser negativa); nombre de cliente opcional en ventas al contado; **módulo Live TikTok eliminado por completo** (pantalla `/app/live`, RPCs `fiar_venta`/`cobrar_venta` DROPEADOS, procesadores offline `live_*`, shortcut del manifest) — el historial de ventas/deudas de Live quedó intacto.
 
 ## Roadmap pendiente (sin catálogo — cancelado)
 

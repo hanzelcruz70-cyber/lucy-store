@@ -140,7 +140,10 @@ export default function VenderClient({ products: initialProducts, lots: initialL
     setBusy(true);
     try {
       const itemsCount = cart.reduce((a, i) => a + i.qty, 0);
-      const clientName = payMethod === 'fiado' ? fiadoClient.trim() : null;
+      // Migración 12: el nombre va en CUALQUIER método — en fiado es
+      // obligatorio (ya validado arriba); en contado/transferencia es
+      // opcional y queda en la venta sin crear cliente ni deuda.
+      const clientName = fiadoClient.trim() || null;
 
       if (isOffline()) {
         // ===== MODO OFFLINE: guardar en la cola local =====
@@ -386,8 +389,10 @@ export default function VenderClient({ products: initialProducts, lots: initialL
             </button>
           </div>
 
-          {payMethod === 'fiado' && (
-            <div className="mt-2 relative">
+          {/* Cliente: OBLIGATORIO en crédito (la deuda necesita a quién
+              cobrarle), OPCIONAL en contado/transferencia — queda en la
+              venta sin crear cliente ni deuda (migración 12). */}
+          <div className="mt-2 relative">
               <input
                 value={fiadoClient}
                 onChange={(e) => {
@@ -396,7 +401,7 @@ export default function VenderClient({ products: initialProducts, lots: initialL
                 }}
                 onFocus={() => setClientPickerOpen(true)}
                 onBlur={() => setTimeout(() => setClientPickerOpen(false), 150)}
-                placeholder="Buscar o escribir nombre del cliente"
+                placeholder={payMethod === 'fiado' ? 'Buscar o escribir nombre del cliente' : 'Nombre del cliente (opcional)'}
                 autoComplete="off"
                 className="w-full bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2.5 text-[13px] text-on-surface placeholder:text-on-surface-variant outline-none focus:border-primary"
               />
@@ -428,10 +433,10 @@ export default function VenderClient({ products: initialProducts, lots: initialL
                     : `Ya existe: ${fiadoSugerencia.name} · al día`}
                 </p>
               )}
-              {/* Si el nombre no coincide con NADIE, avisar que se va a crear
-                  uno nuevo — la dueña sabe si hace un cliente duplicado
-                  (ha pasado escribiendo con tildes o con typo) */}
-              {!fiadoSugerencia && fiadoClient.trim() && clientMatches.length === 0 && (
+              {/* El aviso "se creará cliente nuevo" aplica SOLO al crédito:
+                  en contado/transferencia el nombre se guarda en la venta
+                  sin crear cliente (migración 12). */}
+              {payMethod === 'fiado' && !fiadoSugerencia && fiadoClient.trim() && clientMatches.length === 0 && (
                 <p className="text-[11px] font-semibold mt-1 text-on-surface-variant flex items-center gap-1">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                     <circle cx="10" cy="8" r="3.4" />
@@ -441,7 +446,6 @@ export default function VenderClient({ products: initialProducts, lots: initialL
                 </p>
               )}
             </div>
-          )}
 
           <button
             onClick={confirmSale}

@@ -1,7 +1,7 @@
 {
   "name": "Mi Prenda · Punto de Venta para Tiendas de Ropa",
   "short_name": "Mi Prenda",
-  "description": "Caja, créditos, inventario y Lives de TikTok para tiendas de ropa americana. Instalable y offline.",
+  "description": "Caja, créditos e inventario para tiendas de ropa americana. Instalable y offline.",
   "id": "/?source=pwa",
   "start_url": "/app/inicio",
   "scope": "/",
@@ -42,12 +42,6 @@
       "short_name": "Vender",
       "description": "Venta al mostrador con carrito",
       "url": "/app/vender"
-    },
-    {
-      "name": "Live de TikTok",
-      "short_name": "Live",
-      "description": "Apartar prendas al vuelo",
-      "url": "/app/live"
     },
     {
       "name": "Cobrar créditos",

@@ -44,9 +44,10 @@ export default async function InicioPage() {
       .select('id, debt_id, sale_id, amount, method, created_at')
       .order('created_at', { ascending: false })
       .limit(150),
-    // Deudas contraídas HOY: el "Crédito" del día es deuda REAL (mostrador
-    // + fiado directo + fiados de Live). Un apartado PENDIENTE de Live NO
-    // es crédito todavía (QA 2026-09-14: C-4) — la deuda nace al fiar.
+    // Deudas contraídas HOY: el "Crédito" del día es deuda REAL
+    // (mostrador + fiado directo). Toda venta fiada crea su deuda en la
+    // misma transacción desde la migración 12 (antes los apartados de
+    // Live pendientes no eran crédito todavía, QA 2026-09-14: C-4).
     supabase
       .from('debts')
       .select('id, original_amount')
@@ -127,15 +128,6 @@ export default async function InicioPage() {
     folioByMov[m.id] = '#' + String(i + 1).padStart(3, '0');
   });
 
-  // Ventas de hoy que son apartados de Live PENDIENTES (fiado sin deuda):
-  // no son ni contado ni crédito — se listan aparte en los movimientos.
-  const debtSaleIds = new Set(debtList.filter((d) => d.sale_id).map((d) => d.sale_id));
-  const pendingLiveIds = new Set(
-    saleList
-      .filter((s) => s.channel === 'tiktok_live' && s.payment_method === 'fiado' && !debtSaleIds.has(s.id))
-      .map((s) => s.id)
-  );
-
   return (
     <InicioClient
       contado={contado}
@@ -150,7 +142,6 @@ export default async function InicioPage() {
       folioByMov={folioByMov}
       debtorNameByPayment={debtorNameByPayment}
       movsByClient={movsByClient}
-      pendingLiveIds={[...pendingLiveIds]}
     />
   );
 }

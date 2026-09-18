@@ -47,13 +47,6 @@ const IcoAbono = () => (
     <path d="M14 7h6v6" />
   </svg>
 );
-const IcoClock = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="8.5" />
-    <path d="M12 7.5V12l3 2" />
-  </svg>
-);
-
 const SearchField = ({ value, onChange, placeholder }) => (
   <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline rounded-[10px] px-3 py-2">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#93707F" strokeWidth="1.8" strokeLinecap="round">
@@ -70,7 +63,7 @@ const SearchField = ({ value, onChange, placeholder }) => (
   </div>
 );
 
-export default function InicioClient({ contado, fiado, abonos, gastos, piezas, sales, expenses, payments: initialPayments, debtors, folioByMov, debtorNameByPayment = {}, movsByClient: initialMovsByClient = {}, pendingLiveIds = [] }) {
+export default function InicioClient({ contado, fiado, abonos, gastos, piezas, sales, expenses, payments: initialPayments, debtors, folioByMov, debtorNameByPayment = {}, movsByClient: initialMovsByClient = {} }) {
   const [movSearch, setMovSearch] = useState('');
   const [cliSearch, setCliSearch] = useState('');
   const [busy, setBusy] = useState(false);
@@ -371,24 +364,17 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
     }
   };
 
-  // Línea de tiempo de movimientos con folio único
-  // Los apartados de Live PENDIENTES (fiado sin deuda) se listan como
-  // "Apartado pendiente" (C-4): no son venta ni crédito — la venta nace
-  // al cobrarlos o fiarlos.
-  const pendingSet = new Set(pendingLiveIds);
+  // Línea de tiempo de movimientos con folio único. Todas las ventas son
+  // reales (migración 12: ya no existen apartados pendientes de Live).
   const movimientos = [
     ...sales.map((s) => ({
       key: s.id,
       folio: folioByMov[s.id] || '',
-      tipo: pendingSet.has(s.id) ? 'pendiente' : s.payment_method === 'fiado' ? 'fiado' : 'venta',
+      tipo: s.payment_method === 'fiado' ? 'fiado' : 'venta',
       titulo: `${s.client_name || 'Venta mostrador'}${s.notes ? ' · ' + s.notes : ''}`,
       sub: `${new Date(s.created_at).toLocaleTimeString('es-NI', { hour: 'numeric', minute: '2-digit' })} · ${
-        pendingSet.has(s.id)
-          ? 'Pendiente de cobrar o pasar a crédito'
-          : s.payment_method === 'fiado'
-            ? 'Crédito'
-            : 'Contado'
-      }${s.channel === 'tiktok_live' ? ' · Live' : ''}`,
+        s.payment_method === 'fiado' ? 'Crédito' : 'Contado'
+      }`,
       monto: Number(s.total),
       signo: '+',
       ts: s.created_at,
@@ -493,7 +479,7 @@ export default function InicioClient({ contado, fiado, abonos, gastos, piezas, s
             {movsFiltrados.map((m) => (
               <div key={m.key} className="flex items-center gap-2.5 py-2.5 border-b border-surface-container last:border-0">
                 <Thumb>
-                  {m.tipo === 'gasto' ? <IcoOut /> : m.tipo === 'abono' ? <IcoAbono /> : m.tipo === 'pendiente' ? <IcoClock /> : <IcoIn />}
+                  {m.tipo === 'gasto' ? <IcoOut /> : m.tipo === 'abono' ? <IcoAbono /> : <IcoIn />}
                 </Thumb>
                 <div className="flex-1 min-w-0">
                   <b className="block text-[13.5px] font-semibold text-on-surface truncate">

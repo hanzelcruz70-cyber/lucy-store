@@ -23,7 +23,7 @@ async function getData() {
   const [sales, expenses, cuts, pagosHoy, cutsHistory, profile, opening, debtsHoy] = await Promise.all([
     supabase
       .from('sales')
-      .select('id, total, items_count, channel, payment_method, client_name, notes, created_at')
+      .select('id, total, total_cost, discount, items_count, channel, payment_method, client_name, notes, created_at')
       .gte('created_at', start.toISOString())
       .order('created_at', { ascending: false })
       .limit(500),
@@ -47,10 +47,11 @@ async function getData() {
       .select('id, amount, method, sale_id, created_at')
       .gte('created_at', start.toISOString())
       .limit(500),
-    // Historial de cortes (máximo 30 días)
+    // Historial de cortes (máximo 30 días); profit_total = ganancia del
+    // día guardada al cerrar (migración 13; cortes viejos la traen null)
     supabase
       .from('cash_cuts')
-      .select('id, sales_total, expenses_total, abonos_total, transfer_total, fisico_total, discrepancy_amount, notes, created_at')
+      .select('id, sales_total, expenses_total, abonos_total, transfer_total, fisico_total, discrepancy_amount, profit_total, notes, created_at')
       .gte('created_at', cutsSince.toISOString())
       .order('created_at', { ascending: false })
       .limit(60),
@@ -84,23 +85,24 @@ async function getData() {
   // de las métricas de todaySales — cobrarlas aquí sería doble conteo.
   const todaySaleIds = new Set(todaySales.map((s) => s.id));
 
-  // Cobros en EFECTIVO de apartados de días ANTERIORES: la clienta pasó HOY
-  // por su prenda del Live de ayer — ese billete está en el cajón HOY y
-  // debe entrar al esperado del arqueo (antes era invisible: "Sobra" fantasma)
-  const cobrosAparEfectivo = todayPayments
-    .filter((p) => p.sale_id && !todaySaleIds.has(p.sale_id) && p.method === 'efectivo')
-    .reduce((a, p) => a + Number(p.amount), 0);
-  const cobrosAparTransf = todayPayments
-    .filter((p) => p.sale_id && !todaySaleIds.has(p.sale_id) && p.method === 'transferencia')
-    .reduce((a, p) => a + Number(p.amount), 0);
-
-  // Ventas con deuda real (fiadas de verdad): los apartados de Live
-  // PENDIENTES (fiado sin deuda) no son ni venta ni crédito todavía (C-4)
+  // Ventas con deuda real (fiadas de verdad). Con la migración 12 ya NO se
+  // crean apartados pendientes (toda venta fiada trae su deuda en la misma
+  // transacción); este guard queda solo para ignorar PENDIENTES VIEJOS del
+  // módulo Live eliminado (fiado sin deuda: no son venta ni crédito, C-4).
   const fiadoSaleIds = new Set((todayDebts || []).map((d) => d.sale_id).filter(Boolean));
   const realSales = todaySales.filter((s) => s.payment_method !== 'fiado' || fiadoSaleIds.has(s.id));
-  // Apartados pendientes de hoy (se listan, no se cuentan)
-  const pendingApar = todaySales.filter((s) => s.payment_method === 'fiado' && !fiadoSaleIds.has(s.id));
-  const pendingTotal = pendingApar.reduce((a, s) => a + Number(s.total), 0);
+
+  // GANANCIA DEL DÍA (migración 12): solo ventas de MERCADERÍA
+  // (items_count > 0 — un "crédito directo" es plata prestada, no prendas)
+  // menos el costo calculado en el servidor desde los lotes. La rebaja ya
+  // está restada en total → la ganancia es la REAL exacta.
+  const merchSales = realSales.filter((s) => s.items_count > 0);
+  const vendidoMerch = merchSales.reduce((a, s) => a + Number(s.total), 0);
+  const costoVentas = merchSales.reduce((a, s) => a + Number(s.total_cost || 0), 0);
+  const ganancia = vendidoMerch - costoVentas;
+  // Sin costo conocido (producto sin lote o ventas anteriores a la
+  // migración 12): esas entran al 100% → la ganancia se marca estimada.
+  const sinCosto = merchSales.filter((s) => Number(s.total_cost || 0) === 0).length;
 
   const total = realSales.reduce((a, s) => a + Number(s.total), 0);
   const collected = realSales
@@ -131,7 +133,7 @@ async function getData() {
     .filter((p) => !p.sale_id)
     .reduce((a, p) => a + Number(p.amount), 0);
 
-  return { todaySales, todayExpenses, todayPayments, todaySaleIds: [...todaySaleIds], cutDone, cutsHistory: cutsHistory.data || [], storeName: profile.data?.stores?.name || 'Mi Prenda', total, collected, efectivoSolo, transf, credit, expTotal, pieces, net, abonosEfectivo, abonosTodos, cobrosAparEfectivo, cobrosAparTransf, fondoInicial, pendingApar, pendingTotal };
+  return { realSales, todayExpenses, todayPayments, todaySaleIds: [...todaySaleIds], cutDone, cutsHistory: cutsHistory.data || [], storeName: profile.data?.stores?.name || 'Mi Prenda', total, collected, efectivoSolo, transf, credit, expTotal, pieces, net, abonosEfectivo, abonosTodos, fondoInicial, ganancia, vendidoMerch, costoVentas, sinCosto };
 }
 
 export default async function CajaPage() {
@@ -139,31 +141,28 @@ export default async function CajaPage() {
 
   return (
     <div className="flex flex-col w-full px-3.5 py-3.5 gap-2.5">
-      {/* Export (descarga el reporte Excel con formato Mi Prenda) */}
+      {/* Export (descarga el reporte Excel con formato Mi Prenda).
+          realSales: pendientes viejos de Live ya eliminados arriba. */}
       <ExportButton
-        sales={d.todaySales}
+        sales={d.realSales}
         expenses={d.todayExpenses}
         payments={d.todayPayments.filter((p) => !d.todaySaleIds.includes(p.sale_id))}
         fondoInicial={d.fondoInicial}
         abonosEfectivo={d.abonosEfectivo}
-        cobrosApartadosEfectivo={d.cobrosAparEfectivo}
-        cobrosApartadosTransferencia={d.cobrosAparTransf}
         storeName={d.storeName}
-        pendingSaleIds={d.pendingApar ? d.pendingApar.map((p) => p.id) : []}
       />
 
       {/* Caja inicial del día (fondo con el que se abre) */}
       <CajaInicial initial={d.fondoInicial} editable={!d.cutDone} />
 
-      {/* Cierre de caja */}
+      {/* Cierre de caja (lleva la ganancia del día para el historial) */}
       <CierreCaja
         contadoEfectivo={d.efectivoSolo}
         contadoTransferencia={d.transf}
         gastos={d.expTotal}
         abonosEfectivo={d.abonosEfectivo}
-        cobrosAparadosEfectivo={d.cobrosAparEfectivo}
-        cobrosAparadosTransferencia={d.cobrosAparTransf}
         fondoInicial={d.fondoInicial}
+        gananciaHoy={d.ganancia}
         cutDone={d.cutDone}
       />
 
@@ -206,8 +205,8 @@ export default async function CajaPage() {
               </svg>
               Cobrado hoy
             </div>
-            <div className="inline-flex items-center leading-none text-[20px] font-bold text-primary mt-1">{money(d.collected + d.cobrosAparEfectivo + d.cobrosAparTransf)}</div>
-            <div className="text-[12px] text-on-surface-variant mt-0.5">Contado + apartados de días anteriores</div>
+            <div className="inline-flex items-center leading-none text-[20px] font-bold text-primary mt-1">{money(d.collected)}</div>
+            <div className="text-[12px] text-on-surface-variant mt-0.5">Ventas cobradas hoy</div>
           </div>
           <div className="bg-surface-container-lowest border border-outline rounded-[14px] p-3">
             <div className="flex justify-between items-center">
@@ -221,6 +220,29 @@ export default async function CajaPage() {
           </div>
         </div>
 
+        {/* GANANCIA DE HOY (migración 12): vendido − costo de prendas.
+            El costo lo calcula el servidor desde los lotes; la rebaja ya
+            está restada en el total → número REAL, sin adornos. */}
+        <div className="mt-3 bg-primary-fixed/60 border border-primary-fixed-dim rounded-[14px] p-3">
+          <div className="flex justify-between items-center">
+            <span className="text-[12px] font-bold text-primary-deep uppercase tracking-[0.04em] flex items-center gap-1.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 17l6-6 4 4 8-8" />
+                <path d="M21 13V7h-6" />
+              </svg>
+              Ganancia de hoy{d.sinCosto > 0 ? '*' : ''}
+            </span>
+            <b className={`inline-flex items-center leading-none text-[20px] font-bold ${d.ganancia >= 0 ? 'text-primary-deep' : 'text-error'}`}>
+              {d.ganancia >= 0 ? '+' : ''}{money(d.ganancia)}
+            </b>
+          </div>
+          {d.sinCosto > 0 && (
+            <p className="text-[11px] text-on-surface-variant mt-0.5">
+              * {d.sinCosto} venta{d.sinCosto > 1 ? 's' : ''} sin costo registrado (producto sin lote) — entran completas a la ganancia
+            </p>
+          )}
+        </div>
+
         <div className="flex justify-between text-[13px] mt-3">
           <span>
             Margen neto en caja <span className="text-on-surface-variant">(cobrado − gastos)</span>
@@ -232,69 +254,46 @@ export default async function CajaPage() {
         </div>
       </div>
 
-      {/* Apartados de Live pendientes de hoy (reserva, no son venta ni crédito) */}
-      {d.pendingApar && d.pendingApar.length > 0 && (
-        <div className="bg-primary-fixed border border-primary-fixed-dim rounded-[14px] p-3.5">
-          <div className="text-[11px] font-semibold text-primary-deep tracking-[0.06em] uppercase flex items-center gap-1.5">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7.5V12l3 2" />
-            </svg>
-            Apartados por confirmar · {d.pendingApar.length}
-          </div>
-          <div className="mt-1.5 flex justify-between items-baseline">
-            <span className="text-[12px] text-on-surface-variant">
-              Cobrados o fiados, entran al día. Los pendientes de +30 días se limpian solos.
-            </span>
-            <b className="inline-flex items-center leading-none text-[15px] font-bold text-primary-deep ml-3 whitespace-nowrap">{money(d.pendingTotal)}</b>
-          </div>
-        </div>
-      )}
-
-      {/* Movimientos del corte: ventas + abonos de deuda + cobros de apartados + gastos */}
+      {/* Movimientos del corte: ventas + abonos de deuda + gastos */}
       <div className="flex justify-between items-center px-0.5">
         <b className="text-[14px] text-on-surface">Movimientos del corte</b>
         <span className="inline-flex text-[10.5px] font-semibold px-2 py-[3px] rounded-full bg-primary-fixed text-primary">
-          {d.todaySales.length + d.todayExpenses.length + d.todayPayments.filter((p) => !d.todaySaleIds.includes(p.sale_id)).length} registros
+          {d.realSales.length + d.todayExpenses.length + d.todayPayments.filter((p) => !d.todaySaleIds.includes(p.sale_id)).length} registros
         </span>
       </div>
       <div className="bg-surface-container-lowest border border-outline rounded-[14px] px-3.5 py-1">
-        {d.todaySales.length === 0 && d.todayExpenses.length === 0 && d.todayPayments.filter((p) => !d.todaySaleIds.includes(p.sale_id)).length === 0 && (
+        {d.realSales.length === 0 && d.todayExpenses.length === 0 && d.todayPayments.filter((p) => !d.todaySaleIds.includes(p.sale_id)).length === 0 && (
           <p className="py-6 text-center text-[13px] text-on-surface-variant">Aún no hay movimientos hoy.</p>
         )}
         {/* Lista con scroll a 5 filas (regla de UI: listas largas no crecen
             la página — se desplazan dentro de la cajita) */}
         <div className="overflow-y-auto scroll-box -mr-1 pr-1" style={{ maxHeight: 5 * 62 }}>
-        {d.todaySales.map((s) => {
-          const esPendiente = d.pendingApar && d.pendingApar.some((p) => p.id === s.id);
-          return (
-          <div key={s.id} className={`flex items-center gap-2.5 py-2.5 border-b border-surface-container last:border-0 ${esPendiente ? 'opacity-70' : ''}`}>
+        {d.realSales.map((s) => (
+          <div key={s.id} className="flex items-center gap-2.5 py-2.5 border-b border-surface-container last:border-0">
             <div className="flex-1 min-w-0">
               <b className="block text-[13.5px] font-semibold text-on-surface truncate">
-                {esPendiente ? 'Apartado pendiente · ' : 'Venta · '}{s.client_name || 'Mostrador'}
+                Venta · {s.client_name || 'Mostrador'}
               </b>
               <span className="block text-[11.5px] text-on-surface-variant truncate">
-                {s.notes || s.items_count + ' prendas'} · {esPendiente ? 'pendiente de cobrar o fiar' : s.payment_method === 'fiado' ? 'crédito' : 'contado'}
-                {s.channel === 'tiktok_live' ? ' · Live' : ''}
+                {s.notes || s.items_count + ' prendas'} · {s.payment_method === 'fiado' ? 'crédito' : 'contado'}
+                {Number(s.discount) > 0 ? ` · rebaja ${money(s.discount)}` : ''}
               </span>
             </div>
-            <span className={`inline-flex items-center leading-none text-[14px] font-bold whitespace-nowrap ${esPendiente ? 'text-on-surface-variant' : 'text-primary'}`}>
-              {esPendiente ? '' : '+'}{money(s.total)}
+            <span className="inline-flex items-center leading-none text-[14px] font-bold whitespace-nowrap text-primary">
+              +{money(s.total)}
             </span>
           </div>
-          );
-        })}
+        ))}
         {d.todayPayments
           .filter((p) => !d.todaySaleIds.includes(p.sale_id))
           .map((p) => (
             <div key={'abono-' + p.id} className="flex items-center gap-2.5 py-2.5 border-b border-surface-container last:border-0">
               <div className="flex-1 min-w-0">
                 <b className="block text-[13.5px] font-semibold text-on-surface truncate">
-                  {p.sale_id ? 'Apartado cobrado' : 'Abono recibido'}
+                  Abono recibido
                 </b>
                 <span className="block text-[11.5px] text-on-surface-variant">
                   {p.method === 'transferencia' ? 'Transferencia' : 'Efectivo'}
-                  {p.sale_id ? ' · de un Live anterior' : ''}
                 </span>
               </div>
               <span className="inline-flex items-center leading-none text-[14px] font-bold text-primary whitespace-nowrap">+{money(p.amount)}</span>

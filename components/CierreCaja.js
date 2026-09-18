@@ -10,7 +10,7 @@ const money = (n) => 'C$' + (Number(n) || 0).toLocaleString('es-NI', { maximumFr
 
 const DENOMS = [1000, 500, 200, 100, 50, 20, 10, 5, 1];
 
-export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gastos, abonosEfectivo = 0, cobrosAparadosEfectivo = 0, cobrosAparadosTransferencia = 0, fondoInicial = 0, cutDone }) {
+export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gastos, abonosEfectivo = 0, fondoInicial = 0, gananciaHoy = null, cutDone }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [counts, setCounts] = useState({});
@@ -27,14 +27,12 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
   // El efectivo esperado del cajón incluye:
   //   + ventas en efectivo de hoy
   //   + abonos de deudas en efectivo
-  //   + cobros EN EFECTIVO de apartados de días anteriores (la clienta
-  //     pasó hoy por su prenda del Live de ayer — ese billete está hoy)
   //   + fondo inicial
   //   − gastos del día
+  // (migración 12: ya no hay apartados de Live cobrados días después)
   const esperadoEnCaja =
     Number(contadoEfectivo) +
-    Number(abonosEfectivo) +
-    Number(cobrosAparadosEfectivo) -
+    Number(abonosEfectivo) -
     Number(gastos) +
     Number(fondoInicial);
   const contadoFisico = DENOMS.reduce((a, d) => a + d * (parseInt(counts[d]) || 0), 0);
@@ -66,15 +64,16 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
           payload: {
             localId: uuid(),
             createdAt: new Date().toISOString(),
-            salesTotal: contadoTotal + Number(cobrosAparadosEfectivo) + Number(cobrosAparadosTransferencia),
-            collectedTotal: Number(contadoEfectivo) + Number(cobrosAparadosEfectivo),
+            salesTotal: contadoTotal,
+            collectedTotal: Number(contadoEfectivo),
             expensesTotal: Number(gastos),
             abonosTotal: Number(abonosEfectivo),
-            transferTotal: Number(contadoTransferencia) + Number(cobrosAparadosTransferencia),
+            transferTotal: Number(contadoTransferencia),
             fisicoTotal: contadoFisico,
             discrepancyAmount: diferencia,
             openingTotal: Number(fondoInicial),
-            notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(Number(contadoTransferencia) + Number(cobrosAparadosTransferencia))}. Abonos en efectivo: ${money(abonosEfectivo)}`,
+            profitTotal: gananciaHoy === null ? null : Number(gananciaHoy),
+            notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(contadoTransferencia)}. Abonos en efectivo: ${money(abonosEfectivo)}`,
           },
         });
         setDone(true);
@@ -85,16 +84,19 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
       const supabase = createClient();
       const ctx = await getMyContext();
       const { error } = await supabase.from('cash_cuts').insert({
-        sales_total: contadoTotal + Number(cobrosAparadosEfectivo) + Number(cobrosAparadosTransferencia),
-        collected_total: Number(contadoEfectivo) + Number(abonosEfectivo) + Number(cobrosAparadosEfectivo), // efectivo real en caja
+        sales_total: contadoTotal,
+        collected_total: Number(contadoEfectivo) + Number(abonosEfectivo), // efectivo real en caja
         abonos_total: Number(abonosEfectivo),
-        transfer_total: Number(contadoTransferencia) + Number(cobrosAparadosTransferencia),
+        transfer_total: Number(contadoTransferencia),
         fisico_total: contadoFisico,
         discrepancy_amount: diferencia,
         opening_total: Number(fondoInicial),
+        // Ganancia REAL del día (migración 13: vendido − costo de prendas,
+        // rebajas ya incluidas) — queda en el historial de cortes
+        profit_total: gananciaHoy === null ? null : Number(gananciaHoy),
         credit_total: 0,
         expenses_total: gastos,
-        notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(Number(contadoTransferencia) + Number(cobrosAparadosTransferencia))}. Abonos en efectivo: ${money(abonosEfectivo)}`,
+        notes: `Contado físico: ${money(contadoFisico)}. Diferencia: ${money(diferencia)}. Transferencias: ${money(contadoTransferencia)}. Abonos en efectivo: ${money(abonosEfectivo)}`,
         store_id: ctx.storeId,
         user_id: ctx.userId,
       });
@@ -162,18 +164,6 @@ export default function CierreCaja({ contadoEfectivo, contadoTransferencia, gast
                 <span className="text-on-surface-variant">De esas, por transferencia</span>
                 <b className="text-on-surface-variant">{money(contadoTransferencia)}</b>
               </div>
-              {Number(cobrosAparadosEfectivo) > 0 && (
-                <div className="flex justify-between text-[13px]">
-                  <span className="text-on-surface-variant">Apartados de días anteriores (efectivo)</span>
-                  <b className="text-primary">+{money(cobrosAparadosEfectivo)}</b>
-                </div>
-              )}
-              {Number(cobrosAparadosTransferencia) > 0 && (
-                <div className="flex justify-between text-[13px]">
-                  <span className="text-on-surface-variant">Apartados de días anteriores (transferencia)</span>
-                  <b className="text-on-surface-variant">{money(cobrosAparadosTransferencia)}</b>
-                </div>
-              )}
               <div className="flex justify-between text-[13px]">
                 <span className="text-on-surface-variant">Gastos del día</span>
                 <b className="text-on-surface">−{money(gastos)}</b>

@@ -101,6 +101,16 @@ export default function CutsHistory({ cuts }) {
                       Físico <b className="inline-flex items-center leading-none text-primary">{money(fisico)}</b>
                     </span>
                   )}
+                  {/* Ganancia del día (migración 13): solo cortes nuevos la
+                      traen; los viejos no la tenían guardada */}
+                  {c.profit_total !== null && c.profit_total !== undefined && (
+                    <span>
+                      Ganancia{' '}
+                      <b className={`inline-flex items-center leading-none ${Number(c.profit_total) >= 0 ? 'text-primary-deep' : 'text-error'}`}>
+                        {Number(c.profit_total) >= 0 ? '+' : ''}{money(c.profit_total)}
+                      </b>
+                    </span>
+                  )}
                 </div>
               </div>
             );

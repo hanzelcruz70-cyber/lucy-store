@@ -9,10 +9,11 @@ import { clearQueue } from '@/lib/offline-queue';
 import PwaRegister from '@/components/PwaRegister';
 import OfflineBanner from '@/components/OfflineBanner';
 
+// Migración 12 (2026-09-17): se ELIMINÓ el módulo Live TikTok (pantalla,
+// RPCs y cola offline) — todo se vende desde Vender, incl. ventas en vivo.
 const NAV = [
   { href: '/app/inicio', label: 'Inicio', icon: 'home' },
   { href: '/app/vender', label: 'Vender', icon: 'sell' },
-  { href: '/app/live', label: 'Live TikTok', icon: 'videocam', live: true },
   { href: '/app/caja', label: 'Caja', icon: 'point_of_sale' },
   { href: '/app/inventario', label: 'Inventario', icon: 'inventory_2' },
   { href: '/app/clientes', label: 'Clientes', icon: 'groups' },
@@ -31,7 +32,6 @@ const Icon = ({ name, size = 20, sw = 1.8, className = '' }) => {
         <path d="M5.4 14.5L3.7 19.4c-.2.7.3 1.6 1.1 1.6h14.4c.8 0 1.3-.9 1.1-1.6l-1.7-4.9" />
       </>
     ),
-    videocam: <path d="M3 7a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 10l5-3v10l-5-3" />,
     point_of_sale: (
       <>
         {/* Caja registradora (solo para la pestaña Caja) */}
@@ -157,11 +157,6 @@ export default function AppShell({ storeName, userName, children }) {
               >
                 <Icon name={item.icon} size={19} />
                 <span className="truncate">{item.label}</span>
-                {item.live && (
-                  <span className="ml-auto px-1.5 py-0.5 rounded-md bg-primary text-on-primary text-[9px] font-bold tracking-wide">
-                    LIVE
-                  </span>
-                )}
               </Link>
             );
           })}
@@ -221,11 +216,6 @@ export default function AppShell({ storeName, userName, children }) {
                     >
                       <Icon name={item.icon} size={20} />
                       <span className="truncate">{item.label}</span>
-                      {item.live && (
-                        <span className="ml-auto px-1.5 py-0.5 rounded-md bg-primary text-on-primary text-[9px] font-bold">
-                          LIVE
-                        </span>
-                      )}
                     </Link>
                   );
                 })}
